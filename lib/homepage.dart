@@ -6,8 +6,20 @@ class Homepage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Variable auxiliar mientras no se tiene la base de datos
+    // Variables auxiliares mientras no se tiene la base de datos
     var perros = [
+      ['Princesa', 'Hace 10 minutos', 'Saludable'],
+      ['Nube', 'Hace 1 hora', 'Necesita atención'],
+      ['Goldie', 'Hace 15 minutos', 'Saludable'],
+      ['Manchas', 'Hace 4 horas', 'Saludable'],
+      ['Rocky', 'Hace 6 horas', 'Necesita atención'],
+      ['Minnie', 'Hace 10 minutos', 'Saludable'],
+      ['Bebé', 'Hace 1 hora', 'Necesita atención'],
+      ['Spot', 'Hace 15 minutos', 'Saludable'],
+      ['Walter', 'Hace 4 horas', 'Saludable'],
+      ['Sir', 'Hace 6 horas', 'Necesita atención']
+    ];
+    var perrosSeguidos = [
       ['Princesa', 'Hace 10 minutos', 'Saludable'],
       ['Nube', 'Hace 1 hora', 'Necesita atención'],
       ['Goldie', 'Hace 15 minutos', 'Saludable'],
@@ -17,7 +29,15 @@ class Homepage extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('GUAUrdados'),
+        backgroundColor: Color.fromRGBO(238,210,195,1),
+        title: Text(
+          'GUAUrdados',
+          style: TextStyle(
+            fontWeight: FontWeight.w800,
+            fontSize: 28,
+            color: Color.fromRGBO(56, 54, 53, 1),
+          ),
+        ),
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -34,7 +54,7 @@ class Homepage extends StatelessWidget {
             ),
           ),
           ListaPerrosSeguidos(
-                listaPerrosSeguidos: perros,
+                listaPerrosSeguidos: perrosSeguidos,
           ),
           Container(
             padding: EdgeInsets.only(left: 15),
@@ -72,21 +92,32 @@ class ListaPerrosSeguidos extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(2),
       child: SizedBox(
-        height: 110,
+        height: 130,
         child: ListView.builder(
           padding: const EdgeInsets.all(12),
           scrollDirection: Axis.horizontal,
           itemCount: listaPerrosSeguidos.length,
           itemBuilder: (BuildContext context, int index) {
             return SizedBox(
-              width: 100,
+              width: 120,
               child: Card(
+                color: Color.fromRGBO(249, 240, 235, 1),
                 margin: const EdgeInsets.symmetric(horizontal: 5),
-                child: Column(
-                  children: [
-                    Text('Image'),
-                    Text(listaPerrosSeguidos[index][0])
-                  ],
+                child: InkWell(
+                  splashColor: Colors.white,
+                  onTap: () {},
+                  child: Column(
+                    children: [
+                      Text('Imagen'),
+                      Text(
+                        listaPerrosSeguidos[index][0],
+                        textAlign: TextAlign.left,
+                        style: TextStyle(
+                          fontSize: 18,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             );
@@ -117,32 +148,41 @@ class ListaTodosLosPerros extends StatelessWidget {
             child: Column(
               children: <Widget>[
                 Card(
-                  child: SizedBox(
-                    width: 400,
-                    height: 80,
-                    child: Row(
-                      children: [
-                        Text('Imagen'),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              listaPerros[index][0],
-                              textAlign: TextAlign.left,
-                              style: TextStyle(
-                                fontSize: 18,
-                              ),
+                  color: Color.fromRGBO(249, 240, 235, 1),
+                  child: InkWell(
+                    splashColor: Colors.white,
+                    onTap: () {},
+                    child: SizedBox(
+                      width: 400,
+                      height: 80,
+                      child: Row(
+                        children: [
+                          Text('Imagen'),
+                          Padding(
+                            padding: EdgeInsets.only(top: 15),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  listaPerros[index][0],
+                                  textAlign: TextAlign.left,
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                Text(listaPerros[index][1]),
+                              ],
                             ),
-                            Text(listaPerros[index][1]),
-                          ],
-                        ),
-                        Text(
-                          listaPerros[index][2],
-                          textAlign: TextAlign.right,
-                        ),
-                      ],
+                          ),
+                          Text(
+                            listaPerros[index][2],
+                            textAlign: TextAlign.right,
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
+                  )
                 ),
               ],
             ),
