@@ -87,3 +87,8 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+fonts:
+  - family: Inter
+    fonts:
+      - asset: Font/Inter-VariableFont_opsz,wght.ttf
+      - asset: Font/Inter-Italic-VariableFont_opsz,wght.ttf
