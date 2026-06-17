@@ -56,6 +56,10 @@ class Homepage extends StatelessWidget {
           ListaPerrosSeguidos(
                 listaPerrosSeguidos: perrosSeguidos,
           ),
+          Padding(
+            padding: EdgeInsets.only(left: 15, bottom: 20),
+            child: BotonForo(),
+          ),
           Container(
             padding: EdgeInsets.only(left: 15),
             child: Text(
@@ -92,14 +96,14 @@ class ListaPerrosSeguidos extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(2),
       child: SizedBox(
-        height: 130,
+        height: 170,
         child: ListView.builder(
           padding: const EdgeInsets.all(12),
           scrollDirection: Axis.horizontal,
           itemCount: listaPerrosSeguidos.length,
           itemBuilder: (BuildContext context, int index) {
             return SizedBox(
-              width: 120,
+              width: 160,
               child: Card(
                 color: Color.fromRGBO(249, 240, 235, 1),
                 margin: const EdgeInsets.symmetric(horizontal: 5),
@@ -111,9 +115,9 @@ class ListaPerrosSeguidos extends StatelessWidget {
                       Text('Imagen'),
                       Text(
                         listaPerrosSeguidos[index][0],
-                        textAlign: TextAlign.left,
                         style: TextStyle(
                           fontSize: 18,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ],
@@ -159,7 +163,7 @@ class ListaTodosLosPerros extends StatelessWidget {
                         children: [
                           Text('Imagen'),
                           Padding(
-                            padding: EdgeInsets.only(top: 15),
+                            padding: EdgeInsets.only(top: 15, left: 30, right: 40),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -193,3 +197,38 @@ class ListaTodosLosPerros extends StatelessWidget {
   }
 }
 
+
+/// Botón foro principal
+class BotonForo extends StatelessWidget {
+  const BotonForo({super.key});
+
+  @override
+  Widget build(BuildContext context){
+    return SizedBox(
+      width: 380,
+      child: TextButton(
+        style: TextButton.styleFrom(
+          backgroundColor: Color.fromRGBO(222, 79, 65, 1),
+          foregroundColor: Colors.white,
+        ),
+        onPressed: () {},
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.chat_bubble_outline,
+              color: Colors.white,
+            ),
+            Text(
+              'Foros',
+              style: TextStyle(
+                fontWeight: FontWeight.w500,
+                fontSize: 16,
+              ),
+            )
+          ],
+        ),
+      ),
+    );
+  }
+}
