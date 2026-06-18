@@ -1,35 +1,40 @@
 import 'package:flutter/material.dart';
+import 'package:guaurdados_oficial/perfilperro.dart';
 
 /// Base de la página de inicio
-class Homepage extends StatelessWidget {
+class Homepage extends StatefulWidget {
   const Homepage({super.key});
 
+  @override
+  State<StatefulWidget> createState() => HomepageBody();
+}
+
+/// Cuerpo de la página de inicio
+class HomepageBody extends State<Homepage> {
   @override
   Widget build(BuildContext context) {
     // Variables auxiliares mientras no se tiene la base de datos
     var perros = [
-      ['Princesa', 'Hace 10 minutos', 'Saludable'],
-      ['Nube', 'Hace 1 hora', 'Necesita atención'],
-      ['Goldie', 'Hace 15 minutos', 'Saludable'],
-      ['Manchas', 'Hace 4 horas', 'Saludable'],
-      ['Rocky', 'Hace 6 horas', 'Necesita atención'],
-      ['Minnie', 'Hace 10 minutos', 'Saludable'],
-      ['Bebé', 'Hace 1 hora', 'Necesita atención'],
-      ['Spot', 'Hace 15 minutos', 'Saludable'],
-      ['Walter', 'Hace 4 horas', 'Saludable'],
-      ['Sir', 'Hace 6 horas', 'Necesita atención']
+      ['0', 'Scooby', 'Hace 10 minutos', 'Saludable'],
+      ['1', 'Bobby', 'Hace 1 hora', 'Necesita atención'],
+      ['2', 'Ramón', 'Hace 15 minutos', 'Saludable'],
+      ['3', 'Ramona', 'Hace 4 horas', 'Saludable'],
+      ['4', 'Mora', 'Hace 6 horas', 'Necesita atención'],
+      ['5', 'Tommy', 'Hace 10 minutos', 'Saludable'],
+      ['6', 'Romeo', 'Hace 1 hora', 'Necesita atención'],
+      ['7', 'Lobito', 'Hace 15 minutos', 'Saludable']
     ];
     var perrosSeguidos = [
-      ['Princesa', 'Hace 10 minutos', 'Saludable'],
-      ['Nube', 'Hace 1 hora', 'Necesita atención'],
-      ['Goldie', 'Hace 15 minutos', 'Saludable'],
-      ['Manchas', 'Hace 4 horas', 'Saludable'],
-      ['Rocky', 'Hace 6 horas', 'Necesita atención']
+      ['0', 'Scooby', 'Hace 10 minutos', 'Saludable'],
+      ['1', 'Bobby', 'Hace 1 hora', 'Necesita atención'],
+      ['2', 'Ramón', 'Hace 15 minutos', 'Saludable'],
+      ['3', 'Ramona', 'Hace 4 horas', 'Saludable'],
+      ['4', 'Mora', 'Hace 6 horas', 'Necesita atención']
     ];
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Color.fromRGBO(238,210,195,1),
+        backgroundColor: Color.fromRGBO(238, 210, 195, 1),
         title: Text(
           'GUAUrdados',
           style: TextStyle(
@@ -54,7 +59,11 @@ class Homepage extends StatelessWidget {
             ),
           ),
           ListaPerrosSeguidos(
-                listaPerrosSeguidos: perrosSeguidos,
+            listaPerrosSeguidos: perrosSeguidos,
+          ),
+          Padding(
+            padding: EdgeInsets.only(left: 15, bottom: 20),
+            child: BotonForo(),
           ),
           Container(
             padding: EdgeInsets.only(left: 15),
@@ -68,11 +77,31 @@ class Homepage extends StatelessWidget {
             ),
           ),
           Expanded(
-              child: ListaTodosLosPerros(
-                  listaPerros: perros,
-              ),
+            child: ListaTodosLosPerros(
+              listaPerros: perros,
+            ),
           ),
         ],
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        items: const <BottomNavigationBarItem>[
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home_outlined),
+            label: '',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.camera_alt_outlined),
+            label: '',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_outline),
+            label: '',
+          ),
+        ],
+        currentIndex: 0,
+        backgroundColor: Color.fromRGBO(235, 185, 157, 1),
+        selectedItemColor: Color.fromRGBO(222, 79, 65, 1),
+        iconSize: 40,
       ),
     );
   }
@@ -92,28 +121,36 @@ class ListaPerrosSeguidos extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(2),
       child: SizedBox(
-        height: 130,
+        height: 170,
         child: ListView.builder(
           padding: const EdgeInsets.all(12),
           scrollDirection: Axis.horizontal,
           itemCount: listaPerrosSeguidos.length,
           itemBuilder: (BuildContext context, int index) {
             return SizedBox(
-              width: 120,
+              width: 160,
               child: Card(
                 color: Color.fromRGBO(249, 240, 235, 1),
                 margin: const EdgeInsets.symmetric(horizontal: 5),
                 child: InkWell(
-                  splashColor: Colors.white,
-                  onTap: () {},
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute<void>(
+                        builder: (context) => PerfilPerro(
+                            IDPerro: listaPerrosSeguidos[index][0],
+                        ),
+                      ),
+                    );
+                  },
                   child: Column(
                     children: [
                       Text('Imagen'),
                       Text(
-                        listaPerrosSeguidos[index][0],
-                        textAlign: TextAlign.left,
+                        listaPerrosSeguidos[index][1],
                         style: TextStyle(
                           fontSize: 18,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ],
@@ -150,8 +187,16 @@ class ListaTodosLosPerros extends StatelessWidget {
                 Card(
                   color: Color.fromRGBO(249, 240, 235, 1),
                   child: InkWell(
-                    splashColor: Colors.white,
-                    onTap: () {},
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute<void>(
+                          builder: (context) => PerfilPerro(
+                            IDPerro: listaPerros[index][0],
+                          ),
+                        ),
+                      );
+                    },
                     child: SizedBox(
                       width: 400,
                       height: 80,
@@ -159,24 +204,38 @@ class ListaTodosLosPerros extends StatelessWidget {
                         children: [
                           Text('Imagen'),
                           Padding(
-                            padding: EdgeInsets.only(top: 15),
+                            padding: EdgeInsets.only(top: 15, left: 30, right: 40),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  listaPerros[index][0],
+                                  listaPerros[index][1],
                                   textAlign: TextAlign.left,
                                   style: TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
-                                Text(listaPerros[index][1]),
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.access_time,
+                                      size: 15,
+                                      color: Color.fromRGBO(56, 54, 53, 0.75),
+                                    ),
+                                    Text(
+                                      listaPerros[index][2],
+                                      style: TextStyle(
+                                        color: Color.fromRGBO(56, 54, 53, 0.75)
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ],
                             ),
                           ),
                           Text(
-                            listaPerros[index][2],
+                            listaPerros[index][3],
                             textAlign: TextAlign.right,
                           ),
                         ],
@@ -193,3 +252,38 @@ class ListaTodosLosPerros extends StatelessWidget {
   }
 }
 
+
+/// Botón foro principal
+class BotonForo extends StatelessWidget {
+  const BotonForo({super.key});
+
+  @override
+  Widget build(BuildContext context){
+    return SizedBox(
+      width: 380,
+      child: TextButton(
+        style: TextButton.styleFrom(
+          backgroundColor: Color.fromRGBO(222, 79, 65, 1),
+          foregroundColor: Colors.white,
+        ),
+        onPressed: () {},
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.chat_bubble_outline,
+              color: Colors.white,
+            ),
+            Text(
+              'Foros',
+              style: TextStyle(
+                fontWeight: FontWeight.w500,
+                fontSize: 16,
+              ),
+            )
+          ],
+        ),
+      ),
+    );
+  }
+}
