@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:guaurdados_oficial/perfilperro.dart';
+import 'foro.dart';
 
 /// Base de la página de inicio
 class Homepage extends StatefulWidget {
@@ -285,7 +286,14 @@ class BotonForo extends StatelessWidget {
           backgroundColor: Color.fromRGBO(222, 79, 65, 1),
           foregroundColor: Colors.white,
         ),
-        onPressed: () {},
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute<void>(
+              builder: (context) => Foro()
+            ),
+          );
+        },
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
