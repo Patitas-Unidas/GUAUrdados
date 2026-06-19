@@ -11,14 +11,14 @@ class PerfilPerro extends StatelessWidget {
   Widget build(BuildContext context) {
     // Variables auxiliares mientras no se tiene la base de datos
     var perros = [
-      ['0', 'Scooby'],
-      ['1', 'Bobby'],
-      ['2', 'Ramón'],
-      ['3', 'Ramona'],
-      ['4', 'Mora'],
-      ['5', 'Tommy'],
-      ['6', 'Romeo'],
-      ['7', 'Lobito']
+      ['0', 'Scooby', 'Saludable'],
+      ['1', 'Bobby', 'Necesita atención'],
+      ['2', 'Ramón', 'Saludable'],
+      ['3', 'Ramona', 'Saludable'],
+      ['4', 'Mora', 'Necesita atención'],
+      ['5', 'Tommy', 'Saludable'],
+      ['6', 'Romeo', 'Necesita atención'],
+      ['7', 'Lobito', 'Saludable']
     ];
 
     return Scaffold(
@@ -50,6 +50,54 @@ class PerfilPerro extends StatelessWidget {
                     onPressed: () {
                       Navigator.pop(context);
                     },
+                  ),
+                ),
+              ),
+
+              // Botón editar
+              Padding(
+                padding: EdgeInsets.only(top: 20),
+                child: Align(
+                  alignment: Alignment(.98, 0),
+                  child: IconButton.filledTonal(
+                    icon: Icon(Icons.edit),
+                    iconSize: 20,
+                    color: Colors.grey,
+                    onPressed: () {},
+                  ),
+                ),
+              ),
+
+              // Burbuja estado perro
+              Padding(
+                padding: EdgeInsets.only(top: 295),
+                child: Align(
+                  alignment: Alignment(0, 0),
+                  child: TextButton(
+                    style: TextButton.styleFrom(
+                      backgroundColor: Colors.white,
+                    ),
+                    onPressed: null,
+                    child: Builder(
+                      builder: (context) {
+                        if (perros[int.parse(IDPerro)][2] == 'Saludable') {
+                          return Text(
+                            perros[int.parse(IDPerro)][2],
+                            style: TextStyle(
+                              color: Colors.green,
+                              fontSize: 12,
+                            ),
+                          );
+                        }
+                        return Text(
+                          perros[int.parse(IDPerro)][2],
+                          style: TextStyle(
+                            color: Colors.orange,
+                            fontSize: 12,
+                          ),
+                        );
+                      }
+                    ),
                   ),
                 ),
               ),
@@ -106,7 +154,7 @@ class DatosPerro extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Primera fila de la columna de datos / Nombre y botón
+          // Primera fila de la columna de datos / Nombre y botón seguir
           Padding(
             padding: EdgeInsets.only(left: 5, right: 5,),
             // Row que contiene el nombre, raza, edad, última actualización y botón de seguido
@@ -191,6 +239,7 @@ class DatosPerro extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
+                // Última comida
                 Card(
                   shadowColor: Colors.transparent,
                   color: Colors.white,
@@ -204,7 +253,7 @@ class DatosPerro extends StatelessWidget {
                           Row(
                             children: [
                               Icon(
-                                Icons.food_bank_outlined,
+                                Icons.flatware,
                                 size: 30,
                               ),
                               Flexible(child: Text('Última comida:'))
@@ -229,6 +278,7 @@ class DatosPerro extends StatelessWidget {
                     ),
                   ),
                 ),
+                // Peso
                 Card(
                   shadowColor: Colors.transparent,
                   color: Colors.white,
@@ -267,7 +317,7 @@ class DatosPerro extends StatelessWidget {
                     ),
                   ),
                 ),
-
+                // Caracter / Por hacer
                 Card(
                   shadowColor: Colors.transparent,
                   color: Colors.white,
@@ -333,6 +383,7 @@ class DatosPerro extends StatelessWidget {
             alignment: Alignment.bottomCenter,
             child: Column(
               children: [
+                // Botón Registrar Alimentación
                 ElevatedButton(
                   style: TextButton.styleFrom(
                     backgroundColor: Color.fromRGBO(222, 79, 65, 1),
@@ -346,7 +397,7 @@ class DatosPerro extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(
-                        Icons.food_bank_outlined,
+                        Icons.flatware,
                         color: Colors.white,
                         size: 28,
 
@@ -365,6 +416,7 @@ class DatosPerro extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
+                    // Botón Estado Médico
                     ElevatedButton(
                       style: TextButton.styleFrom(
                         backgroundColor: Colors.lightGreen,
@@ -393,6 +445,7 @@ class DatosPerro extends StatelessWidget {
                         ],
                       ),
                     ),
+                    // Botón Foro
                     ElevatedButton(
                       style: TextButton.styleFrom(
                         backgroundColor: Colors.orangeAccent,
