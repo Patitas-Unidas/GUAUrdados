@@ -101,230 +101,333 @@ class DatosPerro extends StatelessWidget {
       ['7', 'Lobito', 'Hace 15 minutos', 'Saludable', 'Mestizo', '10 años', '25 kg', '11:23', 'Mediano', 'No vacunado', 'Muy lindo y cariñoso, obediente, disfruta pasear sin correa y busca un hogar para sus últimos años. Desparasitación pendiente.']
     ];
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // Primera fila de la columna de datos / Nombre y botón
-        Padding(
-          padding: EdgeInsets.only(top: 12, left: 15, right: 15,),
-          // Row que contiene el nombre, raza, edad, última actualización y botón de seguido
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // Ítem que contiene los datos a la izquierda de la página
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Nombre del perro
-                  Text(
-                    perros[int.parse(IDPerro)][1],
-                    style: TextStyle(
-                      fontSize: 30,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  // Raza y edad del perro
-                  Text(
-                    '${perros[int.parse(IDPerro)][4]} - ${perros[int.parse(IDPerro)][5]}',
-                    style: TextStyle(
-                      fontSize: 16,
-                    ),
-                  ),
-                  // Ícono de reloj y última actualización del perro
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.access_time,
-                        size: 15,
-                        color: Color.fromRGBO(56, 54, 53, .5),
+    return Padding(
+      padding: EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Primera fila de la columna de datos / Nombre y botón
+          Padding(
+            padding: EdgeInsets.only(left: 5, right: 5,),
+            // Row que contiene el nombre, raza, edad, última actualización y botón de seguido
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // Ítem que contiene los datos a la izquierda de la página
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Nombre del perro
+                    Text(
+                      perros[int.parse(IDPerro)][1],
+                      style: TextStyle(
+                        fontSize: 30,
+                        fontWeight: FontWeight.w800,
                       ),
-                      Text(
-                        'Última actualización: ${perros[int.parse(IDPerro)][2]}.',
-                        style: TextStyle(
+                    ),
+                    // Raza y edad del perro
+                    Text(
+                      '${perros[int.parse(IDPerro)][4]} - ${perros[int.parse(IDPerro)][5]}',
+                      style: TextStyle(
+                        fontSize: 16,
+                      ),
+                    ),
+                    // Ícono de reloj y última actualización del perro
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.access_time,
+                          size: 15,
                           color: Color.fromRGBO(56, 54, 53, .5),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-
-              // Ítem que contiene el botón de seguido a la derecha de la página
-              ElevatedButton(
-                style: TextButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: Colors.grey,
-                  shape: const RoundedRectangleBorder(
-                    borderRadius: BorderRadius.all(Radius.circular(10)),
-                  ),
+                        Text(
+                          'Última actualización: ${perros[int.parse(IDPerro)][2]}.',
+                          style: TextStyle(
+                            color: Color.fromRGBO(56, 54, 53, .5),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-                onPressed: () {},
-                child: Padding(
-                  padding: EdgeInsets.only(top: 10, bottom: 10),
-                  child: Column(
-                    children: [
-                      Icon(
-                        Icons.pets,
-                        size: 35,
-                        color: Colors.grey,
-                      ),
-                      Text(
-                        'Seguido',
-                        style: TextStyle(
+
+                // Ítem que contiene el botón de seguido a la derecha de la página
+                ElevatedButton(
+                  style: TextButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: Colors.grey,
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(10)),
+                    ),
+                  ),
+                  onPressed: () {},
+                  child: Padding(
+                    padding: EdgeInsets.only(top: 10, bottom: 10),
+                    child: Column(
+                      children: [
+                        Icon(
+                          Icons.pets,
+                          size: 35,
+                          color: Colors.grey,
+                        ),
+                        Text(
+                          'Seguir',
+                          style: TextStyle(
                             color: Colors.grey,
                             fontSize: 13,
+                          ),
                         ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Segunda fila de la columna de datos / Cards con datos
+          Padding(
+            padding: EdgeInsets.only(top: 15, left: 8, right: 8,),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Card(
+                  shadowColor: Colors.transparent,
+                  color: Colors.white,
+                  child: SizedBox(
+                    width: 110,
+                    height: 110,
+                    child: Padding(
+                      padding: EdgeInsets.all(10),
+                      child: Column(
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.food_bank_outlined,
+                                size: 30,
+                              ),
+                              Flexible(child: Text('Última comida:'))
+                            ],
+                          ),
+                          Text(
+                            perros[int.parse(IDPerro)][7],
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          Text(
+                            perros[int.parse(IDPerro)][2],
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Color.fromRGBO(56, 54, 53, .5),
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
-        ),
+                Card(
+                  shadowColor: Colors.transparent,
+                  color: Colors.white,
+                  child: SizedBox(
+                    width: 110,
+                    height: 110,
+                    child: Padding(
+                      padding: EdgeInsets.only(top: 15, left: 12, right: 12,),
+                      child: Column(
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.scale,
+                                size: 27,
+                              ),
+                              Text('Peso:')
+                            ],
+                          ),
+                          Text(
+                            perros[int.parse(IDPerro)][6],
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          Text(
+                            perros[int.parse(IDPerro)][8],
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Color.fromRGBO(56, 54, 53, .5),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
 
-        // Segunda fila de la columna de datos / Cards con datos
-        Padding(
-          padding: EdgeInsets.only(top: 15, left: 20, right: 20,),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Card(
-                shadowColor: Colors.transparent,
-                color: Colors.white,
-                child: SizedBox(
-                  width: 110,
-                  height: 110,
-                  child: Padding(
-                    padding: EdgeInsets.all(10),
-                    child: Column(
-                      children: [
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.food_bank_outlined,
-                              size: 30,
-                            ),
-                            Flexible(child: Text('Última comida:'))
-                          ],
-                        ),
-                        Text(
-                          perros[int.parse(IDPerro)][7],
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        Text(
-                          perros[int.parse(IDPerro)][2],
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: Color.fromRGBO(56, 54, 53, .5),
-                          ),
-                        ),
-                      ],
-                    ),
+                Card(
+                  shadowColor: Colors.transparent,
+                  color: Colors.white,
+                  child: SizedBox(
+                    width: 110,
+                    height: 110,
                   ),
                 ),
-              ),
-              Card(
-                shadowColor: Colors.transparent,
-                color: Colors.white,
-                child: SizedBox(
-                  width: 110,
-                  height: 110,
-                  child: Padding(
-                    padding: EdgeInsets.only(top: 15, left: 12, right: 12,),
-                    child: Column(
-                      children: [
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.scale,
-                              size: 27,
-                            ),
-                            Text('Peso:')
-                          ],
-                        ),
-                        Text(
-                          perros[int.parse(IDPerro)][6],
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        Text(
-                          perros[int.parse(IDPerro)][8],
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: Color.fromRGBO(56, 54, 53, .5),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              Card(
-                shadowColor: Colors.transparent,
-                color: Colors.white,
-                child: SizedBox(
-                  width: 110,
-                  height: 110,
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-        
-        // Tercera fila de la columna de datos / Vacunación
-        Padding(
-          padding: EdgeInsets.only(top: 8, left: 20),
-          child: Row(
-            children: [
-              if (perros[int.parse(IDPerro)][9] == 'Vacunado' || perros[int.parse(IDPerro)][9] == 'Vacunada') ...[
-                Icon(
-                  Icons.check,
-                  color: Colors.green,
-                ),
-                Text(
-                  perros[int.parse(IDPerro)][9],
-                  style: TextStyle(
+
+          // Tercera fila de la columna de datos / Vacunación
+          Padding(
+            padding: EdgeInsets.only(top: 8, left: 5),
+            child: Row(
+              children: [
+                if (perros[int.parse(IDPerro)][9] == 'Vacunado' || perros[int.parse(IDPerro)][9] == 'Vacunada') ...[
+                  Icon(
+                    Icons.check,
                     color: Colors.green,
-                    fontSize: 20,
                   ),
-                ),
-              ]
-              else ...[
-                Icon(
-                  Icons.close,
-                  color: Colors.red,
-                ),
-                Text(
-                  perros[int.parse(IDPerro)][9],
-                  style: TextStyle(
+                  Text(
+                    perros[int.parse(IDPerro)][9],
+                    style: TextStyle(
+                      color: Colors.green,
+                      fontSize: 20,
+                    ),
+                  ),
+                ]
+                else ...[
+                  Icon(
+                    Icons.close,
                     color: Colors.red,
-                    fontSize: 20,
                   ),
-                ),
-              ]
-            ],
+                  Text(
+                    perros[int.parse(IDPerro)][9],
+                    style: TextStyle(
+                      color: Colors.red,
+                      fontSize: 20,
+                    ),
+                  ),
+                ]
+              ],
+            ),
           ),
-        ),
 
-        // Cuarta fila de la columna de datos / Bio
-        Padding(
-          padding: EdgeInsets.only(top: 10, left: 20, right: 20,),
-          child: Flexible(
-            child: Text(
-              perros[int.parse(IDPerro)][10],
-              style: TextStyle(
-                fontSize: 16,
+          // Cuarta fila de la columna de datos / Bio
+          Padding(
+            padding: EdgeInsets.only(top: 10, left: 5, right: 5, bottom: 20,),
+            child: Flexible(
+              child: Text(
+                perros[int.parse(IDPerro)][10],
+                style: TextStyle(
+                  fontSize: 16,
+                ),
               ),
             ),
           ),
-        ),
-      ],
+
+          // Quinta fila de la columna de datos / Botones
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: Column(
+              children: [
+                ElevatedButton(
+                  style: TextButton.styleFrom(
+                    backgroundColor: Color.fromRGBO(222, 79, 65, 1),
+                    padding: EdgeInsets.only(top: 15, bottom: 15),
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(10)),
+                    ),
+                  ),
+                  onPressed: () {},
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.food_bank_outlined,
+                        color: Colors.white,
+                        size: 28,
+
+                      ),
+                      Text(
+                        'Registrar Alimentación',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Padding(padding: EdgeInsets.only(top: 12)),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    ElevatedButton(
+                      style: TextButton.styleFrom(
+                        backgroundColor: Colors.lightGreen,
+                        padding: EdgeInsets.only(top: 15, bottom: 15, left: 15, right: 15,),
+                        shape: const RoundedRectangleBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(10)),
+                        ),
+                      ),
+                      onPressed: () {},
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.file_open_outlined,
+                            color: Colors.white,
+                            size: 28,
+
+                          ),
+                          Text(
+                            'Estado Médico',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    ElevatedButton(
+                      style: TextButton.styleFrom(
+                        backgroundColor: Colors.orangeAccent,
+                        padding: EdgeInsets.only(top: 15, bottom: 15, left: 58, right: 58,),
+                        shape: const RoundedRectangleBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(10)),
+                        ),
+                      ),
+                      onPressed: () {},
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.chat_bubble_outline,
+                            color: Colors.white,
+                            size: 28,
+
+                          ),
+                          Text(
+                            'Foro',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
