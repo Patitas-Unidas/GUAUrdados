@@ -33,6 +33,7 @@ class HomepageBody extends State<Homepage> {
     ];
 
     return Scaffold(
+      // Appbar que va atener el logo de la aplicación, el botón de notificaciones y el botón de emergencias general
       appBar: AppBar(
         backgroundColor: Color.fromRGBO(238, 210, 195, 1),
         title: Text(
@@ -44,9 +45,12 @@ class HomepageBody extends State<Homepage> {
           ),
         ),
       ),
+
+      // Cuerpo de la página principal que llama a las clases ListaPerrosSeguidos, BotonForo y ListaTodosLosPerros
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Texto "Patitas seguidas"
           Container(
             padding: EdgeInsets.only(left: 15),
             child: Text(
@@ -58,13 +62,16 @@ class HomepageBody extends State<Homepage> {
               ),
             ),
           ),
+          // Llamado a ListaPerrosSeguidos
           ListaPerrosSeguidos(
             listaPerrosSeguidos: perrosSeguidos,
           ),
+          // Llamado a BotonForo
           Padding(
             padding: EdgeInsets.only(left: 15, bottom: 20),
             child: BotonForo(),
           ),
+          // Texto "Todos los perritos"
           Container(
             padding: EdgeInsets.only(left: 15),
             child: Text(
@@ -76,6 +83,7 @@ class HomepageBody extends State<Homepage> {
               ),
             ),
           ),
+          // Llamado a ListaTodosLosPerros
           Expanded(
             child: ListaTodosLosPerros(
               listaPerros: perros,
@@ -83,6 +91,8 @@ class HomepageBody extends State<Homepage> {
           ),
         ],
       ),
+
+      // Bottom navbar con botones de inicio, cámara y perfil
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
@@ -102,13 +112,16 @@ class HomepageBody extends State<Homepage> {
         backgroundColor: Color.fromRGBO(235, 185, 157, 1),
         selectedItemColor: Color.fromRGBO(222, 79, 65, 1),
         iconSize: 40,
+        selectedFontSize: 0,
       ),
     );
   }
 }
 
 
-/// Módulo con la lista de los perros seguidos
+/// Clase con la lista de los perros seguidos
+/// Crea una lista de cards scrolleable horizontalmente que sólo toma en cuenta a los perros seguidos
+/// Si no hay perros seguidos, ésta clase y su título no se verán
 class ListaPerrosSeguidos extends StatelessWidget {
   const ListaPerrosSeguidos({
     super.key,
@@ -122,9 +135,12 @@ class ListaPerrosSeguidos extends StatelessWidget {
       padding: const EdgeInsets.all(2),
       child: SizedBox(
         height: 170,
+        // Creador del listado de cards
         child: ListView.builder(
           padding: const EdgeInsets.all(12),
+          // Le decimos que queremos que sea scrolleable horizontalmente
           scrollDirection: Axis.horizontal,
+          // Toma en cuenta la cantidad de perros seguidos con la longitud de la listaPerrosSeguidos
           itemCount: listaPerrosSeguidos.length,
           itemBuilder: (BuildContext context, int index) {
             return SizedBox(
@@ -166,7 +182,8 @@ class ListaPerrosSeguidos extends StatelessWidget {
 }
 
 
-/// Módulo con la lista de todos los perros
+/// Clase con la lista de todos los perros
+/// Crea una lista de cards scrolleable verticalmente que automáticamente considera a todos los perros
 class ListaTodosLosPerros extends StatelessWidget {
   const ListaTodosLosPerros({
     super.key,
@@ -178,7 +195,9 @@ class ListaTodosLosPerros extends StatelessWidget {
   Widget build(BuildContext context){
     return Container(
       padding: const EdgeInsets.all(12),
+      // Creador del listado de cards
       child: ListView.builder(
+        // Toma en cuenta la cantidad de perros totales con la longitud de la listaPerros
         itemCount: listaPerros.length,
         itemBuilder: (BuildContext context, int index) {
           return Center(
@@ -253,7 +272,7 @@ class ListaTodosLosPerros extends StatelessWidget {
 }
 
 
-/// Botón foro principal
+/// Clase con el botón de foro principal
 class BotonForo extends StatelessWidget {
   const BotonForo({super.key});
 
