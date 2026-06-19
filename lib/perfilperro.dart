@@ -11,14 +11,14 @@ class PerfilPerro extends StatelessWidget {
   Widget build(BuildContext context) {
     // Variables auxiliares mientras no se tiene la base de datos
     var perros = [
-      ['0', 'Scooby', 'Hace 10 minutos', 'Saludable', 'Mestizo', '3 años', '40 kg'],
-      ['1', 'Bobby', 'Hace 1 hora', 'Necesita atención', 'Mestizo', '2-3 años', '33,9 kg'],
-      ['2', 'Ramón', 'Hace 15 minutos', 'Saludable', 'Mestizo', '3-4 años', '30 kg'],
-      ['3', 'Ramona', 'Hace 4 horas', 'Saludable', 'Mestiza', '2 años', '25-30 kg'],
-      ['4', 'Mora', 'Hace 6 horas', 'Necesita atención', 'Mestiza', 'Menos de 2 años', '25-30 kg'],
-      ['5', 'Tommy', 'Hace 10 minutos', 'Saludable', 'Mestizo', '4-5 años', '25-30 kg'],
-      ['6', 'Romeo', 'Hace 1 hora', 'Necesita atención', 'Mestizo', '7-8 años', '30 kg'],
-      ['7', 'Lobito', 'Hace 15 minutos', 'Saludable', 'Mestizo', '10 años', '25 kg']
+      ['0', 'Scooby'],
+      ['1', 'Bobby'],
+      ['2', 'Ramón'],
+      ['3', 'Ramona'],
+      ['4', 'Mora'],
+      ['5', 'Tommy'],
+      ['6', 'Romeo'],
+      ['7', 'Lobito']
     ];
 
     return Scaffold(
@@ -91,22 +91,22 @@ class DatosPerro extends StatelessWidget {
   Widget build(BuildContext context){
     // Variables auxiliares mientras no se tiene la base de datos
     var perros = [
-      ['0', 'Scooby', 'Hace 10 minutos', 'Saludable', 'Mestizo', '3 años', '40 kg'],
-      ['1', 'Bobby', 'Hace 1 hora', 'Necesita atención', 'Mestizo', '2-3 años', '33,9 kg'],
-      ['2', 'Ramón', 'Hace 15 minutos', 'Saludable', 'Mestizo', '3-4 años', '30 kg'],
-      ['3', 'Ramona', 'Hace 4 horas', 'Saludable', 'Mestiza', '2 años', '25-30 kg'],
-      ['4', 'Mora', 'Hace 6 horas', 'Necesita atención', 'Mestiza', 'Menos de 2 años', '25-30 kg'],
-      ['5', 'Tommy', 'Hace 10 minutos', 'Saludable', 'Mestizo', '4-5 años', '25-30 kg'],
-      ['6', 'Romeo', 'Hace 1 hora', 'Necesita atención', 'Mestizo', '7-8 años', '30 kg'],
-      ['7', 'Lobito', 'Hace 15 minutos', 'Saludable', 'Mestizo', '10 años', '25 kg']
+      ['0', 'Scooby', 'Hace 10 minutos', 'Saludable', 'Mestizo', '3 años', '40 kg', '07:30', 'Grande', 'Vacunado', 'Tiene cama, da la patita, sabe sentarse para pedir premios, le gusta poner cara de penita y está en hogar temporal.'],
+      ['1', 'Bobby', 'Hace 1 hora', 'Necesita atención', 'Mestizo', '2-3 años', '33,9 kg', '13:45', 'Grande', 'No vacunado', 'Responde a órdenes básicas, está con terapia de conducta y medicación (fluoxetina 20 mg), muy regalón.'],
+      ['2', 'Ramón', 'Hace 15 minutos', 'Saludable', 'Mestizo', '3-4 años', '30 kg', '09:24', 'Grande', 'Vacunado', 'Obediente y regalón, con terapia de conducta y medicación (fluoxetina 20 mg), no le gusta estar solo.'],
+      ['3', 'Ramona', 'Hace 4 horas', 'Saludable', 'Mestiza', '2 años', '25 kg', '15:34', 'Mediana', 'No vacunada', 'Juguetona y regalona, territorial, corretea perros nuevos, muestra la guatita cuando hace travesuras, necesita adopción responsable.'],
+      ['4', 'Mora', 'Hace 6 horas', 'Necesita atención', 'Mestiza', 'Menos de 2 años', '25 kg', '22:54', 'Mediana', 'No vacunada', 'Amorosa, tranquila y sociable; llora si otros perros pelean, no juega brusco, se porta bien y convive con gatos y perros.'],
+      ['5', 'Tommy', 'Hace 10 minutos', 'Saludable', 'Mestizo', '4-5 años', '25 kg', '18:17', 'Mediano', 'Vacunado', 'Obedece órdenes, amoroso, cariñoso y sociable; no pelea, convive con perros y gatos, tranquilo y protector. Desparasitación pendiente.'],
+      ['6', 'Romeo', 'Hace 1 hora', 'Necesita atención', 'Mestizo', '7-8 años', '30 kg', '08:38', 'Grande', 'Vacunado', 'Muy amoroso y sociable, aunque independiente; se porta bien encerrado y convive con otros perros. Adopción responsable.'],
+      ['7', 'Lobito', 'Hace 15 minutos', 'Saludable', 'Mestizo', '10 años', '25 kg', '11:23', 'Mediano', 'No vacunado', 'Muy lindo y cariñoso, obediente, disfruta pasear sin correa y busca un hogar para sus últimos años. Desparasitación pendiente.']
     ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Primera fila de la columna de datos
+        // Primera fila de la columna de datos / Nombre y botón
         Padding(
-          padding: EdgeInsets.only(top: 5, left: 15, right: 15,),
+          padding: EdgeInsets.only(top: 12, left: 15, right: 15,),
           // Row que contiene el nombre, raza, edad, última actualización y botón de seguido
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -180,6 +180,148 @@ class DatosPerro extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+        ),
+
+        // Segunda fila de la columna de datos / Cards con datos
+        Padding(
+          padding: EdgeInsets.only(top: 15, left: 20, right: 20,),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Card(
+                shadowColor: Colors.transparent,
+                color: Colors.white,
+                child: SizedBox(
+                  width: 110,
+                  height: 110,
+                  child: Padding(
+                    padding: EdgeInsets.all(10),
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.food_bank_outlined,
+                              size: 30,
+                            ),
+                            Flexible(child: Text('Última comida:'))
+                          ],
+                        ),
+                        Text(
+                          perros[int.parse(IDPerro)][7],
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        Text(
+                          perros[int.parse(IDPerro)][2],
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Color.fromRGBO(56, 54, 53, .5),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              Card(
+                shadowColor: Colors.transparent,
+                color: Colors.white,
+                child: SizedBox(
+                  width: 110,
+                  height: 110,
+                  child: Padding(
+                    padding: EdgeInsets.only(top: 15, left: 12, right: 12,),
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.scale,
+                              size: 27,
+                            ),
+                            Text('Peso:')
+                          ],
+                        ),
+                        Text(
+                          perros[int.parse(IDPerro)][6],
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        Text(
+                          perros[int.parse(IDPerro)][8],
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Color.fromRGBO(56, 54, 53, .5),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              Card(
+                shadowColor: Colors.transparent,
+                color: Colors.white,
+                child: SizedBox(
+                  width: 110,
+                  height: 110,
+                ),
+              ),
+            ],
+          ),
+        ),
+        
+        // Tercera fila de la columna de datos / Vacunación
+        Padding(
+          padding: EdgeInsets.only(top: 8, left: 20),
+          child: Row(
+            children: [
+              if (perros[int.parse(IDPerro)][9] == 'Vacunado' || perros[int.parse(IDPerro)][9] == 'Vacunada') ...[
+                Icon(
+                  Icons.check,
+                  color: Colors.green,
+                ),
+                Text(
+                  perros[int.parse(IDPerro)][9],
+                  style: TextStyle(
+                    color: Colors.green,
+                    fontSize: 20,
+                  ),
+                ),
+              ]
+              else ...[
+                Icon(
+                  Icons.close,
+                  color: Colors.red,
+                ),
+                Text(
+                  perros[int.parse(IDPerro)][9],
+                  style: TextStyle(
+                    color: Colors.red,
+                    fontSize: 20,
+                  ),
+                ),
+              ]
+            ],
+          ),
+        ),
+
+        // Cuarta fila de la columna de datos / Bio
+        Padding(
+          padding: EdgeInsets.only(top: 10, left: 20, right: 20,),
+          child: Flexible(
+            child: Text(
+              perros[int.parse(IDPerro)][10],
+              style: TextStyle(
+                fontSize: 16,
+              ),
+            ),
           ),
         ),
       ],
