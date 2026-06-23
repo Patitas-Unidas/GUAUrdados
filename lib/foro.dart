@@ -5,8 +5,8 @@ class Foro extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      child: Padding(
+    return Scaffold(
+      body: Padding(
         padding: EdgeInsets.only(top: 20),
         child: Align(
           alignment: Alignment(-.98, 0),
