@@ -135,7 +135,7 @@ class ListaPerrosSeguidos extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(2),
       child: SizedBox(
-        height: 170,
+        height: 190,
         // Creador del listado de cards
         child: ListView.builder(
           padding: const EdgeInsets.all(12),
@@ -160,17 +160,39 @@ class ListaPerrosSeguidos extends StatelessWidget {
                       ),
                     );
                   },
-                  child: Column(
-                    children: [
-                      Text('Imagen'),
-                      Text(
-                        listaPerrosSeguidos[index][1],
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
+                  child: Padding(
+                    padding: EdgeInsets.all(12),
+                    child: Column(
+                      children: [
+                        CircleAvatar(
+                          radius: 48,
+                          backgroundImage: AssetImage('fotos/${listaPerrosSeguidos[index][1]}.jpg'),
                         ),
-                      ),
-                    ],
+                        Text(
+                          listaPerrosSeguidos[index][1],
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        if (listaPerrosSeguidos[index][3] == 'Saludable') ...[
+                          Text(
+                            listaPerrosSeguidos[index][3],
+                            style: TextStyle(
+                              color: Color.fromRGBO(76, 175, 130, 1),
+                            ),
+                          ),
+                        ]
+                        else ...[
+                          Text(
+                            listaPerrosSeguidos[index][3],
+                            style: TextStyle(
+                              color: Color.fromRGBO(255, 149, 0, 1),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -220,45 +242,73 @@ class ListaTodosLosPerros extends StatelessWidget {
                     child: SizedBox(
                       width: 400,
                       height: 80,
-                      child: Row(
-                        children: [
-                          Text('Imagen'),
-                          Padding(
-                            padding: EdgeInsets.only(top: 15, left: 30, right: 40),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                      child: Padding(
+                        padding: EdgeInsets.all(15),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
                               children: [
-                                Text(
-                                  listaPerros[index][1],
-                                  textAlign: TextAlign.left,
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w500,
-                                  ),
+                                CircleAvatar(
+                                  radius:28,
+                                  backgroundImage: AssetImage('fotos/${listaPerros[index][1]}.jpg'),
                                 ),
-                                Row(
-                                  children: [
-                                    Icon(
-                                      Icons.access_time,
-                                      size: 15,
-                                      color: Color.fromRGBO(56, 54, 53, 0.75),
-                                    ),
-                                    Text(
-                                      listaPerros[index][2],
-                                      style: TextStyle(
-                                        color: Color.fromRGBO(56, 54, 53, 0.75)
+                                Padding(
+                                  padding: EdgeInsets.only(left: 10),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        listaPerros[index][1],
+                                        textAlign: TextAlign.left,
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w500,
+                                        ),
                                       ),
-                                    ),
-                                  ],
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            Icons.access_time,
+                                            size: 15,
+                                            color: Color.fromRGBO(56, 54, 53, 0.75),
+                                          ),
+                                          Text(
+                                            listaPerros[index][2],
+                                            style: TextStyle(
+                                                color: Color.fromRGBO(56, 54, 53, 0.75)
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ],
                             ),
-                          ),
-                          Text(
-                            listaPerros[index][3],
-                            textAlign: TextAlign.right,
-                          ),
-                        ],
+                            Row(
+                              children: [
+                                if (listaPerros[index][3] == 'Saludable') ...[
+                                  Text(
+                                    listaPerros[index][3],
+                                    style: TextStyle(
+                                      color: Color.fromRGBO(76, 175, 130, 1),
+                                    ),
+                                  ),
+                                ]
+                                else ...[
+                                  Text(
+                                    listaPerros[index][3],
+                                    style: TextStyle(
+                                      color: Color.fromRGBO(255, 149, 0, 1),
+                                    ),
+                                  ),
+                                ],
+                                Icon(Icons.arrow_right)
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   )

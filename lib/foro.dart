@@ -7,7 +7,7 @@ class Foro extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Padding(
-        padding: EdgeInsets.only(top: 20),
+        padding: EdgeInsets.all(10),
         child: Align(
           alignment: Alignment(-.98, 0),
           child: IconButton.filledTonal(

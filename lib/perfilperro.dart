@@ -84,7 +84,7 @@ class PerfilPerro extends StatelessWidget {
                           return Text(
                             perros[int.parse(IDPerro)][2],
                             style: TextStyle(
-                              color: Colors.green,
+                              color: Color.fromRGBO(76, 175, 130, 1),
                               fontSize: 12,
                             ),
                           );
@@ -92,7 +92,7 @@ class PerfilPerro extends StatelessWidget {
                         return Text(
                           perros[int.parse(IDPerro)][2],
                           style: TextStyle(
-                            color: Colors.orange,
+                            color: Color.fromRGBO(255, 149, 0, 1),
                             fontSize: 12,
                           ),
                         );
@@ -173,13 +173,29 @@ class DatosPerro extends StatelessWidget {
                         fontWeight: FontWeight.w800,
                       ),
                     ),
+
                     // Raza y edad del perro
-                    Text(
-                      '${perros[int.parse(IDPerro)][4]} - ${perros[int.parse(IDPerro)][5]}',
-                      style: TextStyle(
-                        fontSize: 16,
-                      ),
+                    Row(
+                      children: [
+                        Text(
+                          '${perros[int.parse(IDPerro)][4]} ',
+                          style: TextStyle(
+                            fontSize: 16,
+                          ),
+                        ),
+                        Icon(
+                          Icons.circle,
+                          size: 5,
+                        ),
+                        Text(
+                          ' ${perros[int.parse(IDPerro)][5]}',
+                          style: TextStyle(
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
                     ),
+
                     // Ícono de reloj y última actualización del perro
                     Row(
                       children: [
@@ -390,7 +406,7 @@ class DatosPerro extends StatelessWidget {
                         child: Column(
                           children: [
                             Icon(
-                              Icons.warning,
+                              Icons.do_not_disturb_alt,
                               color: Color.fromRGBO(255, 0, 55, 1),
                               size: 50,
                             ),
@@ -420,12 +436,12 @@ class DatosPerro extends StatelessWidget {
                 if (perros[int.parse(IDPerro)][9] == 'Vacunado' || perros[int.parse(IDPerro)][9] == 'Vacunada') ...[
                   Icon(
                     Icons.check,
-                    color: Colors.green,
+                    color: Color.fromRGBO(76, 175, 130, 1),
                   ),
                   Text(
                     perros[int.parse(IDPerro)][9],
                     style: TextStyle(
-                      color: Colors.green,
+                      color: Color.fromRGBO(76, 175, 130, 1),
                       fontSize: 20,
                     ),
                   ),
@@ -433,12 +449,12 @@ class DatosPerro extends StatelessWidget {
                 else ...[
                   Icon(
                     Icons.close,
-                    color: Colors.red,
+                    color: Color.fromRGBO(255, 0, 55, 1),
                   ),
                   Text(
                     perros[int.parse(IDPerro)][9],
                     style: TextStyle(
-                      color: Colors.red,
+                      color: Color.fromRGBO(255, 0, 55, 1),
                       fontSize: 20,
                     ),
                   ),
@@ -512,10 +528,9 @@ class DatosPerro extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(
-                            Icons.file_open_outlined,
+                            Icons.description_outlined,
                             color: Colors.white,
                             size: 28,
-
                           ),
                           Text(
                             'Estado Médico',
@@ -544,7 +559,6 @@ class DatosPerro extends StatelessWidget {
                             Icons.chat_bubble_outline,
                             color: Colors.white,
                             size: 28,
-
                           ),
                           Text(
                             'Foro',
