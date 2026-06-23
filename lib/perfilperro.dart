@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'foro.dart';
 
 class PerfilPerro extends StatelessWidget {
   const PerfilPerro({
@@ -551,7 +552,14 @@ class DatosPerro extends StatelessWidget {
                           borderRadius: BorderRadius.all(Radius.circular(10)),
                         ),
                       ),
-                      onPressed: () {},
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute<void>(
+                              builder: (context) => Foro(IDPerro: IDPerro)
+                          ),
+                        );
+                      },
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
