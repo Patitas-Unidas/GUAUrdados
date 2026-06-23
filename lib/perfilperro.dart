@@ -173,13 +173,29 @@ class DatosPerro extends StatelessWidget {
                         fontWeight: FontWeight.w800,
                       ),
                     ),
+
                     // Raza y edad del perro
-                    Text(
-                      '${perros[int.parse(IDPerro)][4]} - ${perros[int.parse(IDPerro)][5]}',
-                      style: TextStyle(
-                        fontSize: 16,
-                      ),
+                    Row(
+                      children: [
+                        Text(
+                          '${perros[int.parse(IDPerro)][4]} ',
+                          style: TextStyle(
+                            fontSize: 16,
+                          ),
+                        ),
+                        Icon(
+                          Icons.circle,
+                          size: 5,
+                        ),
+                        Text(
+                          ' ${perros[int.parse(IDPerro)][5]}',
+                          style: TextStyle(
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
                     ),
+
                     // Ícono de reloj y última actualización del perro
                     Row(
                       children: [
@@ -512,10 +528,9 @@ class DatosPerro extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(
-                            Icons.file_open_outlined,
+                            Icons.description_outlined,
                             color: Colors.white,
                             size: 28,
-
                           ),
                           Text(
                             'Estado Médico',
@@ -544,7 +559,6 @@ class DatosPerro extends StatelessWidget {
                             Icons.chat_bubble_outline,
                             color: Colors.white,
                             size: 28,
-
                           ),
                           Text(
                             'Foro',
