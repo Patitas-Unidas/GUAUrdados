@@ -34,17 +34,43 @@ class HomepageBody extends State<Homepage> {
     ];
 
     return Scaffold(
-      // Appbar que va atener el logo de la aplicación, el botón de notificaciones y el botón de emergencias general
+      // Appbar que va a tener el logo de la aplicación, el botón de notificaciones y el botón de emergencias general
       appBar: AppBar(
         backgroundColor: Color.fromRGBO(238, 210, 195, 1),
-        title: Text(
-          'GUAUrdados',
-          style: TextStyle(
-            fontWeight: FontWeight.w800,
-            fontSize: 28,
-            color: Color.fromRGBO(56, 54, 53, 1),
-          ),
-        ),
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Image.asset(
+              'fotos/Letras.png',
+              width: 180,
+            ),
+            Row(
+              children: [
+                Padding(
+                  padding: EdgeInsets.only(right: 5),
+                  child: IconButton.filledTonal(
+                    icon: Icon(Icons.notifications),
+                    iconSize: 20,
+                    color: Colors.grey,
+                    onPressed: () {},
+                  ),
+                ),
+                ElevatedButton(
+                  style: TextButton.styleFrom(
+                    backgroundColor: Color.fromRGBO(255, 0, 55, 1),
+                  ),
+                  onPressed: () {},
+                  child: Text(
+                    'Emergencia',
+                    style: TextStyle(
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
+            )
+          ],
+        )
       ),
 
       // Cuerpo de la página principal que llama a las clases ListaPerrosSeguidos, BotonForo y ListaTodosLosPerros
