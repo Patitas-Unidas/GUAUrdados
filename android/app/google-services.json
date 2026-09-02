@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "997761473283",
+    "project_id": "guaurdados",
+    "storage_bucket": "guaurdados.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:997761473283:android:7ce59f625715726c7a6736",
+        "android_client_info": {
+          "package_name": "com.example.guaurdados_oficial"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAVBpXqonXhoOWYMhb2JP3UQpbfZrWpZC4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
