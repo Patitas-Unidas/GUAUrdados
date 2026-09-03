@@ -1,0 +1,8 @@
+<resources>
+    <color name="bg_peach">#F4E2D7</color>
+    <color name="btn_brown">#826C63</color>
+    <color name="text_dark">#2B2B2B</color>
+    <color name="text_orange">#E86A4D</color>
+    <color name="text_hint">#9E9E9E</color>
+    <color name="white">#FFFFFF</color>
+</resources>

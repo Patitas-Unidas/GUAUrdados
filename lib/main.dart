@@ -1,7 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:guaurdados_oficial/registro_usuario.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 import 'homepage.dart';
+import 'registro_usuario.dart';
+import 'iniciar_sesion.dart';
 
-void main() {
+void main() async {
+  // 1. Aseguramos que Flutter esté listo
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // 2. Inicializamos Firebase
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
   runApp(const MyApp());
 }
 
@@ -27,7 +40,8 @@ class MyApp extends StatelessWidget {
           displayLarge: const TextStyle(color: Color.fromRGBO(56, 54, 53, 1), letterSpacing: -.3),
         ),
       ),
-      home: Homepage(),
+      //home: Homepage(),
+      home: const IniciarSesion(),
     );
   }
 }
