@@ -310,6 +310,7 @@ class BarraAcciones extends StatelessWidget {
               InkWell(
                 onTap: () {
                   showModalBottomSheet<void>(
+                    isScrollControlled: true,
                     context: context, 
                     builder: (BuildContext context) {
                       return Comentarios(
