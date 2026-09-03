@@ -1,23 +1,23 @@
 import 'package:flutter/material.dart';
-
+import 'package:guaurdados_oficial/screens/comentarios.dart';
 
 class Publicacion extends StatelessWidget {
   const Publicacion({
     super.key,
     required this.TipoPub,
     required this.IDPerro,
+    required this.IDUsuario,
     this.TextoPub,
     this.ImagenPub,
-    this.users,
     this.comida,
     this.procedimiento,
     this.tiempo,
   });
   final String TipoPub;
   final String IDPerro;
+  final List<String> IDUsuario;
   final String? TextoPub;
   final String? ImagenPub;
-  final List<String>? users;
   final List<String>? comida;
   final String? procedimiento;
   final List<String>? tiempo;
@@ -27,7 +27,7 @@ class Publicacion extends StatelessWidget {
     if (TipoPub == 'Alimentación') {
       return ActualizacionComida(
         IDPerro: IDPerro,
-        users: users!,
+        IDUsuario: IDUsuario,
         comida: comida!,
         tiempo: tiempo!,
       );
@@ -35,7 +35,7 @@ class Publicacion extends StatelessWidget {
     else if (TipoPub == 'Estado Médico') {
       return ActualizacionEstadoMedico(
         IDPerro: IDPerro,
-        users: users!,
+        IDUsuario: IDUsuario,
         procedimiento: procedimiento!,
         tiempo: tiempo!,
       );
@@ -48,7 +48,7 @@ class Publicacion extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             BarraUsuario(
-              IDUsuario: 'hola',
+              IDUsuario: IDUsuario,
             ),
             Padding(
               padding: EdgeInsets.only(left: 15, right: 15, bottom: 20,),
@@ -65,7 +65,8 @@ class Publicacion extends StatelessWidget {
               thickness: 1.1,
             ),
             BarraAcciones(
-              IDPublicacion: 'hola',
+              IDPublicacion: TextoPub!,
+              IDUsuario: IDUsuario,
             ),
           ],
         ),
@@ -78,12 +79,12 @@ class ActualizacionComida extends StatelessWidget {
   const ActualizacionComida({
     super.key,
     required this.IDPerro,
-    required this.users,
+    required this.IDUsuario,
     required this.comida,
     required this.tiempo,
   });
   final String IDPerro;
-  final List<String> users;
+  final List<String> IDUsuario;
   final List<String> comida;
   final List<String> tiempo;
 
@@ -108,7 +109,7 @@ class ActualizacionComida extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '¡${users[0]} a registrado una nueva alimentación!',
+                    '¡${IDUsuario[0]} a registrado una nueva alimentación!',
                     overflow: TextOverflow.fade,
                     maxLines: 1,
                     softWrap: false,
@@ -145,12 +146,12 @@ class ActualizacionEstadoMedico extends StatelessWidget {
   const ActualizacionEstadoMedico({
     super.key,
     required this.IDPerro,
-    required this.users,
+    required this.IDUsuario,
     required this.procedimiento,
     required this.tiempo,
   });
   final String IDPerro;
-  final List<String> users;
+  final List<String> IDUsuario;
   final String procedimiento;
   final List<String> tiempo;
 
@@ -175,7 +176,7 @@ class ActualizacionEstadoMedico extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '¡${users[2]} ha actualizado el estado médico!',
+                    '¡${IDUsuario[0]} ha actualizado el estado médico!',
                     overflow: TextOverflow.fade,
                     maxLines: 1,
                     softWrap: false,
@@ -213,7 +214,7 @@ class BarraUsuario extends StatelessWidget {
     super.key,
     required this.IDUsuario,
   });
-  final String IDUsuario;
+  final List<String> IDUsuario;
 
   @override
   Widget build(BuildContext context) {
@@ -231,14 +232,14 @@ class BarraUsuario extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'María González',
+                      IDUsuario[0],
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                     Text(
-                      '@mariag   Hace 2 horas',
+                      '${IDUsuario[1]}   Hace 2 horas',
                       style: TextStyle(
                         fontSize: 12,
                         color: Color.fromRGBO(56, 54, 53, .5),
@@ -266,8 +267,10 @@ class BarraAcciones extends StatelessWidget {
   const BarraAcciones({
     super.key,
     required this.IDPublicacion,
+    required this.IDUsuario,
   });
   final String IDPublicacion;
+  final List<String> IDUsuario;
 
   @override
   Widget build(BuildContext context) {
@@ -305,7 +308,17 @@ class BarraAcciones extends StatelessWidget {
               ),
 
               InkWell(
-                onTap: () {},
+                onTap: () {
+                  showModalBottomSheet<void>(
+                    context: context, 
+                    builder: (BuildContext context) {
+                      return Comentarios(
+                        IDComentario: [IDPublicacion],
+                        IDUsuario: IDUsuario,
+                      );
+                    },
+                  );
+                },
                 child: Row(
                   children: [
                     Padding(

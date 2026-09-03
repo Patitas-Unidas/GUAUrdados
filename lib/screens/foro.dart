@@ -197,15 +197,16 @@ class Foro extends StatelessWidget {
               // Publicaciones
               Publicacion(
                 TipoPub: 'General',
-                TextoPub: 'Le di su desayuno hoy a las 7am, se lo comió todo muy rápido! Le noté la cola moviéndose sin parar :)',
                 IDPerro: perros[int.parse(IDPerro!)][1],
+                IDUsuario: ['María González', '@mariag'],
+                TextoPub: 'Le di su desayuno hoy a las 7am, se lo comió todo muy rápido! Le noté la cola moviéndose sin parar :)',
               ),
 
-              if (IDPerro != null) ...[
+              if (IDPerro != null || IDPerro!.isNotEmpty) ...[
                 Publicacion(
                   TipoPub: 'Alimentación',
                   IDPerro: perros[int.parse(IDPerro!)][1],
-                  users: users,
+                  IDUsuario: ['María González', '@mariag'],
                   comida: ['500 gr', 'croquetas'],
                   tiempo: ['hoy', '12:43'],
                 ),
@@ -213,7 +214,7 @@ class Foro extends StatelessWidget {
                 Publicacion(
                   TipoPub: 'Estado Médico',
                   IDPerro: perros[int.parse(IDPerro!)][1], 
-                  users: users, 
+                  IDUsuario: ['Sofía Ramos', '@sofiar'],
                   procedimiento: 'desparasitación',
                   tiempo: ['hoy', '10:07'],
                 ),
@@ -282,6 +283,7 @@ class Foro extends StatelessWidget {
                     ),
                     BarraAcciones(
                       IDPublicacion: 'hola',
+                      IDUsuario: ['Carlos Méndez', '@carlosm'],
                     ),
                   ],
                 ),
@@ -348,16 +350,17 @@ class Foro extends StatelessWidget {
                     ),
                     BarraAcciones(
                       IDPublicacion: 'hola',
+                      IDUsuario: ['Sofía Ramos', '@sofiar'],
                     ),
                   ],
                 ),
               ),
 
-              if (IDPerro != null) ...[
+              if (IDPerro != null || IDPerro!.isNotEmpty) ...[
                 Publicacion(
                   TipoPub: 'Alimentación',
                   IDPerro: perros[int.parse(IDPerro!)][1],
-                  users: users,
+                  IDUsuario: ['María González', '@mariag'],
                   comida: ['500 gr', 'croquetas'],
                   tiempo: ['ayer', '22:14'],
                 ),
@@ -424,6 +427,7 @@ class Foro extends StatelessWidget {
                     ),
                     BarraAcciones(
                       IDPublicacion: 'hola',
+                      IDUsuario: ['Carlos Méndez', '@carlosm'],
                     ),
                   ],
                 ),
