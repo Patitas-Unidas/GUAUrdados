@@ -157,7 +157,30 @@ class Foro extends StatelessWidget {
                 thickness: 1,
                 color: Color.fromRGBO(56, 54, 53, .3),
               ),
-
+              
+              Card(
+                margin: EdgeInsets.all(10),
+                color: Colors.white,
+                child: InkWell(
+                  onTap: () {},
+                  child: Padding(
+                    padding: EdgeInsets.all(10),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.add),
+                        Text(
+                          "Nueva publicación",
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
 
               Card(
                 margin: EdgeInsets.all(10),
