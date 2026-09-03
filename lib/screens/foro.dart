@@ -195,28 +195,34 @@ class Foro extends StatelessWidget {
               ),
 
               // Publicaciones
-              Publicacion(
-                TipoPub: 'General',
-                IDPerro: perros[int.parse(IDPerro!)][1],
-                IDUsuario: ['María González', '@mariag'],
-                TextoPub: 'Le di su desayuno hoy a las 7am, se lo comió todo muy rápido! Le noté la cola moviéndose sin parar :)',
-              ),
-
-              if (IDPerro != null || IDPerro!.isNotEmpty) ...[
+              if (IDPerro != null) ...[
+                Publicacion(
+                  TipoPub: 'General',
+                  IDPerro: perros[int.parse(IDPerro!)][1],
+                  IDUsuario: ['María González', '@mariag'],
+                  TextoPub: 'Le di su desayuno hoy a las 7am, se lo comió todo muy rápido! Le noté la cola moviéndose sin parar :)',
+                ),
                 Publicacion(
                   TipoPub: 'Alimentación',
                   IDPerro: perros[int.parse(IDPerro!)][1],
                   IDUsuario: ['María González', '@mariag'],
-                  comida: ['500 gr', 'croquetas'],
+                  comida: ['200 gr', 'croquetas'],
                   tiempo: ['hoy', '12:43'],
                 ),
-
                 Publicacion(
                   TipoPub: 'Estado Médico',
                   IDPerro: perros[int.parse(IDPerro!)][1], 
                   IDUsuario: ['Sofía Ramos', '@sofiar'],
                   procedimiento: 'desparasitación',
                   tiempo: ['hoy', '10:07'],
+                ),
+              ]
+              else ...[
+                Publicacion(
+                  TipoPub: 'General',
+                  IDPerro: '01',
+                  IDUsuario: ['María González', '@mariag'],
+                  TextoPub: 'Le di su desayuno hoy a las 7am, se lo comió todo muy rápido! Le noté la cola moviéndose sin parar :)',
                 ),
               ],
               
@@ -356,12 +362,12 @@ class Foro extends StatelessWidget {
                 ),
               ),
 
-              if (IDPerro != null || IDPerro!.isNotEmpty) ...[
+              if (IDPerro != null) ...[
                 Publicacion(
                   TipoPub: 'Alimentación',
                   IDPerro: perros[int.parse(IDPerro!)][1],
                   IDUsuario: ['María González', '@mariag'],
-                  comida: ['500 gr', 'croquetas'],
+                  comida: ['200 gr', 'croquetas'],
                   tiempo: ['ayer', '22:14'],
                 ),
               ],
