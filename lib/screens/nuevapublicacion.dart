@@ -12,7 +12,7 @@ class NuevaPublicacion extends StatefulWidget{
 }
 
 class _NuevaPublicacionState extends State<NuevaPublicacion> {
-  List<String> _perros = ['Scooby', 'Bobby', 'Ramón', 'Ramona'];
+  final List<String> _perros = ['Scooby', 'Bobby', 'Ramón', 'Ramona', 'Mora'];
   String? _perroSelec;
 
   @override
@@ -62,7 +62,6 @@ class _NuevaPublicacionState extends State<NuevaPublicacion> {
                   child: Padding(
                     padding: EdgeInsets.only(top: 5, left: 10, right: 10, bottom: 5),
                     child: Row(
-                      mainAxisSize: MainAxisSize.max,
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Text(
@@ -70,7 +69,7 @@ class _NuevaPublicacionState extends State<NuevaPublicacion> {
                           style: TextStyle(
                             fontSize: 16,
                           ),
-                        ),
+                        ),                       
                         if (widget.IDPerro == null) ...[
                           Padding(
                             padding: EdgeInsets.only(left: 8),
@@ -120,7 +119,7 @@ class _NuevaPublicacionState extends State<NuevaPublicacion> {
                               fontSize: 16,
                             ),
                           ),
-                        ]
+                        ],
                       ],
                     ),
                   ),
@@ -133,7 +132,7 @@ class _NuevaPublicacionState extends State<NuevaPublicacion> {
                       padding: EdgeInsets.all(10),
                       child: Icon(Icons.add_a_photo),
                     ),
-                  ),                
+                  ),
                 ),
               ],
             ),
