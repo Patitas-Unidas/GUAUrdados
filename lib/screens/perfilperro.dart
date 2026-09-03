@@ -529,7 +529,7 @@ class DatosPerro extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(
-                            Icons.description_outlined,
+                            Icons.medical_information_outlined,
                             color: Colors.white,
                             size: 28,
                           ),
