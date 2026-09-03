@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:guaurdados_oficial/perfilperro.dart';
+import 'package:guaurdados_oficial/screens/perfilperro.dart';
 import 'foro.dart';
 
 /// Base de la página de inicio
