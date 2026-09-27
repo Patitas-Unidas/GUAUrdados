@@ -1,7 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'package:flutter/material.dart';
-import 'screens/homepage.dart';
+import 'screens/iniciar_sesion.dart';
 
 
 Future<void> main() async {
@@ -34,7 +34,8 @@ class MyApp extends StatelessWidget {
           displayLarge: const TextStyle(color: Color.fromRGBO(56, 54, 53, 1), letterSpacing: -.3),
         ),
       ),
-      home: Homepage(),
+      //home: Homepage(),
+      home: const IniciarSesion(),
     );
   }
 }
