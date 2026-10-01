@@ -261,7 +261,7 @@ class DatosPerro extends StatelessWidget {
                   shadowColor: Colors.transparent,
                   color: Colors.white,
                   child: SizedBox(
-                    width: 110,
+                    width: MediaQuery.of(context).size.width * 0.27,
                     height: 110,
                     child: Padding(
                       padding: EdgeInsets.all(10),
@@ -300,7 +300,7 @@ class DatosPerro extends StatelessWidget {
                   shadowColor: Colors.transparent,
                   color: Colors.white,
                   child: SizedBox(
-                    width: 110,
+                    width: MediaQuery.of(context).size.width * 0.27,
                     height: 110,
                     child: Padding(
                       padding: EdgeInsets.only(top: 15, left: 12, right: 12,),
@@ -340,7 +340,7 @@ class DatosPerro extends StatelessWidget {
                     shadowColor: Colors.transparent,
                     color: Color.fromRGBO(198, 220, 204, 1),
                     child: SizedBox(
-                      width: 110,
+                      width: MediaQuery.of(context).size.width * 0.27,
                       height: 110,
                       child: Padding(
                         padding: EdgeInsets.only(top: 15),

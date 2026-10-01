@@ -156,6 +156,32 @@ class _NuevaPublicacionState extends State<NuevaPublicacion> {
                 ),
               ),
             ),
+
+            Card(
+              margin: EdgeInsets.all(10),
+              color: Colors.white,
+              child: InkWell(
+                onTap: () {
+                  Navigator.pop(context);
+                },
+                child: Padding(
+                  padding: EdgeInsets.all(10),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.publish),
+                      Text(
+                        "Publicar",
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
       ),
