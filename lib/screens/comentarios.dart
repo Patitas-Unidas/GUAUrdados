@@ -132,18 +132,39 @@ class Comentarios extends StatelessWidget{
           ),
           Align(
             alignment: Alignment.bottomCenter,
-            child: Card(
-              margin: EdgeInsets.all(10),
-              color: Colors.white,
-              child: TextField(
-                decoration: InputDecoration(
-                  border: OutlineInputBorder(
-                    borderSide: BorderSide.none,
-                    borderRadius: BorderRadius.circular(17),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Card(
+                  margin: EdgeInsets.all(10),
+                  color: Colors.white,
+                  child: SizedBox(
+                    width: MediaQuery.of(context).size.width * 0.7,
+                    child: TextField(
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(
+                          borderSide: BorderSide.none,
+                          borderRadius: BorderRadius.circular(17),
+                        ),
+                        hintText: 'Deja tu comentario aquí.'
+                      ),
+                    ),
                   ),
-                  hintText: 'Deja tu comentario aquí.' 
                 ),
-              ),
+                Card(
+                  margin: EdgeInsets.all(10),
+                  color: Colors.white,
+                  child: InkWell(
+                    onTap: () {
+                      Navigator.pop(context);
+                    },
+                    child: Padding(
+                      padding: EdgeInsets.all(15),
+                      child: Icon(Icons.send),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
