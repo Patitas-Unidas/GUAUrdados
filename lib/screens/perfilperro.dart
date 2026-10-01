@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:guaurdados_oficial/screens/registraralimentacion.dart';
 import 'foro.dart';
 
 class PerfilPerro extends StatelessWidget {
@@ -491,7 +492,15 @@ class DatosPerro extends StatelessWidget {
                       borderRadius: BorderRadius.all(Radius.circular(10)),
                     ),
                   ),
-                  onPressed: () {},
+                  onPressed: () {
+                    showModalBottomSheet<void>(
+                      isScrollControlled: true,
+                      context: context,
+                      builder: (BuildContext context) {
+                        return RegistrarAlimentacion(perro: perros[int.parse(IDPerro)][1],);
+                      },
+                    );
+                  },
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
