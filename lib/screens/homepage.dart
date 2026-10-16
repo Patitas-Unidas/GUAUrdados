@@ -1,392 +1,382 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:guaurdados_oficial/models/perro.dart';
 import 'package:guaurdados_oficial/screens/perfilperro.dart';
+import 'package:guaurdados_oficial/services/perros_repository.dart';
 import 'foro.dart';
+import 'package:guaurdados_oficial/screens/perfilusuario.dart';
 
-/// Base de la página de inicio
-class Homepage extends StatefulWidget {
-  const Homepage({super.key});
+const _fondo = Color(0xfff0d2c2);
+const _tarjeta = Color(0xfffff9f6);
+const _coral = Color(0xffe85042);
 
-  @override
-  State<StatefulWidget> createState() => HomepageBody();
-}
+class Homepage extends StatelessWidget {
+  const Homepage({super.key, PerrosRepository? perrosRepository})
+      : _repository = perrosRepository;
 
-/// Cuerpo de la página de inicio
-class HomepageBody extends State<Homepage> {
+  final PerrosRepository? _repository;
+
   @override
   Widget build(BuildContext context) {
-    // Variables auxiliares mientras no se tiene la base de datos
-    var perros = [
-      ['0', 'Scooby', 'Hace 10 minutos', 'Saludable'],
-      ['1', 'Bobby', 'Hace 1 hora', 'Necesita atención'],
-      ['2', 'Ramón', 'Hace 15 minutos', 'Saludable'],
-      ['3', 'Ramona', 'Hace 4 horas', 'Saludable'],
-      ['4', 'Mora', 'Hace 6 horas', 'Necesita atención'],
-      ['5', 'Tommy', 'Hace 10 minutos', 'Saludable'],
-      ['6', 'Romeo', 'Hace 1 hora', 'Necesita atención'],
-      ['7', 'Lobito', 'Hace 15 minutos', 'Saludable']
-    ];
-    var perrosSeguidos = [
-      ['0', 'Scooby', 'Hace 10 minutos', 'Saludable'],
-      ['1', 'Bobby', 'Hace 1 hora', 'Necesita atención'],
-      ['2', 'Ramón', 'Hace 15 minutos', 'Saludable'],
-      ['3', 'Ramona', 'Hace 4 horas', 'Saludable'],
-      ['4', 'Mora', 'Hace 6 horas', 'Necesita atención']
-    ];
+    final repository = _repository ?? PerrosRepository();
+    final uid = FirebaseAuth.instance.currentUser?.uid;
 
     return Scaffold(
-      // Appbar que va a tener el logo de la aplicación, el botón de notificaciones y el botón de emergencias general
+      backgroundColor: _fondo,
       appBar: AppBar(
-        backgroundColor: Color.fromRGBO(238, 210, 195, 1),
+        toolbarHeight: 76,
+        backgroundColor: _fondo,
+        elevation: 0,
+        titleSpacing: 18,
         title: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Image.asset(
-              'fotos/Letras.png',
-              width: 180,
+            Image.asset('fotos/Letras.png', width: 154),
+            const Spacer(),
+            IconButton.filled(
+              onPressed: () {},
+              style: IconButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: const Color(0xffff8500),
+              ),
+              icon: const Icon(Icons.notifications_none),
             ),
-            Row(
-              children: [
-                Padding(
-                  padding: EdgeInsets.only(right: 5),
-                  child: IconButton.filledTonal(
-                    icon: Icon(Icons.notifications),
-                    iconSize: 20,
-                    color: Colors.grey,
-                    onPressed: () {},
-                  ),
-                ),
-                ElevatedButton(
-                  style: TextButton.styleFrom(
-                    backgroundColor: Color.fromRGBO(255, 0, 55, 1),
-                  ),
-                  onPressed: () {},
-                  child: Text(
-                    'Emergencia',
-                    style: TextStyle(
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ],
-            )
+            const SizedBox(width: 9),
+            ElevatedButton(
+              onPressed: () {},
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xffff0041),
+                foregroundColor: Colors.white,
+                elevation: 3,
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                shape: const StadiumBorder(),
+              ),
+              child: const Text('Emergencia', style: TextStyle(fontSize: 12)),
+            ),
           ],
-        )
+        ),
       ),
+      body: StreamBuilder<List<Perro>>(
+        stream: repository.observarPerros(),
+        builder: (context, snapshot) {
+          if (snapshot.hasError) return _EstadoError(error: snapshot.error);
+          if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
 
-      // Cuerpo de la página principal que llama a las clases ListaPerrosSeguidos, BotonForo y ListaTodosLosPerros
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Texto "Patitas seguidas"
-          Container(
-            padding: EdgeInsets.only(left: 15),
-            child: Text(
-              'Patitas seguidas',
-              textAlign: TextAlign.left,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 20,
+          final perros = snapshot.data!;
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (uid != null) _PerrosSeguidos(repository: repository, uid: uid),
+              const Padding(
+                padding: EdgeInsets.fromLTRB(18, 10, 18, 8),
+                child: BotonForo(),
               ),
-            ),
-          ),
-          // Llamado a ListaPerrosSeguidos
-          ListaPerrosSeguidos(
-            listaPerrosSeguidos: perrosSeguidos,
-          ),
-          // Llamado a BotonForo
-          Padding(
-            padding: EdgeInsets.only(left: 15, bottom: 20),
-            child: BotonForo(),
-          ),
-          // Texto "Todos los perritos"
-          Container(
-            padding: EdgeInsets.only(left: 15),
-            child: Text(
-              'Todos los perritos',
-              textAlign: TextAlign.left,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 20,
+              const Padding(
+                padding: EdgeInsets.fromLTRB(18, 8, 18, 5),
+                child: Text(
+                  'Todos los perritos',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                ),
               ),
-            ),
-          ),
-          // Llamado a ListaTodosLosPerros
-          Expanded(
-            child: ListaTodosLosPerros(
-              listaPerros: perros,
-            ),
-          ),
-        ],
+              Expanded(
+                child: perros.isEmpty
+                    ? const Center(child: Text('Aún no hay perros publicados.'))
+                    : ListaTodosLosPerros(listaPerros: perros),
+              ),
+            ],
+          );
+        },
       ),
-
-      // Bottom navbar con botones de inicio, cámara y perfil
-      bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            label: '',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.camera_alt_outlined),
-            label: '',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            label: '',
-          ),
-        ],
-        currentIndex: 0,
-        backgroundColor: Color.fromRGBO(235, 185, 157, 1),
-        selectedItemColor: Color.fromRGBO(222, 79, 65, 1),
-        iconSize: 40,
-        selectedFontSize: 0,
-      ),
+      bottomNavigationBar: const _NavegacionInferior(),
     );
   }
 }
 
+class _PerrosSeguidos extends StatelessWidget {
+  const _PerrosSeguidos({required this.repository, required this.uid});
+  final PerrosRepository repository;
+  final String uid;
 
-/// Clase con la lista de los perros seguidos
-/// Crea una lista de cards scrolleable horizontalmente que sólo toma en cuenta a los perros seguidos
-/// Si no hay perros seguidos, ésta clase y su título no se verán
+  @override
+  Widget build(BuildContext context) => StreamBuilder<List<Perro>>(
+        stream: repository.observarPerrosSeguidos(uid),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) return const SizedBox.shrink();
+          if (snapshot.data!.isEmpty) {
+            return const Padding(
+              padding: EdgeInsets.fromLTRB(18, 8, 18, 10),
+              child: _MensajeSinSeguidos(),
+            );
+          }
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Padding(
+                padding: EdgeInsets.fromLTRB(18, 8, 18, 2),
+                child: Text('Patitas seguidas',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+              ),
+              ListaPerrosSeguidos(listaPerrosSeguidos: snapshot.data!),
+            ],
+          );
+        },
+      );
+}
+
+class _MensajeSinSeguidos extends StatelessWidget {
+  const _MensajeSinSeguidos();
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: double.infinity,
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+    decoration: BoxDecoration(
+      color: const Color(0xfffff9f6),
+      borderRadius: BorderRadius.circular(18),
+    ),
+    child: const Row(
+      children: [
+        Icon(Icons.pets_outlined, size: 28, color: _coral),
+        SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Aún no sigues a ningún perrito', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+              SizedBox(height: 2),
+              Text('Conoce a nuestros perritos y sigue a tus favoritos.', style: TextStyle(fontSize: 11, color: Color(0xff776d68))),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
 class ListaPerrosSeguidos extends StatelessWidget {
-  const ListaPerrosSeguidos({
-    super.key,
-    required this.listaPerrosSeguidos,
-  });
-  final List<List<String>> listaPerrosSeguidos;
+  const ListaPerrosSeguidos({super.key, required this.listaPerrosSeguidos});
+  final List<Perro> listaPerrosSeguidos;
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+        height: 184,
+        child: ListView.separated(
+          padding: const EdgeInsets.fromLTRB(18, 10, 18, 6),
+          scrollDirection: Axis.horizontal,
+          itemCount: listaPerrosSeguidos.length,
+          separatorBuilder: (_, __) => const SizedBox(width: 12),
+          itemBuilder: (context, index) => _TarjetaPerro(
+            perro: listaPerrosSeguidos[index],
+            compacta: true,
+          ),
+        ),
+      );
+}
+
+class ListaTodosLosPerros extends StatelessWidget {
+  const ListaTodosLosPerros({super.key, required this.listaPerros});
+  final List<Perro> listaPerros;
+
+  @override
+  Widget build(BuildContext context) => ListView.separated(
+        padding: const EdgeInsets.fromLTRB(18, 8, 18, 20),
+        itemCount: listaPerros.length,
+        separatorBuilder: (_, __) => const SizedBox(height: 10),
+        itemBuilder: (context, index) => _TarjetaPerro(perro: listaPerros[index]),
+      );
+}
+
+class _TarjetaPerro extends StatelessWidget {
+  const _TarjetaPerro({required this.perro, this.compacta = false});
+  final Perro perro;
+  final bool compacta;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(2),
-      child: SizedBox(
-        height: 190,
-        // Creador del listado de cards
-        child: ListView.builder(
-          padding: const EdgeInsets.all(12),
-          // Le decimos que queremos que sea scrolleable horizontalmente
-          scrollDirection: Axis.horizontal,
-          // Toma en cuenta la cantidad de perros seguidos con la longitud de la listaPerrosSeguidos
-          itemCount: listaPerrosSeguidos.length,
-          itemBuilder: (BuildContext context, int index) {
-            return SizedBox(
-              width: 160,
-              child: Card(
-                color: Color.fromRGBO(249, 240, 235, 1),
-                margin: const EdgeInsets.symmetric(horizontal: 5),
-                child: InkWell(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute<void>(
-                        builder: (context) => PerfilPerro(
-                            IDPerro: listaPerrosSeguidos[index][0],
-                        ),
-                      ),
-                    );
-                  },
-                  child: Padding(
-                    padding: EdgeInsets.all(12),
-                    child: Column(
-                      children: [
-                        CircleAvatar(
-                          radius: 48,
-                          backgroundImage: AssetImage('fotos/${listaPerrosSeguidos[index][1]}.jpg'),
-                        ),
-                        Text(
-                          listaPerrosSeguidos[index][1],
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        if (listaPerrosSeguidos[index][3] == 'Saludable') ...[
-                          Text(
-                            listaPerrosSeguidos[index][3],
-                            style: TextStyle(
-                              color: Color.fromRGBO(76, 175, 130, 1),
-                            ),
-                          ),
-                        ]
-                        else ...[
-                          Text(
-                            listaPerrosSeguidos[index][3],
-                            style: TextStyle(
-                              color: Color.fromRGBO(255, 149, 0, 1),
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            );
-          },
+    final contenido = compacta ? _contenidoCompacto() : _contenidoLista();
+    return Material(
+      color: _tarjeta,
+      borderRadius: BorderRadius.circular(compacta ? 20 : 18),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(compacta ? 20 : 18),
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => PerfilPerro(idPerro: perro.id)),
+        ),
+        child: SizedBox(
+          width: compacta ? 138 : double.infinity,
+          height: compacta ? 160 : 88,
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: contenido,
+          ),
         ),
       ),
     );
   }
+
+  Widget _contenidoCompacto() => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(child: _FotoPerro(perro: perro, size: 54, circular: true)),
+          const SizedBox(height: 8),
+          Text(perro.nombre,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontWeight: FontWeight.w600)),
+          const Spacer(),
+          _EtiquetaEstado(estado: perro.estado, compacta: true),
+        ],
+      );
+
+  Widget _contenidoLista() => Row(
+        children: [
+          _FotoPerro(perro: perro, size: 52),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(perro.nombre,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                const SizedBox(height: 3),
+                Row(children: [
+                  const Icon(Icons.access_time, size: 13, color: Color(0xff867d78)),
+                  const SizedBox(width: 3),
+                  Expanded(
+                    child: Text(_fechaRelativa(perro.actualizadoEn),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 12, color: Color(0xff625b57))),
+                  ),
+                ]),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          _EtiquetaEstado(estado: perro.estado),
+          const Icon(Icons.chevron_right, color: Color(0xffd8cfca)),
+        ],
+      );
 }
 
-
-/// Clase con la lista de todos los perros
-/// Crea una lista de cards scrolleable verticalmente que automáticamente considera a todos los perros
-class ListaTodosLosPerros extends StatelessWidget {
-  const ListaTodosLosPerros({
-    super.key,
-    required this.listaPerros,
-  });
- final List<List<String>> listaPerros;
+class _FotoPerro extends StatelessWidget {
+  const _FotoPerro({required this.perro, required this.size, this.circular = false});
+  final Perro perro;
+  final double size;
+  final bool circular;
 
   @override
-  Widget build(BuildContext context){
+  Widget build(BuildContext context) {
+    final image = perro.fotoUrl.isNotEmpty
+        ? Image.network(perro.fotoUrl, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _sinImagen())
+        : perro.imagenAsset.isNotEmpty
+            ? Image.asset('fotos/${perro.imagenAsset}', fit: BoxFit.cover, errorBuilder: (_, __, ___) => _sinImagen())
+            : _sinImagen();
+    return SizedBox(
+      width: size,
+      height: size,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(circular ? size / 2 : 10),
+        child: image,
+      ),
+    );
+  }
+
+  Widget _sinImagen() => const ColoredBox(
+        color: Color(0xffe7d9ff),
+        child: Icon(Icons.pets, color: Color(0xff6345a2)),
+      );
+}
+
+class _EtiquetaEstado extends StatelessWidget {
+  const _EtiquetaEstado({required this.estado, this.compacta = false});
+  final String estado;
+  final bool compacta;
+
+  @override
+  Widget build(BuildContext context) {
+    final saludable = estado.toLowerCase() == 'saludable';
+    final color = saludable ? const Color(0xff35ae7b) : const Color(0xffff8d17);
+    final fondo = saludable ? const Color(0xffe4f5ec) : const Color(0xffffedda);
+    final texto = saludable ? estado : estado == 'Sin estado' ? estado : 'Revisar';
     return Container(
-      padding: const EdgeInsets.all(12),
-      // Creador del listado de cards
-      child: ListView.builder(
-        // Toma en cuenta la cantidad de perros totales con la longitud de la listaPerros
-        itemCount: listaPerros.length,
-        itemBuilder: (BuildContext context, int index) {
-          return Center(
-            child: Column(
-              children: <Widget>[
-                Card(
-                  color: Color.fromRGBO(249, 240, 235, 1),
-                  child: InkWell(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute<void>(
-                          builder: (context) => PerfilPerro(
-                            IDPerro: listaPerros[index][0],
-                          ),
-                        ),
-                      );
-                    },
-                    child: SizedBox(
-                      width: 400,
-                      height: 80,
-                      child: Padding(
-                        padding: EdgeInsets.all(15),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
-                              children: [
-                                CircleAvatar(
-                                  radius:28,
-                                  backgroundImage: AssetImage('fotos/${listaPerros[index][1]}.jpg'),
-                                ),
-                                Padding(
-                                  padding: EdgeInsets.only(left: 10),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        listaPerros[index][1],
-                                        textAlign: TextAlign.left,
-                                        style: TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                      Row(
-                                        children: [
-                                          Icon(
-                                            Icons.access_time,
-                                            size: 15,
-                                            color: Color.fromRGBO(56, 54, 53, 0.75),
-                                          ),
-                                          Text(
-                                            listaPerros[index][2],
-                                            style: TextStyle(
-                                                color: Color.fromRGBO(56, 54, 53, 0.75)
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                            Row(
-                              children: [
-                                if (listaPerros[index][3] == 'Saludable') ...[
-                                  Text(
-                                    listaPerros[index][3],
-                                    style: TextStyle(
-                                      color: Color.fromRGBO(76, 175, 130, 1),
-                                    ),
-                                  ),
-                                ]
-                                else ...[
-                                  Text(
-                                    listaPerros[index][3],
-                                    style: TextStyle(
-                                      color: Color.fromRGBO(255, 149, 0, 1),
-                                    ),
-                                  ),
-                                ],
-                                Icon(Icons.arrow_right)
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  )
+      constraints: BoxConstraints(maxWidth: compacta ? 112 : 72),
+      padding: EdgeInsets.symmetric(horizontal: compacta ? 7 : 9, vertical: 7),
+      decoration: BoxDecoration(color: fondo, borderRadius: BorderRadius.circular(18)),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        if (compacta) ...[Container(width: 5, height: 5, decoration: BoxDecoration(color: color, shape: BoxShape.circle)), const SizedBox(width: 4)],
+        Text(texto, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: color, fontSize: compacta ? 10 : 11, fontWeight: FontWeight.w600)),
+      ]),
+    );
+  }
+}
+
+String _fechaRelativa(dynamic timestamp) {
+  if (timestamp == null) return 'Sin actualizaciones';
+  final difference = DateTime.now().difference(timestamp.toDate());
+  if (difference.inMinutes < 1) return 'Hace unos instantes';
+  if (difference.inMinutes < 60) return 'Hace ${difference.inMinutes} min';
+  if (difference.inHours < 24) return 'Hace ${difference.inHours} h';
+  return 'Hace ${difference.inDays} días';
+}
+
+class _EstadoError extends StatelessWidget {
+  const _EstadoError({this.error});
+  final Object? error;
+  @override
+  Widget build(BuildContext context) => Center(child: Padding(padding: const EdgeInsets.all(24), child: Text('No se pudieron cargar los perros.\n$error', textAlign: TextAlign.center)));
+}
+
+class BotonForo extends StatelessWidget {
+  const BotonForo({super.key});
+  @override
+  Widget build(BuildContext context) => SizedBox(
+        width: double.infinity,
+        height: 39,
+        child: FilledButton.icon(
+          style: FilledButton.styleFrom(backgroundColor: _coral, shape: const StadiumBorder()),
+          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const Foro())),
+          icon: const Icon(Icons.chat_bubble_outline, size: 18),
+          label: const Text('Foros', style: TextStyle(fontWeight: FontWeight.w700)),
+        ),
+      );
+}
+
+class _NavegacionInferior extends StatelessWidget {
+  const _NavegacionInferior();
+  @override
+  Widget build(BuildContext context) => SizedBox(
+        height: 86,
+        child: Stack(clipBehavior: Clip.none, alignment: Alignment.topCenter, children: [
+          Container(color: const Color(0xfff4bea5)),
+          Positioned(
+            left: 0,
+            right: 0,
+            top: 10,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                IconButton(
+                  tooltip: 'Inicio',
+                  onPressed: () {},
+                  icon: const Icon(Icons.home_outlined, color: _coral, size: 32),
+                ),
+                const SizedBox(width: 48),
+                IconButton(
+                  tooltip: 'Mi perfil',
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const PerfilUsuario()),
+                  ),
+                  icon: const Icon(Icons.person_outline, color: Color(0xff776d68), size: 31),
                 ),
               ],
             ),
-          );
-        },
-      ),
-    );
-  }
-}
-
-
-/// Clase con el botón de foro principal
-class BotonForo extends StatelessWidget {
-  const BotonForo({super.key});
-
-  @override
-  Widget build(BuildContext context){
-    return SizedBox(
-      width: 380,
-      child: TextButton(
-        style: TextButton.styleFrom(
-          backgroundColor: Color.fromRGBO(222, 79, 65, 1),
-          foregroundColor: Colors.white,
-        ),
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute<void>(
-              builder: (context) => Foro()
-            ),
-          );
-        },
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.chat_bubble_outline,
-              color: Colors.white,
-            ),
-            Text(
-              'Foros',
-              style: TextStyle(
-                fontWeight: FontWeight.w500,
-                fontSize: 16,
-              ),
-            )
-          ],
-        ),
-      ),
-    );
-  }
+          ),
+          Positioned(top: -20, child: Container(width: 78, height: 78, decoration: const BoxDecoration(color: _coral, shape: BoxShape.circle), child: const Icon(Icons.camera_alt_outlined, color: Colors.white, size: 31))),
+        ]),
+      );
 }

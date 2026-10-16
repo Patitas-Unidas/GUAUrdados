@@ -6,21 +6,13 @@ class Foro extends StatelessWidget {
   const Foro({
     super.key,
     this.IDPerro,
+    this.nombrePerro,
   });
   final String? IDPerro;
+  final String? nombrePerro;
 
   @override
   Widget build(BuildContext context) {
-    var perros = [
-      ['0', 'Scooby'],
-      ['1', 'Bobby'],
-      ['2', 'Ramón'],
-      ['3', 'Ramona'],
-      ['4', 'Mora'],
-      ['5', 'Tommy'],
-      ['6', 'Romeo'],
-      ['7', 'Lobito']
-    ];
     var users = ['María G.', 'Carlos M.', 'Sofía R.'];
 
     return Scaffold(
@@ -49,7 +41,7 @@ class Foro extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            if (IDPerro == null) ...[
+                            if (nombrePerro == null) ...[
                               Text(
                                 'Foro',
                                 style: TextStyle(
@@ -60,7 +52,7 @@ class Foro extends StatelessWidget {
                             ]
                             else ...[
                               Text(
-                                'Foro de ${perros[int.parse(IDPerro!)][1]}',
+                                'Foro de $nombrePerro',
                                 style: TextStyle(
                                   fontSize: 25,
                                   fontWeight: FontWeight.w600,
@@ -195,23 +187,23 @@ class Foro extends StatelessWidget {
               ),
 
               // Publicaciones
-              if (IDPerro != null) ...[
+              if (nombrePerro != null) ...[
                 Publicacion(
                   TipoPub: 'General',
-                  IDPerro: perros[int.parse(IDPerro!)][1],
+                  IDPerro: nombrePerro!,
                   IDUsuario: ['María González', '@mariag'],
                   TextoPub: 'Le di su desayuno hoy a las 7am, se lo comió todo muy rápido! Le noté la cola moviéndose sin parar :)',
                 ),
                 Publicacion(
                   TipoPub: 'Alimentación',
-                  IDPerro: perros[int.parse(IDPerro!)][1],
+                  IDPerro: nombrePerro!,
                   IDUsuario: ['María González', '@mariag'],
                   comida: ['200 gr', 'croquetas'],
                   tiempo: ['hoy', '12:43'],
                 ),
                 Publicacion(
                   TipoPub: 'Estado Médico',
-                  IDPerro: perros[int.parse(IDPerro!)][1], 
+                  IDPerro: nombrePerro!,
                   IDUsuario: ['Sofía Ramos', '@sofiar'],
                   procedimiento: 'desparasitación',
                   tiempo: ['hoy', '10:07'],
@@ -362,10 +354,10 @@ class Foro extends StatelessWidget {
                 ),
               ),
 
-              if (IDPerro != null) ...[
+              if (nombrePerro != null) ...[
                 Publicacion(
                   TipoPub: 'Alimentación',
-                  IDPerro: perros[int.parse(IDPerro!)][1],
+                  IDPerro: nombrePerro!,
                   IDUsuario: ['María González', '@mariag'],
                   comida: ['200 gr', 'croquetas'],
                   tiempo: ['ayer', '22:14'],
