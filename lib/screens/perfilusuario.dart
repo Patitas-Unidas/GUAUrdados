@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:guaurdados_oficial/screens/camara.dart';
 
 import 'iniciar_sesion.dart';
 
@@ -298,11 +299,17 @@ class _BarraPerfilUsuario extends StatelessWidget {
         ),
         Positioned(
           top: -20,
-          child: Container(
-            width: 78,
-            height: 78,
-            decoration: const BoxDecoration(color: Color(0xffe85042), shape: BoxShape.circle),
-            child: const Icon(Icons.camera_alt_outlined, color: Colors.white, size: 31),
+          child: InkWell(
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const Camara()),
+              ),
+            child: Container(
+              width: 78,
+              height: 78,
+              decoration: const BoxDecoration(color: Color(0xffe85042), shape: BoxShape.circle),
+              child: const Icon(Icons.camera_alt_outlined, color: Colors.white, size: 31),
+            ),
           ),
         ),
       ],

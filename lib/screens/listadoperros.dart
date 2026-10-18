@@ -107,7 +107,7 @@ class ListaPerrosSeguidos extends StatelessWidget {
                       context,
                       MaterialPageRoute<void>(
                         builder: (context) => PerfilPerro(
-                          IDPerro: listaPerrosSeguidos[index][0],
+                          idPerro: listaPerrosSeguidos[index][0],
                         ),
                       ),
                     );
@@ -185,7 +185,7 @@ class ListaTodosLosPerros extends StatelessWidget {
                           context,
                           MaterialPageRoute<void>(
                             builder: (context) => PerfilPerro(
-                              IDPerro: listaPerros[index][0],
+                              idPerro: listaPerros[index][0],
                             ),
                           ),
                         );
