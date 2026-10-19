@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 
@@ -60,6 +61,26 @@ class _CamaraState extends State<Camara> {
               child: CameraPreview(_controller),
             ),
           ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: MediaQuery.of(context).size.width,
+                height: MediaQuery.of(context).size.height * .10,
+                color: Color.fromRGBO(0, 0, 0, .7),
+              ),
+              Container(
+                width: MediaQuery.of(context).size.width,
+                height: MediaQuery.of(context).size.height * .70,
+                color: Colors.transparent,
+              ),
+              Container(
+                width: MediaQuery.of(context).size.width,
+                height: MediaQuery.of(context).size.height * .20,
+                color: Color.fromRGBO(0, 0, 0, .7),
+              ),
+            ],
+          ),
           Padding(
             padding: const EdgeInsets.only(top: 25, left: 10,),
             child: IconButton.filledTonal(
@@ -75,9 +96,56 @@ class _CamaraState extends State<Camara> {
       ),
       floatingActionButton: FloatingActionButton.large(
         shape: CircleBorder(),
-        onPressed: (){},
+        onPressed: () async {
+          try {
+            await _controller.initialize();
+            final image = await _controller.takePicture();
+
+            if (!context.mounted) return;
+
+            await Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (context) => DisplayPictureScreen(
+                  imagePath: image.path,
+                ),
+              ),
+            );
+          }
+          catch (e) {
+            return;
+          }
+        },
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+    );
+  }
+}
+
+class DisplayPictureScreen extends StatelessWidget {
+  const DisplayPictureScreen({super.key, required this.imagePath});
+  final String imagePath;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 25, left: 10, bottom: 10,),
+            child: IconButton.filledTonal(
+              icon: Icon(Icons.arrow_back),
+              iconSize: 20,
+              color: Colors.grey,
+              onPressed: () {
+                Navigator.pop(context);
+              },
+            ),
+          ),
+          Image.file(File(imagePath)),
+        ],
+      ),
     );
   }
 }
