@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:guaurdados_oficial/models/perro.dart';
+import 'package:guaurdados_oficial/screens/camara.dart';
 import 'package:guaurdados_oficial/screens/perfilperro.dart';
 import 'package:guaurdados_oficial/services/perros_repository.dart';
 import 'foro.dart';
@@ -376,7 +377,12 @@ class _NavegacionInferior extends StatelessWidget {
               ],
             ),
           ),
-          Positioned(top: -20, child: Container(width: 78, height: 78, decoration: const BoxDecoration(color: _coral, shape: BoxShape.circle), child: const Icon(Icons.camera_alt_outlined, color: Colors.white, size: 31))),
+          Positioned(top: -20, child: InkWell(
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const Camara()),
+              ),
+              child: Container(width: 78, height: 78, decoration: const BoxDecoration(color: _coral, shape: BoxShape.circle), child: const Icon(Icons.camera_alt_outlined, color: Colors.white, size: 31)))),
         ]),
       );
 }
