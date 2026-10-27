@@ -109,7 +109,7 @@ class ActualizacionComida extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '¡${IDUsuario[0]} a registrado una nueva alimentación!',
+                    '¡${IDUsuario[0]} ha registrado una nueva alimentación!',
                     overflow: TextOverflow.fade,
                     maxLines: 1,
                     softWrap: false,

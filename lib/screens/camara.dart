@@ -95,31 +95,26 @@ class _CamaraState extends State<Camara> {
     return Scaffold(
       body: Stack(
         children: [
-          FittedBox(
-            fit: BoxFit.fitWidth,
-            child: SizedBox(
-              width: MediaQuery.of(context).size.width,
-              height: MediaQuery.of(context).size.height,
-              child: CameraPreview(_controller),
-            ),
-          ),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
                 width: MediaQuery.of(context).size.width,
-                height: MediaQuery.of(context).size.height * 0.10,
-                color: const Color.fromRGBO(0, 0, 0, .7),
+                height: MediaQuery.of(context).size.height * .10,
+                color: Colors.black,
+              ),
+              FittedBox(
+                fit: BoxFit.fitWidth,
+                child: SizedBox(
+                  width: MediaQuery.of(context).size.width,
+                  height: MediaQuery.of(context).size.height * .70,
+                  child: CameraPreview(_controller),
+                ),
               ),
               Container(
                 width: MediaQuery.of(context).size.width,
-                height: MediaQuery.of(context).size.height * 0.70,
-                color: Colors.transparent,
-              ),
-              Container(
-                width: MediaQuery.of(context).size.width,
-                height: MediaQuery.of(context).size.height * 0.20,
-                color: const Color.fromRGBO(0, 0, 0, .7),
+                height: MediaQuery.of(context).size.height * .20,
+                color: Colors.black,
               ),
             ],
           ),
