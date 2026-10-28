@@ -5,11 +5,8 @@ import '../models/perro.dart';
 import '../services/emergencias_repository.dart';
 import '../services/perros_repository.dart';
 
-const _telefonoClinica = '+56000000000';
-
 const _rojo = Color(0xffff0041);
 const _fondo = Color(0xfff9f0eb);
-const _oscuro = Color(0xff1c1c28);
 
 const _tipos = <String, IconData>{
   'Problema de salud': Icons.healing_outlined,
@@ -20,11 +17,11 @@ const _tipos = <String, IconData>{
 
 /// Hoja inferior para reportar una emergencia.
 ///
-/// - Desde el Homepage: `ReportarEmergencia.mostrar(context)` → versión completa
+/// - Desde el Homepage: `ReportarEmergencia.mostrar(context)` > versión completa
 ///   (selector de perro, qué ocurre, ubicación).
 /// - Desde el foro/perfil de un perro:
 ///   `ReportarEmergencia.mostrar(context, idPerro: id, nombrePerro: nombre)`
-///   → versión compacta, con los datos del perro adjuntos automáticamente.
+///   > versión compacta, con los datos del perro adjuntos automáticamente.
 class ReportarEmergencia extends StatefulWidget {
   const ReportarEmergencia({super.key, this.idPerro, this.nombrePerro, EmergenciasRepository? repository})
       : _repository = repository;
@@ -98,11 +95,6 @@ class _ReportarEmergenciaState extends State<ReportarEmergencia> {
       setState(() => _enviando = false);
       _snack('No se pudo emitir la alerta. Inténtalo de nuevo.');
     }
-  }
-
-  Future<void> _llamar() async {
-    final ok = await launchUrl(Uri(scheme: 'tel', path: _telefonoClinica));
-    if (!ok && mounted) _snack('No se pudo abrir el teléfono.');
   }
 
   @override
@@ -182,40 +174,6 @@ class _ReportarEmergenciaState extends State<ReportarEmergencia> {
                     ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                     : const Icon(Icons.warning_amber_rounded),
                 label: const Text('Emitir Alerta a la Comunidad', style: TextStyle(fontWeight: FontWeight.w700)),
-              ),
-            ),
-            if (_fijo) ...[
-              const SizedBox(height: 12),
-              const Center(child: Text('O', style: TextStyle(color: Color(0xff9a918c)))),
-              const SizedBox(height: 12),
-              const _Etiqueta('ASISTENCIA PROFESIONAL'),
-              const SizedBox(height: 10),
-            ] else
-              const SizedBox(height: 10),
-            SizedBox(
-              width: double.infinity,
-              height: _fijo ? 56 : 50,
-              child: ElevatedButton(
-                onPressed: _llamar,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _oscuro,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.phone_outlined, size: 18),
-                        SizedBox(width: 8),
-                        Text('Llamar a Clínica Veterinaria', style: TextStyle(fontWeight: FontWeight.w700)),
-                      ],
-                    ),
-                    if (_fijo) const Text('(Línea directa para urgencias)', style: TextStyle(fontSize: 10, color: Colors.white70)),
-                  ],
-                ),
               ),
             ),
             Center(
