@@ -30,4 +30,46 @@ class PerrosRepository {
             ? FieldValue.arrayUnion([uid])
             : FieldValue.arrayRemove([uid]),
       });
+
+  Stream<List<Perro>> observarNovedadesSeguidos(String uid) {
+    return _perros.where('seguidores', arrayContains: uid).snapshots().map((s) {
+      final perros = s.docs.map(Perro.fromFirestore).toList();
+      perros.sort((a, b) => (b.actualizadoEn?.millisecondsSinceEpoch ?? 0)
+          .compareTo(a.actualizadoEn?.millisecondsSinceEpoch ?? 0));
+      return perros;
+    });
+  }
+
+  Stream<List<Map<String, dynamic>>> observarPublicacionesForoSeguidos(String uid) {
+    return observarPerrosSeguidos(uid).asyncMap((perrosSeguidos) async {
+      if (perrosSeguidos.isEmpty) return [];
+
+      final idsPerrosSeguidos = perrosSeguidos.map((p) => p.id).toList();
+      List<Map<String, dynamic>> todasLasPublicaciones = [];
+
+      final foroSnapshot = await _firestore
+          .collection('foro')
+          .where('idperro', whereIn: idsPerrosSeguidos)
+          .get();
+
+      for (var docForo in foroSnapshot.docs) {
+        final idPerro = docForo.data()['idperro'] as String;
+        final perroAsociado = perrosSeguidos.firstWhere((p) => p.id == idPerro);
+
+        final pubsSnapshot = await docForo.reference.collection('publicaciones').get();
+        for (var pubDoc in pubsSnapshot.docs) {
+          final data = pubDoc.data();
+          todasLasPublicaciones.add({
+            'id': pubDoc.id,
+            'tipo': 'foro',
+            'nombrePerro': perroAsociado.nombre,
+            'comentario': data['comentario'] ?? '',
+            'fecha': data['fecha'],
+          });
+        }
+      }
+
+      return todasLasPublicaciones;
+    });
+  }
 }
