@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:guaurdados_oficial/services/notificaciones_service.dart';
 import 'homepage.dart';
 import 'registro_usuario.dart';
 
@@ -25,6 +26,8 @@ class _IniciarSesionState extends State<IniciarSesion> {
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
+
+      try { await NotificacionesService.inicializar(); } catch (_) {}
 
       // Verificación de seguridad de Flutter después de un "await"
       if (!mounted) return;

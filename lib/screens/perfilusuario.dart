@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:guaurdados_oficial/screens/camara.dart';
+import 'package:guaurdados_oficial/services/notificaciones_service.dart';
 
 import 'iniciar_sesion.dart';
 
@@ -222,6 +223,7 @@ class PerfilUsuario extends StatelessWidget{
               borderRadius: BorderRadius.circular(8),
               onTap: () async {
                 try {
+                  await NotificacionesService.desregistrar();
                   await FirebaseAuth.instance.signOut();
                   if (!context.mounted) return;
                   Navigator.of(context).pushAndRemoveUntil(
