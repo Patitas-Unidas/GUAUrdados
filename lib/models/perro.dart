@@ -46,8 +46,11 @@ class Perro {
       final values = value is List ? value : value == null ? const [] : [value];
       for (final item in values) {
         final carnet = item.toString();
-        if (carnet.isNotEmpty) {
-          carnetUrls.add(carnet.startsWith('http') ? carnet : 'https://guaurdados.web.app/carnets/$carnet');
+        // Firestore guarda la URL de descarga completa de Firebase Storage.
+        final uri = Uri.tryParse(carnet);
+        if (uri != null && uri.hasAuthority &&
+            (uri.scheme == 'https' || uri.scheme == 'http')) {
+          carnetUrls.add(carnet);
         }
       }
     }
