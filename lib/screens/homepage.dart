@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import '../widgets/imagen_remota.dart';
 import 'package:guaurdados_oficial/models/perro.dart';
 import 'package:guaurdados_oficial/screens/camara.dart';
 import 'package:guaurdados_oficial/screens/perfilperro.dart';
@@ -273,7 +274,7 @@ class _FotoPerro extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final image = perro.fotoUrl.isNotEmpty
-        ? Image.network(perro.fotoUrl, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _sinImagen())
+        ? ImagenRemota(url: perro.fotoUrl, fit: BoxFit.cover, error: _sinImagen())
         : perro.imagenAsset.isNotEmpty
             ? Image.asset('fotos/${perro.imagenAsset}', fit: BoxFit.cover, errorBuilder: (_, __, ___) => _sinImagen())
             : _sinImagen();

@@ -43,4 +43,7 @@
       ]
     }
   ]
+  "storage": {
+    "rules": "storage.rules"
+  }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/imagen_remota.dart';
 
 class CarnetVeterinario extends StatefulWidget {
   const CarnetVeterinario({super.key, required this.nombrePerro, required this.imagenes});
@@ -32,7 +33,7 @@ class _CarnetVeterinarioState extends State<CarnetVeterinario> {
               borderRadius: BorderRadius.circular(16),
               child: ColoredBox(
                 color: Colors.white,
-                child: Image.network(widget.imagenes[index], fit: BoxFit.contain, errorBuilder: (_, __, ___) => const Center(child: Column(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.broken_image_outlined, size: 42), SizedBox(height: 8), Text('No se pudo cargar esta imagen')]))),
+                child: ImagenRemota(url: widget.imagenes[index], fit: BoxFit.contain, error: const Center(child: Column(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.broken_image_outlined, size: 42), SizedBox(height: 8), Text('No se pudo cargar esta imagen')]))),
               ),
             ),
           ),

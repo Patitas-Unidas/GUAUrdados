@@ -33,6 +33,10 @@ migrate_working_dir/
 /build/
 /coverage/
 
+# Cachés de despliegue y respaldos temporales locales
+/.firebase/
+/tmp/
+
 # Symbolication related
 app.*.symbols
 
