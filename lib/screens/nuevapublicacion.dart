@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import '../services/imagenes_cache.dart';
 import 'package:guaurdados_oficial/models/perro.dart';
 import 'package:guaurdados_oficial/services/perros_repository.dart';
 
@@ -52,5 +54,5 @@ class _SelectorPerro extends StatelessWidget {
 class _EtiquetaPerro extends StatelessWidget {
   const _EtiquetaPerro({required this.perro}); final Perro perro;
   @override
-  Widget build(BuildContext context) => Card(child: Padding(padding: const EdgeInsets.all(10), child: Row(mainAxisSize: MainAxisSize.min, children: [CircleAvatar(radius: 18, backgroundImage: perro.fotoUrl.isNotEmpty ? NetworkImage(perro.fotoUrl) : perro.imagenAsset.isEmpty ? null : AssetImage('fotos/${perro.imagenAsset}'), onBackgroundImageError: (_, __) {}, child: perro.fotoUrl.isEmpty && perro.imagenAsset.isEmpty ? const Icon(Icons.pets) : null), const SizedBox(width: 8), Text('Foro de ${perro.nombre}')])));
+  Widget build(BuildContext context) => Card(child: Padding(padding: const EdgeInsets.all(10), child: Row(mainAxisSize: MainAxisSize.min, children: [CircleAvatar(radius: 18, backgroundImage: perro.fotoUrl.isNotEmpty ? CachedNetworkImageProvider(perro.fotoUrl, cacheManager: ImagenesCache.instance) : perro.imagenAsset.isEmpty ? null : AssetImage('fotos/${perro.imagenAsset}'), onBackgroundImageError: (_, __) {}, child: perro.fotoUrl.isEmpty && perro.imagenAsset.isEmpty ? const Icon(Icons.pets) : null), const SizedBox(width: 8), Text('Foro de ${perro.nombre}')])));
 }

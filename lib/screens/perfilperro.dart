@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import '../widgets/imagen_remota.dart';
 import 'package:flutter/services.dart';
 import 'package:guaurdados_oficial/models/perro.dart';
 import 'package:guaurdados_oficial/services/perros_repository.dart';
@@ -132,7 +133,7 @@ class _Foto extends StatelessWidget {
   Widget build(BuildContext context) {
     const vacio = ColoredBox(color: Color(0xffefd2c3), child: Center(child: Icon(Icons.pets, size: 80)));
     final ancho = MediaQuery.sizeOf(context).width;
-    if (perro.fotoUrl.isNotEmpty) return Image.network(perro.fotoUrl, width: ancho, fit: BoxFit.fitWidth, alignment: Alignment.topCenter, errorBuilder: (_, __, ___) => vacio);
+    if (perro.fotoUrl.isNotEmpty) return ImagenRemota(url: perro.fotoUrl, width: ancho, fit: BoxFit.fitWidth, alignment: Alignment.topCenter, error: vacio);
     if (perro.imagenAsset.isNotEmpty) return Image.asset('fotos/${perro.imagenAsset}', width: ancho, fit: BoxFit.fitWidth, alignment: Alignment.topCenter, errorBuilder: (_, __, ___) => vacio);
     return vacio;
   }
