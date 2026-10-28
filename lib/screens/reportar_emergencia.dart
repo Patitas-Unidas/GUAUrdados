@@ -1,6 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../models/perro.dart';
 import '../services/emergencias_repository.dart';
 import '../services/perros_repository.dart';
