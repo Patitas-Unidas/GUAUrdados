@@ -5,6 +5,9 @@ import 'package:camera/camera.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 
+import 'perfilperro.dart';
+import 'listadoperros.dart';
+
 class Camara extends StatefulWidget {
   const Camara({super.key});
 
@@ -197,15 +200,22 @@ class _DisplayPictureScreenState extends State<DisplayPictureScreen> {
     } catch (e) {
       setState(() => _isLoading = false);
       if (!mounted) return;
-      _mostrarAlerta("Error de conexión", "No se pudo comunicar con el servidor: $e");
+      _mostrarAlertaConAccion("Error de conexión", "No se pudo comunicar con el servidor: $e");
     }
   }
 
-  void _avisoPerfil(String nombrePerro) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text("El perfil de $nombrePerro estará disponible próximamente."),
-        duration: const Duration(seconds: 2),
+  void _irAlPerfil(String idPerro) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => PerfilPerro(idPerro: idPerro),
+      ),
+    );
+  }
+
+  void _irABuscarManualmente() {
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (context) => ListadoPerros(),
       ),
     );
   }
@@ -215,20 +225,23 @@ class _DisplayPictureScreenState extends State<DisplayPictureScreen> {
 
     if (status == 'MATCH') {
       final perro = data['perro'];
-      _mostrarModalMatch(perro['nombre'], perro['sexo'], perro['coincidencia']);
+      _mostrarModalMatch(
+        perro['nombre'] ?? '',
+        perro['sexo'] ?? '',
+        perro['coincidencia'] ?? '',
+        perro['id'] ?? '',
+      );
     } else if (status == 'AMBIGUOUS') {
       final c1 = data['candidato_1'];
       final c2 = data['candidato_2'];
       _mostrarModalAmbiguo(c1, c2);
     } else {
-      _mostrarAlerta(
-        "Sin coincidencia",
-        data['mensaje'] ?? "No se encontró ningún registro que coincida.",
-      );
+      _mostrarModalSinMatch(data['mensaje'] ?? "No se encontró ningún registro que coincida.");
     }
   }
 
-  void _mostrarModalMatch(String nombre, String sexo, String coincidencia) {
+  // CASO 1: MATCH DIRECTO
+  void _mostrarModalMatch(String nombre, String sexo, String coincidencia, String dogId) {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -252,7 +265,7 @@ class _DisplayPictureScreenState extends State<DisplayPictureScreen> {
           ElevatedButton.icon(
             onPressed: () {
               Navigator.pop(context);
-              _avisoPerfil(nombre);
+              _irAlPerfil(dogId);
             },
             icon: const Icon(Icons.pets),
             label: const Text("Ver perfil"),
@@ -262,45 +275,25 @@ class _DisplayPictureScreenState extends State<DisplayPictureScreen> {
     );
   }
 
+  // CASO 2: PARCIAL (2 OPCIONES CON PERFIL BREVE)
   void _mostrarModalAmbiguo(Map<String, dynamic> c1, Map<String, dynamic> c2) {
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        title: const Text("Doble coincidencia"),
+        title: const Text("Coincidencia intermedia"),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text("El perro podría ser alguno de los siguientes:"),
+            const Text(
+              "El perro podría ser alguno de los siguientes:",
+              style: TextStyle(fontSize: 14),
+            ),
             const SizedBox(height: 16),
-            ListTile(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-                side: const BorderSide(color: Colors.grey),
-              ),
-              title: Text("${c1['nombre']} (${c1['sexo']})", style: const TextStyle(fontWeight: FontWeight.bold)),
-              subtitle: Text("Similitud: ${c1['coincidencia']}"),
-              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-              onTap: () {
-                Navigator.pop(context);
-                _avisoPerfil(c1['nombre']);
-              },
-            ),
-            const SizedBox(height: 10),
-            ListTile(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-                side: const BorderSide(color: Colors.grey),
-              ),
-              title: Text("${c2['nombre']} (${c2['sexo']})", style: const TextStyle(fontWeight: FontWeight.bold)),
-              subtitle: Text("Similitud: ${c2['coincidencia']}"),
-              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-              onTap: () {
-                Navigator.pop(context);
-                _avisoPerfil(c2['nombre']);
-              },
-            ),
+            _tarjetaBrevePerfil(c1),
+            const SizedBox(height: 12),
+            _tarjetaBrevePerfil(c2),
           ],
         ),
         actions: [
@@ -313,7 +306,120 @@ class _DisplayPictureScreenState extends State<DisplayPictureScreen> {
     );
   }
 
-  void _mostrarAlerta(String titulo, String mensaje) {
+  Widget _tarjetaBrevePerfil(Map<String, dynamic> perro) {
+    final String fotoUrl = perro['foto'] ?? '';
+    final String nombre = perro['nombre'] ?? '';
+    final String id = perro['id'] ?? '';
+    final String subtitulo = perro['subtitulo'] ?? perro['sexo'] ?? '';
+    final String coincidencia = perro['coincidencia'] ?? '';
+
+    Widget imagenWidget;
+    if (fotoUrl.startsWith('http')) {
+      imagenWidget = Image.network(
+        fotoUrl,
+        width: 50,
+        height: 50,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => const ColoredBox(
+          color: Color(0xffefd2c3),
+          child: SizedBox(width: 50, height: 50, child: Icon(Icons.pets, size: 24)),
+        ),
+      );
+    } else if (fotoUrl.isNotEmpty) {
+      imagenWidget = Image.asset(
+        'fotos/$fotoUrl',
+        width: 50,
+        height: 50,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => const ColoredBox(
+          color: Color(0xffefd2c3),
+          child: SizedBox(width: 50, height: 50, child: Icon(Icons.pets, size: 24)),
+        ),
+      );
+    } else {
+      imagenWidget = const ColoredBox(
+        color: Color(0xffefd2c3),
+        child: SizedBox(width: 50, height: 50, child: Icon(Icons.pets, size: 24)),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: const Color(0xfff9f0eb),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xffe8ded9)),
+      ),
+      child: Row(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: imagenWidget,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(nombre, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                Text(subtitulo, style: const TextStyle(fontSize: 12, color: Colors.black54)),
+                Text("Similitud: $coincidencia", style: const TextStyle(fontSize: 11, color: Color(0xff4caf82), fontWeight: FontWeight.w600)),
+              ],
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              elevation: 0,
+              backgroundColor: const Color(0xffde4f41),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () {
+              Navigator.pop(context);
+              _irAlPerfil(id);
+            },
+            child: const Text("Ver perfil", style: TextStyle(color: Colors.white, fontSize: 12)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // CASO 3: SIN COINCIDENCIAS
+  void _mostrarModalSinMatch(String mensaje) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text("Sin coincidencia"),
+        content: Text(mensaje),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context); // Cierra el modal
+              if (mounted) Navigator.pop(context); // Vuelve a la cámara
+            },
+            child: const Text("Prueba con otra foto"),
+          ),
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              elevation: 0,
+              backgroundColor: const Color(0xff1fb39c),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () {
+              Navigator.pop(context);
+              _irABuscarManualmente();
+            },
+            icon: const Icon(Icons.search, color: Colors.white, size: 18),
+            label: const Text("Buscar manualmente", style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _mostrarAlertaConAccion(String titulo, String mensaje) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
