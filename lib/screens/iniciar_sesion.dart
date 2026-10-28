@@ -23,7 +23,7 @@ class _IniciarSesionState extends State<IniciarSesion> {
     try {
       await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
+        password: _passwordController.text,
       );
 
       // Verificación de seguridad de Flutter después de un "await"
@@ -31,7 +31,10 @@ class _IniciarSesionState extends State<IniciarSesion> {
 
       // Mensaje de éxito agregado
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('¡Inicio de sesión exitoso!'), backgroundColor: Colors.green),
+        const SnackBar(
+          content: Text('¡Inicio de sesión exitoso!'),
+          backgroundColor: Colors.green,
+        ),
       );
 
       // Navegación a la página principal
@@ -39,15 +42,17 @@ class _IniciarSesionState extends State<IniciarSesion> {
         context,
         MaterialPageRoute(builder: (context) => const Homepage()),
       );
-
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
 
       String mensajeError = 'Ocurrió un error al iniciar sesión';
 
       // Manejo de códigos clásicos y el nuevo código "invalid-credential" de Firebase
-      if (e.code == 'invalid-credential' || e.code == 'user-not-found' || e.code == 'wrong-password') {
-        mensajeError = 'Credenciales incorrectas. Revisa tu correo y contraseña.';
+      if (e.code == 'invalid-credential' ||
+          e.code == 'user-not-found' ||
+          e.code == 'wrong-password') {
+        mensajeError =
+            'Credenciales incorrectas. Revisa tu correo y contraseña.';
       } else if (e.code == 'invalid-email') {
         mensajeError = 'El formato del correo es inválido.';
       }
@@ -58,7 +63,10 @@ class _IniciarSesionState extends State<IniciarSesion> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Error inesperado de conexión.'), backgroundColor: Colors.red),
+        const SnackBar(
+          content: Text('Error inesperado de conexión.'),
+          backgroundColor: Colors.red,
+        ),
       );
     } finally {
       if (mounted) {
@@ -148,13 +156,13 @@ class _IniciarSesionState extends State<IniciarSesion> {
                   child: _isLoading
                       ? const CircularProgressIndicator(color: Colors.white)
                       : const Text(
-                    "Iniciar Sesión",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                          "Iniciar Sesión",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                 ),
               ),
 
@@ -168,14 +176,16 @@ class _IniciarSesionState extends State<IniciarSesion> {
                     style: TextStyle(color: Colors.black54, fontSize: 14),
                   ),
                   GestureDetector(
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const RegistroUsuario(),
-                        ),
-                      );
-                    },
+                    onTap: _isLoading
+                        ? null
+                        : () {
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const RegistroUsuario(),
+                              ),
+                            );
+                          },
                     child: const Text(
                       "Regístrate",
                       style: TextStyle(
@@ -197,12 +207,12 @@ class _IniciarSesionState extends State<IniciarSesion> {
 
   // El teclado también activa el boton de inicar sesión
   Widget _buildTextField(
-      String hint,
-      bool isObscure,
-      TextEditingController controller, {
-        TextInputAction textInputAction = TextInputAction.next,
-        VoidCallback? onSubmitted,
-      }) {
+    String hint,
+    bool isObscure,
+    TextEditingController controller, {
+    TextInputAction textInputAction = TextInputAction.next,
+    VoidCallback? onSubmitted,
+  }) {
     return Container(
       decoration: BoxDecoration(
         boxShadow: [
@@ -227,7 +237,10 @@ class _IniciarSesionState extends State<IniciarSesion> {
           hintStyle: const TextStyle(color: Colors.grey),
           filled: true,
           fillColor: Colors.white,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 18,
+          ),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(24),
             borderSide: BorderSide.none,
