@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:guaurdados_oficial/screens/reportar_emergencia.dart';
 import 'nuevapublicacion.dart';
 import 'componentesforo.dart';
 
@@ -74,7 +75,11 @@ class Foro extends StatelessWidget {
                     style: TextButton.styleFrom(
                       backgroundColor: Color.fromRGBO(255, 0, 55, 1),
                     ),
-                    onPressed: () {},
+                    onPressed: () => ReportarEmergencia.mostrar(
+                    context,
+                    idPerro: IDPerro,
+                    nombrePerro: nombrePerro,
+                  ),
                     child: Text(
                       'Emergencia',
                       style: TextStyle(

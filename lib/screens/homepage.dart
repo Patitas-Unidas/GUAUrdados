@@ -4,6 +4,7 @@ import '../widgets/imagen_remota.dart';
 import 'package:guaurdados_oficial/models/perro.dart';
 import 'package:guaurdados_oficial/screens/camara.dart';
 import 'package:guaurdados_oficial/screens/perfilperro.dart';
+import 'package:guaurdados_oficial/screens/reportar_emergencia.dart';
 import 'package:guaurdados_oficial/services/perros_repository.dart';
 import 'foro.dart';
 import 'package:guaurdados_oficial/screens/perfilusuario.dart';
@@ -44,7 +45,7 @@ class Homepage extends StatelessWidget {
             ),
             const SizedBox(width: 9),
             ElevatedButton(
-              onPressed: () {},
+              onPressed: () => ReportarEmergencia.mostrar(context),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xffff0041),
                 foregroundColor: Colors.white,
