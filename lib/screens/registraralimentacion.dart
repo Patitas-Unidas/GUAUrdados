@@ -1,6 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:guaurdados_oficial/widgets/iconos.dart';
 import 'package:guaurdados_oficial/models/perro.dart';
 import 'package:guaurdados_oficial/services/cuidados.dart';
@@ -53,17 +53,46 @@ class _RegistrarAlimentacionState extends State<RegistrarAlimentacion> {
   final _cantidades = {for (final u in _Unidad.values) u: u.inicial};
   final _otro = TextEditingController();
   bool _guardando = false;
+  bool _escribiendo = false;
+  final _campoCantidad = TextEditingController();
+  final _focoCantidad = FocusNode();
 
   _Tipo get _tipo => _tipos[_elegido];
   _Unidad get _unidad => _tipo.enMl ? _Unidad.ml : _unidadComida;
 
   @override
+  void initState() {
+    super.initState();
+    _focoCantidad.addListener(() {
+      if (!_focoCantidad.hasFocus) _confirmarCantidad();
+    });
+  }
+
+  @override
   void dispose() {
     _otro.dispose();
+    _campoCantidad.dispose();
+    _focoCantidad.dispose();
     super.dispose();
   }
 
+  void _escribirCantidad() {
+    _campoCantidad.text = '${_cantidades[_unidad]}';
+    _campoCantidad.selection = TextSelection(baseOffset: 0, extentOffset: _campoCantidad.text.length);
+    setState(() => _escribiendo = true);
+  }
+
+  void _confirmarCantidad() {
+    if (!_escribiendo) return;
+    final escrita = int.tryParse(_campoCantidad.text);
+    setState(() {
+      _escribiendo = false;
+      if (escrita != null && escrita > 0) _cantidades[_unidad] = escrita.clamp(1, _unidad.maximo);
+    });
+  }
+
   void _cambiarCantidad(int pasos) {
+    _confirmarCantidad();
     final nueva = _cantidades[_unidad]! + pasos * _unidad.paso;
     if (nueva < _unidad.paso || nueva > _unidad.maximo) return;
     setState(() => _cantidades[_unidad] = nueva);
@@ -163,7 +192,10 @@ class _RegistrarAlimentacionState extends State<RegistrarAlimentacion> {
           const _Titulo('Tipo de alimento'),
           AbsorbPointer(
             absorbing: _guardando,
-            child: _SelectorTipo(elegido: _elegido, alElegir: (i) => setState(() => _elegido = i)),
+            child: _SelectorTipo(elegido: _elegido, alElegir: (i) {
+              _confirmarCantidad();
+              setState(() => _elegido = i);
+            }),
           ),
           AnimatedSize(
             duration: const Duration(milliseconds: 300),
@@ -197,7 +229,10 @@ class _RegistrarAlimentacionState extends State<RegistrarAlimentacion> {
                 child: _SelectorUnidad(
                   unidad: _unidadComida,
                   color: _tipo.color,
-                  alCambiar: (u) => setState(() => _unidadComida = u),
+                  alCambiar: (u) {
+                    _confirmarCantidad();
+                    setState(() => _unidadComida = u);
+                  },
                 ),
               ),
           ]),
@@ -214,7 +249,29 @@ class _RegistrarAlimentacionState extends State<RegistrarAlimentacion> {
               _BotonCantidad(icono: Iconos.minus, color: _tipo.color, alTocar: () => _cambiarCantidad(-1)),
               Expanded(
                 child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                  _NumeroAnimado(valor: _cantidades[_unidad]!, color: _tipo.color),
+                  if (_escribiendo)
+                    SizedBox(
+                      width: 160,
+                      child: TextField(
+                        controller: _campoCantidad,
+                        focusNode: _focoCantidad,
+                        autofocus: true,
+                        textAlign: TextAlign.center,
+                        keyboardType: TextInputType.number,
+                        textInputAction: TextInputAction.done,
+                        inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(4)],
+                        cursorColor: _tipo.color,
+                        style: TextStyle(fontSize: 54, fontWeight: FontWeight.w800, height: 1.1, color: _tipo.color).display,
+                        decoration: const InputDecoration(isDense: true, border: InputBorder.none, contentPadding: EdgeInsets.zero),
+                        onSubmitted: (_) => _confirmarCantidad(),
+                      ),
+                    )
+                  else
+                    GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: _escribirCantidad,
+                      child: _NumeroAnimado(valor: _cantidades[_unidad]!, color: _tipo.color),
+                    ),
                   Text(
                     _unidad == _Unidad.punados && _cantidades[_unidad] == 1 ? 'puñado' : _unidad.texto,
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: c.textoSecundario),
