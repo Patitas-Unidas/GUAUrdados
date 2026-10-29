@@ -8,6 +8,8 @@ import 'package:guaurdados_oficial/services/notificaciones_service.dart';
 import 'package:guaurdados_oficial/theme/preferencias.dart';
 import 'package:guaurdados_oficial/theme/tipografia.dart';
 import 'package:guaurdados_oficial/widgets/aparicion.dart';
+import 'package:guaurdados_oficial/widgets/avatar_usuario.dart';
+import 'package:guaurdados_oficial/widgets/selector_avatar.dart';
 
 import 'iniciar_sesion.dart';
 
@@ -91,6 +93,15 @@ class _ConfiguracionState extends State<Configuracion> {
 
           const _TituloSeccion('Cuenta'),
           _Grupo(children: [
+            _Fila(
+              icono: Iconos.circleUser,
+              titulo: 'Foto de perfil',
+              final_: AvatarUsuario(fotoUrl: fotoPerfilActual(_usuario), radio: 18),
+              alTocar: () async {
+                await elegirFotoPerfil(context);
+                if (mounted) setState(() {});
+              },
+            ),
             _Fila(
               icono: Iconos.user,
               titulo: 'Nombre',
