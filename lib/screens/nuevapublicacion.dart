@@ -1,5 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:guaurdados_oficial/widgets/presionable.dart';
+import 'package:guaurdados_oficial/widgets/esqueleto.dart';
+import 'package:guaurdados_oficial/theme/formas.dart';
 import 'package:guaurdados_oficial/models/perro.dart';
 import 'package:guaurdados_oficial/services/foro_repository.dart';
 import 'package:guaurdados_oficial/services/perros_repository.dart';
@@ -115,11 +118,15 @@ class _NuevaPublicacionState extends State<NuevaPublicacion> {
                       maxLength: 2000,
                       keyboardType: TextInputType.multiline,
                       textCapitalization: TextCapitalization.sentences,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         alignLabelWithHint: true,
                         labelText: '¿Qué quieres compartir?',
                         hintText: 'Cuéntale a la comunidad cómo está el perrito...',
-                        border: OutlineInputBorder(),
+                        filled: true,
+                        fillColor: c.superficie,
+                        border: const BordeSquircle(radio: 16),
+                        enabledBorder: BordeSquircle(radio: 16, borderSide: BorderSide(color: c.divisor)),
+                        focusedBorder: BordeSquircle(radio: 16, borderSide: BorderSide(color: c.acento, width: 1.5)),
                       ),
                     ),
                   ],
@@ -128,14 +135,24 @@ class _NuevaPublicacionState extends State<NuevaPublicacion> {
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-              child: SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  onPressed: _publicando ? null : _publicar,
-                  icon: _publicando
-                      ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                      : const Icono(Iconos.send),
-                  label: Text(_publicando ? 'Publicando...' : 'Publicar'),
+              child: Presionable(
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: FilledButton.icon(
+                    onPressed: _publicando ? null : _publicar,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: c.acento,
+                      foregroundColor: c.sobreAcento,
+                      disabledBackgroundColor: c.acento.withValues(alpha: .5),
+                      disabledForegroundColor: c.sobreAcento,
+                      shape: Formas.squircle(16),
+                    ),
+                    icon: _publicando
+                        ? SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: c.sobreAcento))
+                        : Icono(Iconos.send, color: c.sobreAcento),
+                    label: Text(_publicando ? 'Publicando...' : 'Publicar', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                  ),
                 ),
               ),
             ),
@@ -165,7 +182,7 @@ class _SelectorPerroState extends State<_SelectorPerro> {
     stream: _perros,
     builder: (context, snapshot) {
       if (snapshot.hasError) return const Text('No se pudo cargar la lista de perros.');
-      if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+      if (!snapshot.hasData) return const BloqueEsqueleto(alto: 58, radio: 16);
 
       final perros = snapshot.data!;
       if (perros.isEmpty) return const Text('No hay perros disponibles para publicar.');
@@ -188,7 +205,15 @@ class _SelectorPerroState extends State<_SelectorPerro> {
         initialValue: perros.any((candidato) => candidato.id == widget.seleccionado)
             ? widget.seleccionado
             : null,
-        decoration: const InputDecoration(labelText: 'Publicar en el foro de', border: OutlineInputBorder()),
+        decoration: InputDecoration(
+          labelText: 'Publicar en el foro de',
+          filled: true,
+          fillColor: context.colores.superficie,
+          border: const BordeSquircle(radio: 16),
+          enabledBorder: BordeSquircle(radio: 16, borderSide: BorderSide(color: context.colores.divisor)),
+          focusedBorder: BordeSquircle(radio: 16, borderSide: BorderSide(color: context.colores.acento, width: 1.5)),
+        ),
+        borderRadius: BorderRadius.circular(16),
         hint: const Text('Escoge un perrito'),
         items: perros.map((p) => DropdownMenuItem(value: p.id, child: Text(p.nombre))).toList(),
         onChanged: widget.alSeleccionar,

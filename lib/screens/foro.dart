@@ -1,5 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:guaurdados_oficial/widgets/presionable.dart';
+import 'package:guaurdados_oficial/widgets/esqueleto.dart';
+import 'package:guaurdados_oficial/widgets/aparicion.dart';
+import 'package:guaurdados_oficial/theme/formas.dart';
 import 'package:guaurdados_oficial/models/perro.dart';
 import 'package:guaurdados_oficial/models/publicacion_foro.dart';
 import 'package:guaurdados_oficial/services/foro_repository.dart';
@@ -67,19 +71,21 @@ class Foro extends StatelessWidget {
                     ),
                   ),
                   if (idPerro != null)
-                    FilledButton(
-                      onPressed: () => ReportarEmergencia.mostrar(
-                        context,
-                        idPerro: idPerro,
-                        nombrePerro: nombrePerro,
+                    Presionable(
+                      child: FilledButton(
+                        onPressed: () => ReportarEmergencia.mostrar(
+                          context,
+                          idPerro: idPerro,
+                          nombrePerro: nombrePerro,
+                        ),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: c.emergencia,
+                          foregroundColor: c.sobreAcento,
+                          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                          shape: Formas.squircle(20),
+                        ),
+                        child: const Text('Emergencia', style: TextStyle(fontWeight: FontWeight.w600)),
                       ),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: c.emergencia,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-                        shape: const StadiumBorder(),
-                      ),
-                      child: const Text('Emergencia', style: TextStyle(fontWeight: FontWeight.w600)),
                     ),
                 ],
               ),
@@ -92,7 +98,9 @@ class Foro extends StatelessWidget {
               ),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
-              child: SizedBox(
+              child: Presionable(
+                escala: .97,
+                child: SizedBox(
                 width: double.infinity,
                 height: 48,
                 child: FilledButton.icon(
@@ -114,11 +122,12 @@ class Foro extends StatelessWidget {
                     backgroundColor: c.superficie,
                     foregroundColor: c.texto,
                     elevation: 1,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    shape: Formas.squircle(14),
                   ),
                   icon: const Icono(Iconos.plus),
                   label: const Text('Nueva publicación', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
                 ),
+              ),
               ),
             ),
             Expanded(
@@ -140,7 +149,13 @@ class Foro extends StatelessWidget {
                     );
                   }
                   if (!snapshot.hasData) {
-                    return const Center(child: CircularProgressIndicator());
+                    return ListView.separated(
+                      padding: const EdgeInsets.fromLTRB(15, 9, 15, 24),
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: 3,
+                      separatorBuilder: (_, _) => const SizedBox(height: 14),
+                      itemBuilder: (_, _) => const BloqueEsqueleto(alto: 150, radio: 16),
+                    );
                   }
 
                   final items = snapshot.data!;
@@ -157,7 +172,10 @@ class Foro extends StatelessWidget {
                     physics: const BouncingScrollPhysics(),
                     itemCount: items.length,
                     separatorBuilder: (_, _) => const SizedBox(height: 4),
-                    itemBuilder: (context, index) => _TarjetaPublicacion(publicacion: items[index]),
+                    itemBuilder: (context, index) => Aparicion(
+                      indice: index,
+                      child: _TarjetaPublicacion(publicacion: items[index]),
+                    ),
                   );
                 },
               ),
@@ -199,7 +217,7 @@ class _SeguidoresForo extends StatelessWidget {
                 final id = visibles[index];
                 final perfil = perfiles[id];
                 final nombre = perfil?.nombre ?? 'Usuario ${id.substring(0, id.length < 4 ? id.length : 4)}';
-                return _ChipSeguidor(nombre: _nombreCorto(nombre), fotoUrl: perfil?.fotoUrl);
+                return _ChipSeguidor(nombre: _nombreCorto(nombre), uid: id, fotoUrl: perfil?.fotoUrl);
               },
             ),
           );
@@ -216,9 +234,10 @@ class _SeguidoresForo extends StatelessWidget {
 }
 
 class _ChipSeguidor extends StatelessWidget {
-  const _ChipSeguidor({required this.nombre, this.fotoUrl});
+  const _ChipSeguidor({required this.nombre, this.uid, this.fotoUrl});
 
   final String nombre;
+  final String? uid;
   final String? fotoUrl;
 
   @override
@@ -226,13 +245,13 @@ class _ChipSeguidor extends StatelessWidget {
     final c = context.colores;
     return Container(
       padding: const EdgeInsets.fromLTRB(8, 5, 12, 5),
-      decoration: BoxDecoration(
-        color: c.superficie,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: const [BoxShadow(color: Color(0x16000000), blurRadius: 3, offset: Offset(0, 2))],
+      decoration: Formas.fondo(
+        c.superficie,
+        24,
+        sombras: const [BoxShadow(color: Color(0x16000000), blurRadius: 3, offset: Offset(0, 2))],
       ),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
-        AvatarUsuario(fotoUrl: fotoUrl, nombre: nombre, radio: 13),
+        AvatarUsuario(uid: uid, fotoUrl: fotoUrl, nombre: nombre, radio: 13),
         const SizedBox(width: 7),
         Text(nombre, style: TextStyle(color: c.texto, fontSize: 12, fontWeight: FontWeight.w500)),
       ]),
@@ -259,8 +278,8 @@ class _TarjetaPublicacion extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 3, vertical: 5),
       color: c.superficie,
       elevation: 2,
-      shadowColor: Colors.black.withValues(alpha: .12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shadowColor: const Color(0x1F000000),
+      shape: Formas.squircle(16),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
         child: Column(
@@ -268,7 +287,7 @@ class _TarjetaPublicacion extends StatelessWidget {
           children: [
             Row(
               children: [
-                AvatarUsuario(fotoUrl: foto, nombre: publicacion.nombreUsuario, radio: 21),
+                AvatarUsuario(uid: publicacion.idUsuario, fotoUrl: foto, nombre: publicacion.nombreUsuario, radio: 21),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Column(
@@ -332,7 +351,7 @@ class _TarjetaActualizacion extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.colores;
-    final color = esMedico ? c.medico : c.emergencia;
+    final color = esMedico ? c.medico : c.acento;
     final icono = esMedico ? Iconos.stethoscope : Iconos.utensils;
     final titulo = esMedico
         ? '¡${publicacion.nombreUsuario} actualizó el estado médico!'
@@ -345,27 +364,27 @@ class _TarjetaActualizacion extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 3, vertical: 5),
       color: color,
       elevation: 2,
-      shadowColor: Colors.black.withValues(alpha: .12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shadowColor: const Color(0x1F000000),
+      shape: Formas.squircle(16),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icono(icono, color: Colors.white, size: 28),
+            Icono(icono, color: c.sobreAcento, size: 28),
             const SizedBox(width: 12),
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(titulo, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 15)),
+                Text(titulo, style: TextStyle(color: c.sobreAcento, fontWeight: FontWeight.w700, fontSize: 15)),
                 const SizedBox(height: 4),
-                Text(detalle, style: const TextStyle(color: Colors.white, height: 1.35)),
+                Text(detalle, style: TextStyle(color: c.sobreAcento, height: 1.35)),
                 if (publicacion.descripcion.trim().isNotEmpty &&
                     (esMedico ? publicacion.descripcion != publicacion.procedimiento : true)) ...[
                   const SizedBox(height: 4),
-                  Text(publicacion.descripcion, style: const TextStyle(color: Colors.white)),
+                  Text(publicacion.descripcion, style: TextStyle(color: c.sobreAcento)),
                 ],
                 const SizedBox(height: 7),
-                Text(_fecha(publicacion.creadoEn), style: TextStyle(color: Colors.white.withValues(alpha: .82), fontSize: 12)),
+                Text(_fecha(publicacion.creadoEn), style: TextStyle(color: c.sobreAcento.withValues(alpha: .82), fontSize: 12)),
               ]),
             ),
           ],
@@ -406,11 +425,11 @@ class _EstadoForo extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icono(icono, size: 40, color: c.textoTenue),
+            Aparicion(child: Icono(icono, size: 40, color: c.textoTenue)),
             const SizedBox(height: 12),
-            Text(mensaje, textAlign: TextAlign.center, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
+            Aparicion(indice: 1, child: Text(mensaje, textAlign: TextAlign.center, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600))),
             const SizedBox(height: 5),
-            Text(detalle, textAlign: TextAlign.center, style: TextStyle(color: c.textoSecundario)),
+            Aparicion(indice: 2, child: Text(detalle, textAlign: TextAlign.center, style: TextStyle(color: c.textoSecundario))),
           ],
         ),
       ),
