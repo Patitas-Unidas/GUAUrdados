@@ -8,6 +8,7 @@ class AppColors {
   static const cremaRosada = Color(0xffeed2c3);
   static const crema = Color(0xfff9f0eb);
   static const cremaClara = Color(0xfffff9f6);
+  static const arena = Color(0xffebe1d7);
   static const durazno = Color(0xfff4bea5);
   static const blanco = Color(0xffffffff);
   static const negro = Color(0xff000000);
@@ -29,6 +30,7 @@ class AppColors {
 
   static const verdeTexto = Color(0xff1b6142);
   static const naranjaTexto = Color(0xff8a4b00);
+  static const grisTexto = Color(0xff554e4b);
   static const rojoTexto = Color(0xff8f001b);
 
   static const oscuroFondo = Color(0xff000000);

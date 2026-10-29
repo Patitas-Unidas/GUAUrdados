@@ -8,11 +8,13 @@ class Iconos {
   static const bell = IconData(0xe059, fontFamily: _lucide);
   static const calendar = IconData(0xe063, fontFamily: _lucide);
   static const camera = IconData(0xe064, fontFamily: _lucide);
+  static const check = IconData(0xe06c, fontFamily: _lucide);
   static const chevronLeft = IconData(0xe06e, fontFamily: _lucide);
   static const chevronRight = IconData(0xe06f, fontFamily: _lucide);
   static const circleAlert = IconData(0xe077, fontFamily: _lucide);
   static const circleCheck = IconData(0xe226, fontFamily: _lucide);
   static const circleHelp = IconData(0xe082, fontFamily: _lucide);
+  static const circleUser = IconData(0xe461, fontFamily: _lucide);
   static const circleX = IconData(0xe084, fontFamily: _lucide);
   static const clock = IconData(0xe087, fontFamily: _lucide);
   static const ellipsis = IconData(0xe0b6, fontFamily: _lucide);

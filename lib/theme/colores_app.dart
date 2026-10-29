@@ -10,6 +10,7 @@ class ColoresApp extends ThemeExtension<ColoresApp> {
     required this.superficie,
     required this.superficieSuave,
     required this.contenedor,
+    required this.fondoAvatar,
     required this.navegacion,
     required this.texto,
     required this.textoSecundario,
@@ -32,6 +33,7 @@ class ColoresApp extends ThemeExtension<ColoresApp> {
     required this.esqueletoBrillo,
     required this.exitoTexto,
     required this.advertenciaTexto,
+    required this.neutroTexto,
     required this.emergenciaTexto,
   });
 
@@ -40,6 +42,7 @@ class ColoresApp extends ThemeExtension<ColoresApp> {
   final Color superficie;
   final Color superficieSuave;
   final Color contenedor;
+  final Color fondoAvatar;
   final Color navegacion;
   final Color texto;
   final Color textoSecundario;
@@ -62,6 +65,7 @@ class ColoresApp extends ThemeExtension<ColoresApp> {
   final Color esqueletoBrillo;
   final Color exitoTexto;
   final Color advertenciaTexto;
+  final Color neutroTexto;
   final Color emergenciaTexto;
 
   static const claro = ColoresApp(
@@ -70,6 +74,7 @@ class ColoresApp extends ThemeExtension<ColoresApp> {
     superficie: AppColors.blanco,
     superficieSuave: AppColors.cremaClara,
     contenedor: AppColors.cremaRosada,
+    fondoAvatar: AppColors.arena,
     navegacion: AppColors.durazno,
     texto: AppColors.grisOscuro,
     textoSecundario: AppColors.grisMedio,
@@ -92,6 +97,7 @@ class ColoresApp extends ThemeExtension<ColoresApp> {
     esqueletoBrillo: AppColors.crema,
     exitoTexto: AppColors.verdeTexto,
     advertenciaTexto: AppColors.naranjaTexto,
+    neutroTexto: AppColors.grisTexto,
     emergenciaTexto: AppColors.rojoTexto,
   );
 
@@ -101,6 +107,7 @@ class ColoresApp extends ThemeExtension<ColoresApp> {
     superficie: AppColors.oscuroSuperficie,
     superficieSuave: AppColors.oscuroSuperficie,
     contenedor: AppColors.oscuroContenedor,
+    fondoAvatar: AppColors.oscuroContenedor,
     navegacion: AppColors.oscuroSuperficie,
     texto: AppColors.oscuroTexto,
     textoSecundario: AppColors.oscuroTextoSecundario,
@@ -123,6 +130,7 @@ class ColoresApp extends ThemeExtension<ColoresApp> {
     esqueletoBrillo: AppColors.oscuroBorde,
     exitoTexto: AppColors.verde,
     advertenciaTexto: AppColors.naranja,
+    neutroTexto: AppColors.oscuroTextoSecundario,
     emergenciaTexto: AppColors.rojoUrgencia,
   );
 
@@ -139,6 +147,7 @@ class ColoresApp extends ThemeExtension<ColoresApp> {
       superficie: m(superficie, other.superficie),
       superficieSuave: m(superficieSuave, other.superficieSuave),
       contenedor: m(contenedor, other.contenedor),
+      fondoAvatar: m(fondoAvatar, other.fondoAvatar),
       navegacion: m(navegacion, other.navegacion),
       texto: m(texto, other.texto),
       textoSecundario: m(textoSecundario, other.textoSecundario),
@@ -161,6 +170,7 @@ class ColoresApp extends ThemeExtension<ColoresApp> {
       esqueletoBrillo: m(esqueletoBrillo, other.esqueletoBrillo),
       exitoTexto: m(exitoTexto, other.exitoTexto),
       advertenciaTexto: m(advertenciaTexto, other.advertenciaTexto),
+      neutroTexto: m(neutroTexto, other.neutroTexto),
       emergenciaTexto: m(emergenciaTexto, other.emergenciaTexto),
     );
   }

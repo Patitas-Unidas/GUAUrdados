@@ -16,6 +16,7 @@ import 'package:guaurdados_oficial/widgets/esqueleto.dart';
 import 'package:guaurdados_oficial/widgets/imagen_remota.dart';
 import 'package:guaurdados_oficial/widgets/avatar_usuario.dart';
 import 'package:guaurdados_oficial/widgets/presionable.dart';
+import 'package:guaurdados_oficial/widgets/selector_avatar.dart';
 
 import 'configuracion.dart';
 import 'iniciar_sesion.dart';
@@ -44,7 +45,7 @@ class PerfilUsuario extends StatelessWidget{
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: enCascada([
-                  Center(child: _Avatar(foto: usuario?.photoURL)),
+                  Center(child: _Avatar(uid: usuario?.uid, foto: usuario?.photoURL)),
                   const SizedBox(height: 14),
                   Text(
                     tieneNombre ? nombre : 'Nombre de usuario',
@@ -98,22 +99,52 @@ class PerfilUsuario extends StatelessWidget{
 }
 
 class _Avatar extends StatelessWidget {
-  const _Avatar({this.foto});
+  const _Avatar({this.uid, this.foto});
+  final String? uid;
   final String? foto;
 
   @override
   Widget build(BuildContext context) {
     final c = context.colores;
-    return Container(
-      width: 104,
-      height: 104,
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: c.superficie,
-        shape: BoxShape.circle,
-        boxShadow: const [BoxShadow(color: Color(0x1f000000), blurRadius: 14, offset: Offset(0, 4))],
+    return Semantics(
+      button: true,
+      label: 'Cambiar foto de perfil',
+      child: Presionable(
+        child: GestureDetector(
+          onTap: () => elegirFotoPerfil(context),
+          child: Stack(clipBehavior: Clip.none, children: [
+            Container(
+              width: 104,
+              height: 104,
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: c.superficie,
+                shape: BoxShape.circle,
+                boxShadow: const [BoxShadow(color: Color(0x1f000000), blurRadius: 14, offset: Offset(0, 4))],
+              ),
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 350),
+                switchInCurve: Curves.easeOutBack,
+                transitionBuilder: (hijo, animacion) => FadeTransition(
+                  opacity: animacion,
+                  child: ScaleTransition(scale: Tween(begin: .85, end: 1.0).animate(animacion), child: hijo),
+                ),
+                child: AvatarUsuario(key: ValueKey(foto), uid: uid, fotoUrl: foto, radio: 48),
+              ),
+            ),
+            Positioned(
+              right: 0,
+              bottom: 2,
+              child: Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(color: c.acento, shape: BoxShape.circle, border: Border.all(color: c.fondo, width: 3)),
+                child: Icono(Iconos.pencil, size: 14, color: c.sobreAcento),
+              ),
+            ),
+          ]),
+        ),
       ),
-      child: AvatarUsuario(fotoUrl: foto, radio: 48),
     );
   }
 }
@@ -320,10 +351,11 @@ class _ResumenUsuario extends StatelessWidget {
         if (snapshot.hasError)
           const _ActividadVacia(texto: 'No se pudo cargar tu actividad reciente.')
         else if (!snapshot.hasData)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 16),
-            child: Center(child: CircularProgressIndicator()),
-          )
+          for (var i = 0; i < 3; i++)
+            const Padding(
+              padding: EdgeInsets.only(bottom: 8),
+              child: BloqueEsqueleto(alto: 64, radio: 16),
+            )
         else if (recientes.isEmpty)
           const _ActividadVacia(texto: 'Todavía no tienes actividad registrada.')
         else

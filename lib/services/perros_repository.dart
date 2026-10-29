@@ -68,6 +68,8 @@ class PerrosRepository {
                 'idPerro': idPerro,
                 'nombrePerro': perro?.nombre ?? data['nombrePerro'] ?? 'un perrito',
                 'nombreUsuario': data['nombreUsuario'] ?? 'Usuario',
+                'idUsuario': data['idUsuario'],
+                'tipoPublicacion': tipo,
                 'comentario': comentario,
                 'fecha': data['creadoEn'],
               };
