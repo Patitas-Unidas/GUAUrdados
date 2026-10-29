@@ -16,10 +16,13 @@ Future<void> main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
   await Preferencias.cargar();
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   FirebaseAuth.instance.authStateChanges().listen((usuario) {
     if (usuario != null) {
       NotificacionesService.inicializar().catchError((_) {});
-      PerfilesUsuarioRepository().sincronizar(usuario).catchError((_) {});
+      usuario.reload().catchError((_) {}).whenComplete(
+        () => PerfilesUsuarioRepository().sincronizar(FirebaseAuth.instance.currentUser ?? usuario).catchError((_) {}),
+      );
     }
   });
   runApp(const MyApp());
@@ -41,10 +44,17 @@ class MyApp extends StatelessWidget {
         themeAnimationDuration: const Duration(milliseconds: 350),
         builder: (context, child) {
           final medidas = MediaQuery.of(context);
+          final oscuro = Theme.of(context).brightness == Brightness.dark;
           return MediaQuery(
             data: medidas.copyWith(textScaler: TextScaler.linear(medidas.textScaler.scale(1) * Preferencias.escalaTexto.value)),
             child: AnnotatedRegion<SystemUiOverlayStyle>(
-              value: Theme.of(context).brightness == Brightness.dark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
+              value: (oscuro ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark).copyWith(
+                statusBarColor: Colors.transparent,
+                systemNavigationBarColor: Colors.transparent,
+                systemNavigationBarDividerColor: Colors.transparent,
+                systemNavigationBarIconBrightness: oscuro ? Brightness.light : Brightness.dark,
+                systemNavigationBarContrastEnforced: false,
+              ),
               child: child!,
             ),
           );
