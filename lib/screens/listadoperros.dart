@@ -73,8 +73,8 @@ class ListadoPerros extends StatelessWidget{
 }
 
 /// Clase con la lista de los perros seguidos
-/// Crea una lista de cards scrolleable horizontalmente que sólo toma en cuenta a los perros seguidos
-/// Si no hay perros seguidos, ésta clase y su título no se verán
+/// Crea una lista de cards scrolleable horizontalmente que solo toma en cuenta a los perros seguidos
+/// Si no hay perros seguidos, esta clase y su título no se verán
 class ListaPerrosSeguidos extends StatelessWidget {
   const ListaPerrosSeguidos({
     super.key,

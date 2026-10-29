@@ -44,7 +44,7 @@ dependencies:
   firebase_messaging: ^16.7.1
   cached_network_image: ^4.0.5
   flutter_cache_manager: ^3.4.6
-
+  shared_preferences: ^2.5.6
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -109,3 +109,12 @@ flutter:
         - asset: fonts/Inter-VariableFont_opsz,wght.ttf
         - asset: fonts/Inter-Italic-VariableFont_opsz,wght.ttf
           style: italic
+    - family: Lucide
+      fonts:
+        - asset: fonts/Lucide.ttf
+    - family: PhosphorDuotone
+      fonts:
+        - asset: fonts/Phosphor-Duotone.ttf
+    - family: PhosphorFill
+      fonts:
+        - asset: fonts/Phosphor-Fill.ttf

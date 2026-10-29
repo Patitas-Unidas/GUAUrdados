@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:guaurdados_oficial/screens/reportar_emergencia.dart';
+import 'package:guaurdados_oficial/widgets/iconos.dart';
 import 'nuevapublicacion.dart';
 import 'componentesforo.dart';
+import 'package:guaurdados_oficial/theme/colores_app.dart';
+import 'package:guaurdados_oficial/theme/formas.dart';
+import 'package:guaurdados_oficial/theme/tipografia.dart';
+import 'package:guaurdados_oficial/widgets/aparicion.dart';
+import 'package:guaurdados_oficial/widgets/presionable.dart';
 
 class Foro extends StatelessWidget {
   const Foro({
@@ -15,14 +21,16 @@ class Foro extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     var users = ['María G.', 'Carlos M.', 'Sofía R.'];
+    final c = context.colores;
 
     return Scaffold(
-      backgroundColor: Color.fromRGBO(249, 240, 235, 1),
+      backgroundColor: c.fondo,
       body: Padding(
         padding: EdgeInsets.only(top: 25, left: 10, right: 10, bottom: 20,),
         child: SingleChildScrollView(
+          physics: BouncingScrollPhysics(),
           child: Column(
-            children: [
+            children: enCascada([
               // Botón de regreso, nombre del foro, actualizaciones y botón de emergencia
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -30,9 +38,9 @@ class Foro extends StatelessWidget {
                   Row(
                     children: [
                       IconButton.filledTonal(
-                        icon: Icon(Icons.arrow_back),
+                        icon: Icono(Iconos.chevronLeft),
                         iconSize: 20,
-                        color: Colors.grey,
+                        color: c.textoTenue,
                         onPressed: () {
                           Navigator.pop(context);
                         },
@@ -48,7 +56,7 @@ class Foro extends StatelessWidget {
                                 style: TextStyle(
                                   fontSize: 25,
                                   fontWeight: FontWeight.w600,
-                                ),
+                                ).display,
                               ),
                             ]
                             else ...[
@@ -57,13 +65,13 @@ class Foro extends StatelessWidget {
                                 style: TextStyle(
                                   fontSize: 25,
                                   fontWeight: FontWeight.w600,
-                                ),
+                                ).display,
                               ),
                             ],
                             Text(
                               '4 actualizaciones',
                               style: TextStyle(
-                                color: Color.fromRGBO(56, 54, 53, .5),
+                                color: c.textoTenue,
                               ),
                             ),
                           ],
@@ -73,7 +81,7 @@ class Foro extends StatelessWidget {
                   ),
                   ElevatedButton(
                     style: TextButton.styleFrom(
-                      backgroundColor: Color.fromRGBO(255, 0, 55, 1),
+                      backgroundColor: c.emergencia,
                     ),
                     onPressed: () => ReportarEmergencia.mostrar(
                     context,
@@ -83,7 +91,7 @@ class Foro extends StatelessWidget {
                     child: Text(
                       'Emergencia',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: c.sobreAcento,
                       ),
                     ),
                   ),
@@ -96,8 +104,8 @@ class Foro extends StatelessWidget {
                 child: Row(
                   children: [
                     Card(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
-                      color: Colors.white,
+                      shape: Formas.squircle(25),
+                      color: c.superficie,
                       child: SizedBox(
                         width: 110,
                         height: 45,
@@ -113,8 +121,8 @@ class Foro extends StatelessWidget {
                       ),
                     ),
                     Card(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
-                      color: Colors.white,
+                      shape: Formas.squircle(25),
+                      color: c.superficie,
                       child: SizedBox(
                         width: 120,
                         height: 45,
@@ -130,8 +138,8 @@ class Foro extends StatelessWidget {
                       ),
                     ),
                     Card(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
-                      color: Colors.white,
+                      shape: Formas.squircle(25),
+                      color: c.superficie,
                       child: SizedBox(
                         width: 110,
                         height: 45,
@@ -150,17 +158,18 @@ class Foro extends StatelessWidget {
                 ),
               ),
 
-              // Linea horizontal
+              // Línea horizontal
               Divider(
                 height: 30,
                 thickness: 1,
-                color: Color.fromRGBO(56, 54, 53, .3),
+                color: c.divisor,
               ),
 
               // Botón nueva publicación
-              Card(
+              Presionable(
+                child: Card(
                 margin: EdgeInsets.all(10),
-                color: Colors.white,
+                color: c.superficie,
                 child: InkWell(
                   onTap: () {
                     Navigator.push(
@@ -177,7 +186,7 @@ class Foro extends StatelessWidget {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.add),
+                        Icono(Iconos.plus),
                         Text(
                           "Nueva publicación",
                           style: TextStyle(
@@ -190,6 +199,7 @@ class Foro extends StatelessWidget {
                   ),
                 ),
               ),
+              ),
 
               // Publicaciones
               if (nombrePerro != null) ...[
@@ -197,7 +207,7 @@ class Foro extends StatelessWidget {
                   TipoPub: 'General',
                   IDPerro: nombrePerro!,
                   IDUsuario: ['María González', '@mariag'],
-                  TextoPub: 'Le di su desayuno hoy a las 7am, se lo comió todo muy rápido! Le noté la cola moviéndose sin parar :)',
+                  TextoPub: 'Le di su desayuno hoy a las 7am, ¡se lo comió todo muy rápido! Le noté la cola moviéndose sin parar :)',
                 ),
                 Publicacion(
                   TipoPub: 'Alimentación',
@@ -207,7 +217,7 @@ class Foro extends StatelessWidget {
                   tiempo: ['hoy', '12:43'],
                 ),
                 Publicacion(
-                  TipoPub: 'Estado Médico',
+                  TipoPub: 'Estado médico',
                   IDPerro: nombrePerro!,
                   IDUsuario: ['Sofía Ramos', '@sofiar'],
                   procedimiento: 'desparasitación',
@@ -219,14 +229,13 @@ class Foro extends StatelessWidget {
                   TipoPub: 'General',
                   IDPerro: '01',
                   IDUsuario: ['María González', '@mariag'],
-                  TextoPub: 'Le di su desayuno hoy a las 7am, se lo comió todo muy rápido! Le noté la cola moviéndose sin parar :)',
+                  TextoPub: 'Le di su desayuno hoy a las 7am, ¡se lo comió todo muy rápido! Le noté la cola moviéndose sin parar :)',
                 ),
               ],
               
-
               Card(
                 margin: EdgeInsets.all(10),
-                color: Colors.white,
+                color: c.superficie,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -254,7 +263,7 @@ class Foro extends StatelessWidget {
                                       '@carlosm   Hace 3 horas',
                                       style: TextStyle(
                                         fontSize: 12,
-                                        color: Color.fromRGBO(56, 54, 53, .5),
+                                        color: c.textoTenue,
                                       ),
                                     ),
                                   ],
@@ -264,7 +273,7 @@ class Foro extends StatelessWidget {
                           ),
                           Padding(
                             padding: EdgeInsets.only(right: 10),
-                            child: Icon(Icons.more_horiz),
+                            child: Icono(Iconos.ellipsis),
                           ),
                         ],
                       ),
@@ -273,7 +282,7 @@ class Foro extends StatelessWidget {
                       padding: EdgeInsets.only(left: 15, right: 15, bottom: 10,),
                       child: Flexible(
                         child: Text(
-                          'Fuimos a dar una vuelta al patio. Estuvo jugando con unos estudiantes de primer año ¡La pasó muy bien!',
+                          'Fuimos a dar una vuelta al patio. Estuvo jugando con unos estudiantes de primer año. ¡La pasó muy bien!',
                           style: TextStyle(
                             fontSize: 15,
                           ),
@@ -294,7 +303,7 @@ class Foro extends StatelessWidget {
 
               Card(
                 margin: EdgeInsets.all(10),
-                color: Colors.white,
+                color: c.superficie,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -322,7 +331,7 @@ class Foro extends StatelessWidget {
                                       '@sofiar   Hace 5 horas',
                                       style: TextStyle(
                                         fontSize: 12,
-                                        color: Color.fromRGBO(56, 54, 53, .5),
+                                        color: c.textoTenue,
                                       ),
                                     ),
                                   ],
@@ -332,7 +341,7 @@ class Foro extends StatelessWidget {
                           ),
                           Padding(
                             padding: EdgeInsets.only(right: 10),
-                            child: Icon(Icons.more_horiz),
+                            child: Icono(Iconos.ellipsis),
                           ),
                         ],
                       ),
@@ -341,7 +350,7 @@ class Foro extends StatelessWidget {
                       padding: EdgeInsets.only(left: 15, right: 15, bottom: 20,),
                       child: Flexible(
                         child: Text(
-                          'Revisé su zona de descanso y la encontré limpia. Le puse agua fresca. Sigue de buen humor hoy!',
+                          'Revisé su zona de descanso y la encontré limpia. Le puse agua fresca. ¡Sigue de buen humor hoy!',
                           style: TextStyle(
                             fontSize: 15,
                           ),
@@ -371,7 +380,7 @@ class Foro extends StatelessWidget {
 
               Card(
                 margin: EdgeInsets.all(10),
-                color: Colors.white,
+                color: c.superficie,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -399,7 +408,7 @@ class Foro extends StatelessWidget {
                                       '@carlosm   Ayer, 21:37',
                                       style: TextStyle(
                                         fontSize: 12,
-                                        color: Color.fromRGBO(56, 54, 53, .5),
+                                        color: c.textoTenue,
                                       ),
                                     ),
                                   ],
@@ -409,7 +418,7 @@ class Foro extends StatelessWidget {
                           ),
                           Padding(
                             padding: EdgeInsets.only(right: 10),
-                            child: Icon(Icons.more_horiz),
+                            child: Icono(Iconos.ellipsis),
                           ),
                         ],
                       ),
@@ -435,7 +444,7 @@ class Foro extends StatelessWidget {
                   ],
                 ),
               ),
-            ],
+            ]),
           ),
         ),
       ),

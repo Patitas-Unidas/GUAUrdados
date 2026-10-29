@@ -5,8 +5,12 @@ import 'package:camera/camera.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 
+import 'package:guaurdados_oficial/theme/colores_app.dart';
+import 'package:guaurdados_oficial/theme/formas.dart';
+import 'package:guaurdados_oficial/widgets/iconos.dart';
+import 'package:guaurdados_oficial/widgets/imagen_remota.dart';
+
 import 'perfilperro.dart';
-import 'listadoperros.dart';
 
 class Camara extends StatefulWidget {
   const Camara({super.key});
@@ -213,11 +217,7 @@ class _DisplayPictureScreenState extends State<DisplayPictureScreen> {
   }
 
   void _irABuscarManualmente() {
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (context) => ListadoPerros(),
-      ),
-    );
+    Navigator.of(context).popUntil((ruta) => ruta.isFirst);
   }
 
   void _gestionarRespuesta(Map<String, dynamic> data) {
@@ -313,46 +313,36 @@ class _DisplayPictureScreenState extends State<DisplayPictureScreen> {
     final String subtitulo = perro['subtitulo'] ?? perro['sexo'] ?? '';
     final String coincidencia = perro['coincidencia'] ?? '';
 
+    final c = context.colores;
+    final vacio = ColoredBox(
+      color: c.contenedor,
+      child: SizedBox(width: 50, height: 50, child: Icono(Iconos.pawPrint, size: 24, color: c.textoTenue)),
+    );
+
     Widget imagenWidget;
     if (fotoUrl.startsWith('http')) {
-      imagenWidget = Image.network(
-        fotoUrl,
-        width: 50,
-        height: 50,
-        fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => const ColoredBox(
-          color: Color(0xffefd2c3),
-          child: SizedBox(width: 50, height: 50, child: Icon(Icons.pets, size: 24)),
-        ),
-      );
+      imagenWidget = ImagenRemota(url: fotoUrl, width: 50, height: 50, fit: BoxFit.cover, error: vacio);
     } else if (fotoUrl.isNotEmpty) {
       imagenWidget = Image.asset(
         'fotos/$fotoUrl',
         width: 50,
         height: 50,
         fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => const ColoredBox(
-          color: Color(0xffefd2c3),
-          child: SizedBox(width: 50, height: 50, child: Icon(Icons.pets, size: 24)),
-        ),
+        errorBuilder: (_, _, _) => vacio,
       );
     } else {
-      imagenWidget = const ColoredBox(
-        color: Color(0xffefd2c3),
-        child: SizedBox(width: 50, height: 50, child: Icon(Icons.pets, size: 24)),
-      );
+      imagenWidget = vacio;
     }
 
     return Container(
       padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: const Color(0xfff9f0eb),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xffe8ded9)),
+      decoration: ShapeDecoration(
+        color: c.fondo,
+        shape: Formas.squircle(12, lado: BorderSide(color: c.divisor)),
       ),
       child: Row(
         children: [
-          ClipRRect(
+          ClipRSuperellipse(
             borderRadius: BorderRadius.circular(8),
             child: imagenWidget,
           ),
@@ -362,8 +352,8 @@ class _DisplayPictureScreenState extends State<DisplayPictureScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(nombre, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                Text(subtitulo, style: const TextStyle(fontSize: 12, color: Colors.black54)),
-                Text("Similitud: $coincidencia", style: const TextStyle(fontSize: 11, color: Color(0xff4caf82), fontWeight: FontWeight.w600)),
+                Text(subtitulo, style: TextStyle(fontSize: 12, color: c.textoSecundario)),
+                Text("Similitud: $coincidencia", style: TextStyle(fontSize: 11, color: c.exitoTexto, fontWeight: FontWeight.w600)),
               ],
             ),
           ),
@@ -371,14 +361,14 @@ class _DisplayPictureScreenState extends State<DisplayPictureScreen> {
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               elevation: 0,
-              backgroundColor: const Color(0xffde4f41),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              backgroundColor: c.acento,
+              shape: Formas.squircle(8),
             ),
             onPressed: () {
               Navigator.pop(context);
               _irAlPerfil(id);
             },
-            child: const Text("Ver perfil", style: TextStyle(color: Colors.white, fontSize: 12)),
+            child: Text("Ver perfil", style: TextStyle(color: c.sobreAcento, fontSize: 12)),
           ),
         ],
       ),
@@ -404,15 +394,15 @@ class _DisplayPictureScreenState extends State<DisplayPictureScreen> {
           ElevatedButton.icon(
             style: ElevatedButton.styleFrom(
               elevation: 0,
-              backgroundColor: const Color(0xff1fb39c),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              backgroundColor: context.colores.medico,
+              shape: Formas.squircle(8),
             ),
             onPressed: () {
               Navigator.pop(context);
               _irABuscarManualmente();
             },
-            icon: const Icon(Icons.search, color: Colors.white, size: 18),
-            label: const Text("Buscar manualmente", style: TextStyle(color: Colors.white)),
+            icon: Icono(Iconos.search, color: context.colores.sobreAcento, size: 18),
+            label: Text("Buscar manualmente", style: TextStyle(color: context.colores.sobreAcento)),
           ),
         ],
       ),

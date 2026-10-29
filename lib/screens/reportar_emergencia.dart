@@ -3,15 +3,20 @@ import 'package:flutter/material.dart';
 import '../models/perro.dart';
 import '../services/emergencias_repository.dart';
 import '../services/perros_repository.dart';
-
-const _rojo = Color(0xffff0041);
-const _fondo = Color(0xfff9f0eb);
+import '../theme/colores_app.dart';
+import '../theme/formas.dart';
+import '../theme/tipografia.dart';
+import '../widgets/esqueleto.dart';
+import '../widgets/foto_perro.dart';
+import '../widgets/hoja.dart';
+import '../widgets/iconos.dart';
+import '../widgets/presionable.dart';
 
 const _tipos = <String, IconData>{
-  'Problema de salud': Icons.healing_outlined,
-  'Pelea': Icons.bolt,
-  'Peligro': Icons.warning_amber_rounded,
-  'Otro': Icons.help_outline,
+  'Problema de salud': Iconos.heartPulse,
+  'Pelea': Iconos.zap,
+  'Peligro': Iconos.triangleAlert,
+  'Otro': Iconos.circleHelp,
 };
 
 /// Hoja inferior para reportar una emergencia.
@@ -30,11 +35,8 @@ class ReportarEmergencia extends StatefulWidget {
   final EmergenciasRepository? _repository;
 
   static Future<void> mostrar(BuildContext context, {String? idPerro, String? nombrePerro}) =>
-      showModalBottomSheet<void>(
-        context: context,
-        isScrollControlled: true,
-        useSafeArea: true,
-        backgroundColor: Colors.transparent,
+      mostrarHoja<void>(
+        context,
         builder: (_) => ReportarEmergencia(idPerro: idPerro, nombrePerro: nombrePerro),
       );
 
@@ -99,12 +101,11 @@ class _ReportarEmergenciaState extends State<ReportarEmergencia> {
   @override
   Widget build(BuildContext context) {
     final nombre = widget.nombrePerro ?? 'el perro';
+    final c = context.colores;
     return Container(
-      decoration: const BoxDecoration(
-        color: _fondo,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      padding: EdgeInsets.fromLTRB(16, 10, 16, 12 + MediaQuery.viewInsetsOf(context).bottom),
+      constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * .9),
+      decoration: ShapeDecoration(color: c.fondo, shape: Formas.squircleArriba(28)),
+      padding: EdgeInsets.fromLTRB(16, 10, 16, 12 + MediaQuery.paddingOf(context).bottom),
       child: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -113,19 +114,19 @@ class _ReportarEmergenciaState extends State<ReportarEmergencia> {
             Center(
               child: Container(
                 width: 36, height: 4,
-                decoration: BoxDecoration(color: const Color(0xffd9cfca), borderRadius: BorderRadius.circular(4)),
+                decoration: Formas.fondo(c.divisor, 2),
               ),
             ),
             const SizedBox(height: 14),
             _encabezado(nombre),
             const SizedBox(height: 18),
             if (!_fijo) ...[
-              const _Etiqueta('¿QUIÉN NECESITA AYUDA?', icono: Icons.pets, color: Color(0xff776d68)),
+              _Etiqueta('¿QUIÉN NECESITA AYUDA?', icono: Iconos.pawPrint, color: c.textoSecundario),
               const SizedBox(height: 10),
               _selectorPerros(),
               const SizedBox(height: 18),
             ],
-            _Etiqueta(_fijo ? 'AVISAR A LA SEDE' : '¿QUÉ OCURRE?', icono: _fijo ? null : Icons.bolt, color: const Color(0xffffa000)),
+            _Etiqueta(_fijo ? 'AVISAR A LA SEDE' : '¿QUÉ OCURRE?', icono: _fijo ? null : Iconos.zap, color: c.advertencia),
             const SizedBox(height: 10),
             Wrap(
               spacing: 8,
@@ -142,18 +143,20 @@ class _ReportarEmergenciaState extends State<ReportarEmergencia> {
             ),
             if (!_fijo) ...[
               const SizedBox(height: 18),
-              const _Etiqueta('UBICACIÓN', icono: Icons.place_outlined, color: _rojo),
+              _Etiqueta('UBICACIÓN', icono: Iconos.mapPin, color: c.emergencia),
               const SizedBox(height: 10),
-              TextField(
-                controller: _ubicacion,
-                textInputAction: TextInputAction.done,
-                decoration: InputDecoration(
-                  hintText: 'Ej: Patio Central, Entrada...',
-                  prefixIcon: const Icon(Icons.place_outlined, size: 20),
-                  filled: true,
-                  fillColor: const Color(0xfffdf6f3),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Color(0xffefe2dc))),
-                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Color(0xffefe2dc))),
+              Container(
+                decoration: ShapeDecoration(color: c.superficie, shape: Formas.squircle(14, lado: BorderSide(color: c.divisor))),
+                child: TextField(
+                  controller: _ubicacion,
+                  textInputAction: TextInputAction.done,
+                  decoration: InputDecoration(
+                    hintText: 'Ej: Patio Central, Entrada...',
+                    hintStyle: TextStyle(color: c.textoTenue),
+                    prefixIcon: Icono(Iconos.mapPin, size: 20, color: c.textoTenue),
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
                 ),
               ),
             ],
@@ -161,24 +164,27 @@ class _ReportarEmergenciaState extends State<ReportarEmergencia> {
             SizedBox(
               width: double.infinity,
               height: 52,
-              child: FilledButton.icon(
-                onPressed: _puedeEnviar ? _enviar : null,
-                style: FilledButton.styleFrom(
-                  backgroundColor: _rojo,
-                  disabledBackgroundColor: const Color(0xfff3b4b4),
-                  disabledForegroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              child: Presionable(
+                child: FilledButton.icon(
+                  onPressed: _puedeEnviar ? _enviar : null,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: c.emergencia,
+                    foregroundColor: c.sobreAcento,
+                    disabledBackgroundColor: c.emergencia.withValues(alpha: .35),
+                    disabledForegroundColor: c.sobreAcento,
+                    shape: Formas.squircle(16),
+                  ),
+                  icon: _enviando
+                      ? SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: c.sobreAcento))
+                      : Icono(Iconos.triangleAlert, color: c.sobreAcento),
+                  label: const Text('Emitir alerta a la comunidad', style: TextStyle(fontWeight: FontWeight.w700)),
                 ),
-                icon: _enviando
-                    ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                    : const Icon(Icons.warning_amber_rounded),
-                label: const Text('Emitir Alerta a la Comunidad', style: TextStyle(fontWeight: FontWeight.w700)),
               ),
             ),
             Center(
               child: TextButton(
                 onPressed: _enviando ? null : () => Navigator.pop(context),
-                child: const Text('Cancelar', style: TextStyle(color: Color(0xff8d8580), fontWeight: FontWeight.w600)),
+                child: Text('Cancelar', style: TextStyle(color: c.textoSecundario, fontWeight: FontWeight.w600)),
               ),
             ),
           ],
@@ -187,36 +193,42 @@ class _ReportarEmergenciaState extends State<ReportarEmergencia> {
     );
   }
 
-  Widget _encabezado(String nombre) => Row(
+  Widget _encabezado(String nombre) {
+    final c = context.colores;
+    return Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             width: 46, height: 46,
-            decoration: BoxDecoration(color: const Color(0xffffdfe5), borderRadius: BorderRadius.circular(14), border: Border.all(color: const Color(0xffffb8c6))),
-            child: const Icon(Icons.warning_amber_rounded, color: _rojo, size: 26),
+            decoration: ShapeDecoration(
+              color: c.emergencia.withValues(alpha: .12),
+              shape: Formas.squircle(14, lado: BorderSide(color: c.emergencia.withValues(alpha: .3))),
+            ),
+            child: Icono(Iconos.triangleAlert, color: c.emergencia, size: 24),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(_fijo ? 'Emergencia: $nombre' : 'Reportar Emergencia', style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w800)),
+                Text(_fijo ? 'Emergencia: $nombre' : 'Reportar emergencia', style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w800).display),
                 const SizedBox(height: 2),
                 Text(
                   _fijo ? 'Los datos de $nombre se adjuntarán automáticamente' : 'Se notificará a toda la comunidad',
-                  style: const TextStyle(fontSize: 12, color: Color(0xff8d8580)),
+                  style: TextStyle(fontSize: 12, color: c.textoSecundario),
                 ),
               ],
             ),
           ),
           if (!_fijo)
-            IconButton.filledTonal(
-              visualDensity: VisualDensity.compact,
+            IconButton(
+              tooltip: 'Cerrar',
               onPressed: () => Navigator.pop(context),
-              icon: const Icon(Icons.close, size: 18),
+              icon: Icono(Iconos.x, size: 20, color: c.textoSecundario),
             ),
         ],
       );
+  }
 
   Widget _selectorPerros() => SizedBox(
         height: 98,
@@ -224,7 +236,12 @@ class _ReportarEmergenciaState extends State<ReportarEmergencia> {
           stream: _perros,
           builder: (context, snapshot) {
             if (snapshot.hasError) return const Text('No se pudieron cargar los perros.');
-            if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+            if (!snapshot.hasData) {
+              return Row(children: [
+                for (var i = 0; i < 4; i++)
+                  const Padding(padding: EdgeInsets.only(right: 20), child: BloqueEsqueleto(ancho: 54, alto: 54, circular: true)),
+              ]);
+            }
             final perros = snapshot.data!;
             return ListView(
               scrollDirection: Axis.horizontal,
@@ -232,11 +249,7 @@ class _ReportarEmergenciaState extends State<ReportarEmergencia> {
                 for (final p in perros)
                   _OpcionPerro(
                     nombre: p.nombre,
-                    imagen: p.fotoUrl.isNotEmpty
-                        ? NetworkImage(p.fotoUrl)
-                        : p.imagenAsset.isNotEmpty
-                            ? AssetImage('fotos/${p.imagenAsset}') as ImageProvider
-                            : null,
+                    perro: p,
                     seleccionado: _idSeleccionado == p.id,
                     onTap: () => setState(() {
                       _idSeleccionado = p.id;
@@ -268,7 +281,7 @@ class _Etiqueta extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Row(children: [
-        if (icono != null) ...[Icon(icono, size: 15, color: color), const SizedBox(width: 6)],
+        if (icono != null) ...[Icono(icono!, size: 15, color: color), const SizedBox(width: 6)],
         Text(texto, style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800, letterSpacing: .3)),
       ]);
 }
@@ -281,51 +294,55 @@ class _Pill extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) => Material(
-        color: seleccionado ? const Color(0xffffdfe5) : const Color(0xfffdf6f3),
-        shape: StadiumBorder(side: BorderSide(color: seleccionado ? _rojo : const Color(0xfff6c3c8), width: seleccionado ? 1.5 : 1)),
+  Widget build(BuildContext context) {
+    final c = context.colores;
+    final forma = Formas.squircle(20, lado: BorderSide(color: seleccionado ? c.emergencia : c.divisor, width: seleccionado ? 1.5 : 1));
+    return Presionable(
+      child: Material(
+        color: seleccionado ? c.emergencia.withValues(alpha: .12) : c.superficie,
+        shape: forma,
         child: InkWell(
-          customBorder: const StadiumBorder(),
+          customBorder: forma,
           onTap: onTap,
           child: Padding(
             padding: EdgeInsets.symmetric(horizontal: icono == null ? 28 : 16, vertical: 13),
             child: Row(mainAxisSize: MainAxisSize.min, children: [
-              if (icono != null) ...[Icon(icono, size: 16, color: seleccionado ? _rojo : const Color(0xff776d68)), const SizedBox(width: 8)],
+              if (icono != null) ...[Icono(icono!, size: 16, color: seleccionado ? c.emergencia : c.textoSecundario), const SizedBox(width: 8)],
               Text(texto, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
             ]),
           ),
         ),
-      );
+      ),
+    );
+  }
 }
 
 class _OpcionPerro extends StatelessWidget {
-  const _OpcionPerro({required this.nombre, required this.seleccionado, required this.onTap, this.imagen});
+  const _OpcionPerro({required this.nombre, required this.seleccionado, required this.onTap, this.perro});
   final String nombre;
-  final ImageProvider? imagen;
+  final Perro? perro;
   final bool seleccionado;
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) => InkWell(
+  Widget build(BuildContext context) {
+    final c = context.colores;
+    return InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        customBorder: Formas.squircle(12),
         child: SizedBox(
           width: 74,
           child: Column(children: [
-            Container(
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
               padding: const EdgeInsets.all(2),
-              decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: seleccionado ? _rojo : Colors.transparent, width: 2.5)),
-              child: CircleAvatar(
-                radius: 25,
-                backgroundColor: const Color(0xffefe9e6),
-                backgroundImage: imagen,
-                onBackgroundImageError: imagen == null ? null : (_, __) {},
-                child: imagen == null ? const Icon(Icons.pets, color: Color(0xff776d68)) : null,
-              ),
+              decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: seleccionado ? c.emergencia : Colors.transparent, width: 2.5)),
+              child: FotoPerroRedonda(perro: perro, tamano: 50),
             ),
             const SizedBox(height: 5),
             Text(nombre, maxLines: 2, textAlign: TextAlign.center, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 11, height: 1.1, fontWeight: seleccionado ? FontWeight.w700 : FontWeight.w500)),
           ]),
         ),
       );
+  }
 }
