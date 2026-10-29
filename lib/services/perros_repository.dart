@@ -41,35 +41,45 @@ class PerrosRepository {
   }
 
   Stream<List<Map<String, dynamic>>> observarPublicacionesForoSeguidos(String uid) {
-    return observarPerrosSeguidos(uid).asyncMap((perrosSeguidos) async {
-      if (perrosSeguidos.isEmpty) return [];
+    return observarPerrosSeguidos(uid).asyncExpand((perrosSeguidos) {
+      if (perrosSeguidos.isEmpty) return Stream.value(<Map<String, dynamic>>[]);
 
-      final idsPerrosSeguidos = perrosSeguidos.map((p) => p.id).toList();
-      List<Map<String, dynamic>> todasLasPublicaciones = [];
-
-      final foroSnapshot = await _firestore
-          .collection('foro')
-          .where('idperro', whereIn: idsPerrosSeguidos)
-          .get();
-
-      for (var docForo in foroSnapshot.docs) {
-        final idPerro = docForo.data()['idperro'] as String;
-        final perroAsociado = perrosSeguidos.firstWhere((p) => p.id == idPerro);
-
-        final pubsSnapshot = await docForo.reference.collection('publicaciones').get();
-        for (var pubDoc in pubsSnapshot.docs) {
-          final data = pubDoc.data();
-          todasLasPublicaciones.add({
-            'id': pubDoc.id,
-            'tipo': 'foro',
-            'nombrePerro': perroAsociado.nombre,
-            'comentario': data['comentario'] ?? '',
-            'fecha': data['fecha'],
+      final porId = {for (final perro in perrosSeguidos) perro.id: perro};
+      final idsPerrosSeguidos = porId.keys.take(30).toList();
+      return _firestore
+          .collectionGroup('publicaciones')
+          .where('idPerro', whereIn: idsPerrosSeguidos)
+          .snapshots()
+          .map((snapshot) {
+            final novedades = snapshot.docs.map((doc) {
+              final data = doc.data();
+              final idPerro = data['idPerro'] as String? ?? '';
+              final perro = porId[idPerro];
+              final tipo = data['tipoPublicacion'] as String? ?? 'normal';
+              final descripcion = data['descripcion'] as String? ?? '';
+              final comentario = descripcion.isNotEmpty
+                  ? descripcion
+                  : tipo == 'alimentacion'
+                      ? 'Registró ${data['cantidadComida'] ?? ''} de ${data['tipoComida'] ?? 'alimento'} para ${perro?.nombre ?? 'el perro'}.'
+                      : '';
+              return <String, dynamic>{
+                'id': doc.id,
+                'tipo': 'foro',
+                'idPerro': idPerro,
+                'nombrePerro': perro?.nombre ?? data['nombrePerro'] ?? 'un perrito',
+                'nombreUsuario': data['nombreUsuario'] ?? 'Usuario',
+                'comentario': comentario,
+                'fecha': data['creadoEn'],
+              };
+            }).toList();
+            novedades.sort((a, b) {
+              final fechaA = a['fecha'] as Timestamp?;
+              final fechaB = b['fecha'] as Timestamp?;
+              return (fechaB?.millisecondsSinceEpoch ?? 0)
+                  .compareTo(fechaA?.millisecondsSinceEpoch ?? 0);
+            });
+            return novedades;
           });
-        }
-      }
-
-      return todasLasPublicaciones;
     });
   }
 }

@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:guaurdados_oficial/services/perfiles_usuario_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:guaurdados_oficial/widgets/iconos.dart';
 import 'package:guaurdados_oficial/theme/colores_app.dart';
@@ -140,29 +141,20 @@ class _ConfiguracionState extends State<Configuracion> {
   }
 
   Future<void> _editarNombre() async {
-    final control = TextEditingController(text: _usuario?.displayName ?? '');
     final nuevo = await showDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Tu nombre'),
-        content: TextField(
-          controller: control,
-          autofocus: true,
-          textCapitalization: TextCapitalization.words,
-          decoration: const InputDecoration(hintText: 'Cómo te verán en los foros'),
-          onSubmitted: (texto) => Navigator.pop(context, texto),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
-          TextButton(onPressed: () => Navigator.pop(context, control.text), child: const Text('Guardar')),
-        ],
-      ),
+      builder: (_) => _DialogoEditarNombre(nombreInicial: _usuario?.displayName ?? ''),
     );
-    control.dispose();
     if (nuevo == null || nuevo.trim().isEmpty) return;
     try {
-      await _usuario?.updateDisplayName(nuevo.trim());
-      await _usuario?.reload();
+      final usuario = _usuario;
+      if (usuario == null) return;
+      await usuario.updateDisplayName(nuevo.trim());
+      await usuario.reload();
+      final usuarioActualizado = FirebaseAuth.instance.currentUser;
+      if (usuarioActualizado != null) {
+        await PerfilesUsuarioRepository().sincronizar(usuarioActualizado);
+      }
       if (mounted) setState(() {});
     } catch (_) {
       _avisar('No se pudo guardar el nombre.');
@@ -220,6 +212,43 @@ class _ConfiguracionState extends State<Configuracion> {
   void _avisar(String texto) {
     if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(texto)));
   }
+}
+
+class _DialogoEditarNombre extends StatefulWidget {
+  const _DialogoEditarNombre({required this.nombreInicial});
+
+  final String nombreInicial;
+
+  @override
+  State<_DialogoEditarNombre> createState() => _DialogoEditarNombreState();
+}
+
+class _DialogoEditarNombreState extends State<_DialogoEditarNombre> {
+  late final TextEditingController _control = TextEditingController(
+    text: widget.nombreInicial,
+  );
+
+  @override
+  void dispose() {
+    _control.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    title: const Text('Tu nombre'),
+    content: TextField(
+      controller: _control,
+      autofocus: true,
+      textCapitalization: TextCapitalization.words,
+      decoration: const InputDecoration(hintText: 'Cómo te verán en los foros'),
+      onSubmitted: (texto) => Navigator.of(context).pop(texto),
+    ),
+    actions: [
+      TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancelar')),
+      TextButton(onPressed: () => Navigator.of(context).pop(_control.text), child: const Text('Guardar')),
+    ],
+  );
 }
 
 class _TituloSeccion extends StatelessWidget {

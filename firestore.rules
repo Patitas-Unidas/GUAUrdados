@@ -1,6 +1,11 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Permite las consultas collectionGroup('publicaciones') de los foros.
+    match /{path=**}/publicaciones/{publicacionId} {
+      allow read: if request.auth != null;
+    }
+
     match /perros/{perroId} {
       allow read: if request.auth != null;
       allow create, delete: if request.auth != null && request.auth.token.admin == true;
@@ -15,8 +20,115 @@ service cloud.firestore {
           resource.data.seguidores.toSet()
             .difference(request.resource.data.seguidores.toSet())
             .hasOnly([request.auth.uid])
+        ) || (
+          request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['ultimaComida', 'ultimaComidaEn', 'actualizadoEn']) &&
+          request.resource.data.keys()
+            .hasAll(['ultimaComida', 'ultimaComidaEn', 'actualizadoEn']) &&
+          request.resource.data.ultimaComida is string &&
+          request.resource.data.ultimaComida.size() > 0 &&
+          request.resource.data.ultimaComida.size() <= 120 &&
+          request.resource.data.ultimaComidaEn == request.time &&
+          request.resource.data.actualizadoEn == request.time
         )
       );
+    }
+
+    // Perfil público mínimo para mostrar nombre y foto de los seguidores.
+    // Los tokens FCM se mantienen aislados en la colección privada `usuarios`.
+    match /perfiles_publicos/{uid} {
+      allow read: if request.auth != null;
+      allow create, update: if request.auth != null
+        && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['nombre', 'usuario', 'fotoUrl', 'actualizadoEn'])
+        && request.resource.data.nombre is string
+        && request.resource.data.nombre.size() > 0
+        && request.resource.data.nombre.size() <= 100
+        && request.resource.data.usuario is string
+        && request.resource.data.usuario.size() <= 100
+        && request.resource.data.fotoUrl is string
+        && request.resource.data.fotoUrl.size() <= 2048
+        && request.resource.data.actualizadoEn == request.time;
+      allow delete: if request.auth != null && request.auth.uid == uid;
+    }
+
+    match /foro/{foroId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+        && request.resource.data.keys().hasOnly(['idperro'])
+        && request.resource.data.idperro is string
+        && request.resource.data.idperro.size() > 0
+        && foroId == request.resource.data.idperro
+        && exists(/databases/$(database)/documents/perros/$(request.resource.data.idperro));
+      allow update: if request.auth != null
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['idperro'])
+        && request.resource.data.idperro == resource.data.idperro
+        && resource.data.idperro is string
+        && exists(/databases/$(database)/documents/perros/$(resource.data.idperro));
+      allow delete: if request.auth != null && request.auth.token.admin == true;
+
+      match /publicaciones/{publicacionId} {
+        function esPublicacionValida() {
+          let datos = request.resource.data;
+          let camposComunes = [
+            'idPerro', 'nombrePerro', 'idUsuario', 'nombreUsuario',
+            'tipoPublicacion', 'descripcion', 'creadoEn'
+          ];
+          let camposOpcionales = ['fotoUsuario', 'tipoComida', 'cantidadComida', 'procedimiento'];
+          return datos.keys().hasAll(camposComunes)
+            && datos.keys().hasOnly(camposComunes.concat(camposOpcionales))
+            && datos.idPerro is string
+            && datos.idPerro == get(/databases/$(database)/documents/foro/$(foroId)).data.idperro
+            && datos.nombrePerro is string
+            && datos.nombrePerro.size() > 0
+            && datos.nombreUsuario is string
+            && datos.nombreUsuario.size() > 0
+            && datos.nombreUsuario.size() <= 100
+            && datos.idUsuario == request.auth.uid
+            && datos.tipoPublicacion in ['normal', 'alimentacion', 'estado_medico']
+            && datos.descripcion is string
+            && datos.creadoEn == request.time
+            && (!('fotoUsuario' in datos) || datos.fotoUsuario is string)
+            && (
+              (datos.tipoPublicacion == 'normal'
+                && datos.descripcion.size() > 0
+                && datos.descripcion.size() <= 2000
+                && !('tipoComida' in datos)
+                && !('cantidadComida' in datos)
+                && !('procedimiento' in datos))
+              ||
+              (datos.tipoPublicacion == 'alimentacion'
+                && datos.descripcion.size() <= 500
+                && 'tipoComida' in datos
+                && datos.tipoComida is string
+                && datos.tipoComida.size() > 0
+                && datos.tipoComida.size() <= 60
+                && 'cantidadComida' in datos
+                && datos.cantidadComida is string
+                && datos.cantidadComida.size() > 0
+                && datos.cantidadComida.size() <= 80
+                && !('procedimiento' in datos))
+              ||
+              (datos.tipoPublicacion == 'estado_medico'
+                && datos.descripcion.size() <= 500
+                && 'procedimiento' in datos
+                && datos.procedimiento is string
+                && datos.procedimiento.size() > 0
+                && datos.procedimiento.size() <= 500
+                && !('tipoComida' in datos)
+                && !('cantidadComida' in datos))
+            );
+        }
+
+        allow read: if request.auth != null;
+        allow create: if request.auth != null
+          && exists(/databases/$(database)/documents/foro/$(foroId))
+          && exists(/databases/$(database)/documents/perros/$(request.resource.data.idPerro))
+          && esPublicacionValida();
+        allow update: if false;
+        allow delete: if request.auth != null
+          && (request.auth.token.admin == true || resource.data.idUsuario == request.auth.uid);
+      }
     }
   }
 }

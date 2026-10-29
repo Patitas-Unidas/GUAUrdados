@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'screens/homepage.dart';
 import 'screens/iniciar_sesion.dart';
 import 'services/notificaciones_service.dart';
+import 'services/perfiles_usuario_repository.dart';
 import 'theme/app_theme.dart';
 import 'theme/preferencias.dart';
 
@@ -16,7 +17,10 @@ Future<void> main() async {
   );
   await Preferencias.cargar();
   FirebaseAuth.instance.authStateChanges().listen((usuario) {
-    if (usuario != null) NotificacionesService.inicializar().catchError((_) {});
+    if (usuario != null) {
+      NotificacionesService.inicializar().catchError((_) {});
+      PerfilesUsuarioRepository().sincronizar(usuario).catchError((_) {});
+    }
   });
   runApp(const MyApp());
 }

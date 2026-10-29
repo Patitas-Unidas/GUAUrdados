@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:guaurdados_oficial/widgets/iconos.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:guaurdados_oficial/models/perro.dart';
+import 'package:guaurdados_oficial/models/publicacion_foro.dart';
 import 'package:guaurdados_oficial/screens/camara.dart';
 import 'package:guaurdados_oficial/services/notificaciones_service.dart';
+import 'package:guaurdados_oficial/services/foro_repository.dart';
 import 'package:guaurdados_oficial/services/perros_repository.dart';
 import 'package:guaurdados_oficial/theme/app_colors.dart';
 import 'package:guaurdados_oficial/theme/colores_app.dart';
@@ -12,13 +14,12 @@ import 'package:guaurdados_oficial/theme/tipografia.dart';
 import 'package:guaurdados_oficial/widgets/aparicion.dart';
 import 'package:guaurdados_oficial/widgets/esqueleto.dart';
 import 'package:guaurdados_oficial/widgets/imagen_remota.dart';
+import 'package:guaurdados_oficial/widgets/avatar_usuario.dart';
 import 'package:guaurdados_oficial/widgets/presionable.dart';
 
 import 'configuracion.dart';
 import 'iniciar_sesion.dart';
 import 'perfilperro.dart';
-
-const _fotoPerfilDefault = 'https://firebasestorage.googleapis.com/v0/b/guaurdados.firebasestorage.app/o/fotoPerfil%2Fperfil_default.png?alt=media&token=af8a3d31-1cfa-42f1-88c1-f3fb294a02e3';
 
 class PerfilUsuario extends StatelessWidget{
   const PerfilUsuario({super.key});
@@ -54,22 +55,7 @@ class PerfilUsuario extends StatelessWidget{
                     Text(usuario!.email!, textAlign: TextAlign.center, style: TextStyle(fontSize: 13, color: c.textoTenue)),
                   const SizedBox(height: 22),
 
-                  Row(children: [
-                    Expanded(child: _Estadistica(icono: Iconos.pawPrint, color: c.acento, valor: '12', etiqueta: 'Perros ayudados')),
-                    const SizedBox(width: 10),
-                    Expanded(child: _Estadistica(icono: Iconos.notebookPen, color: c.exitoTexto, valor: '47', etiqueta: 'Registros')),
-                    const SizedBox(width: 10),
-                    Expanded(child: _Estadistica(icono: Iconos.flame, color: c.emergencia, valor: '9 días', etiqueta: 'Racha activa')),
-                  ]),
-
-                  const _TituloSeccion('Patitas que sigues'),
-                  if (usuario != null) _PerrosSeguidos(uid: usuario.uid),
-
-                  const _TituloSeccion('Actividad reciente'),
-                  _Actividad(icono: Iconos.utensils, color: c.acento, titulo: 'Registraste alimentación para Scooby', cuando: 'Hace 2 horas'),
-                  _Actividad(icono: Iconos.utensils, color: c.acento, titulo: 'Registraste alimentación para Mora', cuando: 'Hace 3 horas'),
-                  _Actividad(icono: Iconos.messageCircle, color: AppColors.azulAgua, titulo: 'Publicaste en el foro de Ramón', cuando: 'Ayer, 14:37'),
-                  _Actividad(icono: Iconos.stethoscope, color: c.medico, titulo: 'Registraste estado médico de Scooby', cuando: 'Hace 2 días'),
+                  if (usuario != null) _ResumenUsuario(uid: usuario.uid),
 
                   Padding(padding: const EdgeInsets.symmetric(vertical: 12), child: Divider(height: 1, color: c.divisor)),
                   _Opcion(
@@ -127,17 +113,7 @@ class _Avatar extends StatelessWidget {
         shape: BoxShape.circle,
         boxShadow: const [BoxShadow(color: Color(0x1f000000), blurRadius: 14, offset: Offset(0, 4))],
       ),
-      child: ClipOval(
-        child: ColoredBox(
-          color: c.contenedor,
-          child: ImagenRemota(
-            url: foto == null || foto!.isEmpty ? _fotoPerfilDefault : foto!,
-            fit: BoxFit.cover,
-            cargando: const BloqueEsqueleto(circular: true),
-            error: Icono(Iconos.user, size: 40, color: c.textoTenue),
-          ),
-        ),
-      ),
+      child: AvatarUsuario(fotoUrl: foto, radio: 48),
     );
   }
 }
@@ -294,6 +270,121 @@ class _Actividad extends StatelessWidget {
       ]),
     );
   }
+}
+
+class _ResumenUsuario extends StatelessWidget {
+  const _ResumenUsuario({required this.uid});
+
+  final String uid;
+
+  @override
+  Widget build(BuildContext context) => StreamBuilder<ResumenActividadForo>(
+    stream: ForoRepository().observarResumenUsuario(uid),
+    builder: (context, snapshot) {
+      final c = context.colores;
+      final resumen = snapshot.data;
+      final recientes = resumen?.actividadReciente ?? const <PublicacionForo>[];
+      final racha = resumen?.rachaDias;
+      return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Row(children: [
+          Expanded(
+            child: _Estadistica(
+              icono: Iconos.pawPrint,
+              color: c.acento,
+              valor: resumen?.perrosAyudados.toString() ?? '…',
+              etiqueta: 'Perros ayudados',
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: _Estadistica(
+              icono: Iconos.notebookPen,
+              color: c.exitoTexto,
+              valor: resumen?.registros.toString() ?? '…',
+              etiqueta: 'Registros',
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: _Estadistica(
+              icono: Iconos.flame,
+              color: c.emergencia,
+              valor: racha == null ? '…' : '$racha ${racha == 1 ? 'día' : 'días'}',
+              etiqueta: 'Racha activa',
+            ),
+          ),
+        ]),
+        const _TituloSeccion('Patitas que sigues'),
+        _PerrosSeguidos(uid: uid),
+        const _TituloSeccion('Actividad reciente'),
+        if (snapshot.hasError)
+          const _ActividadVacia(texto: 'No se pudo cargar tu actividad reciente.')
+        else if (!snapshot.hasData)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 16),
+            child: Center(child: CircularProgressIndicator()),
+          )
+        else if (recientes.isEmpty)
+          const _ActividadVacia(texto: 'Todavía no tienes actividad registrada.')
+        else
+          ...recientes.map((publicacion) {
+            final tipo = publicacion.tipoPublicacion;
+            final esAlimentacion = tipo == 'alimentacion';
+            final esMedico = tipo == 'estado_medico';
+            final icono = esAlimentacion
+                ? Iconos.utensils
+                : esMedico
+                    ? Iconos.stethoscope
+                    : Iconos.messageCircle;
+            final color = esAlimentacion
+                ? c.acento
+                : esMedico
+                    ? c.medico
+                    : AppColors.azulAgua;
+            final titulo = esAlimentacion
+                ? 'Registraste alimentación para ${publicacion.nombrePerro}'
+                : esMedico
+                    ? 'Actualizaste el estado médico de ${publicacion.nombrePerro}'
+                    : 'Publicaste en el foro de ${publicacion.nombrePerro}';
+            return _Actividad(
+              icono: icono,
+              color: color,
+              titulo: titulo,
+              cuando: _fechaActividad(publicacion.creadoEn),
+            );
+          }),
+      ]);
+    },
+  );
+
+  String _fechaActividad(DateTime? fecha) {
+    if (fecha == null) return 'Recién';
+    final diferencia = DateTime.now().difference(fecha);
+    if (diferencia.inMinutes < 1) return 'Ahora';
+    if (diferencia.inHours < 1) return 'Hace ${diferencia.inMinutes} min';
+    if (diferencia.inDays < 1) {
+      final horas = diferencia.inHours;
+      return 'Hace $horas ${horas == 1 ? 'hora' : 'horas'}';
+    }
+    final hora = '${fecha.hour.toString().padLeft(2, '0')}:${fecha.minute.toString().padLeft(2, '0')}';
+    if (diferencia.inDays == 1) return 'Ayer, $hora';
+    return '${fecha.day.toString().padLeft(2, '0')}/${fecha.month.toString().padLeft(2, '0')} · $hora';
+  }
+}
+
+class _ActividadVacia extends StatelessWidget {
+  const _ActividadVacia({required this.texto});
+
+  final String texto;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.fromLTRB(4, 4, 4, 12),
+    child: Align(
+      alignment: Alignment.centerLeft,
+      child: Text(texto, style: TextStyle(color: context.colores.textoTenue, fontSize: 13)),
+    ),
+  );
 }
 
 class _Opcion extends StatelessWidget {

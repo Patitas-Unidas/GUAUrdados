@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:guaurdados_oficial/services/perfiles_usuario_repository.dart';
 import 'package:guaurdados_oficial/theme/colores_app.dart';
 import 'package:guaurdados_oficial/theme/formas.dart';
 import 'package:guaurdados_oficial/theme/tipografia.dart';
@@ -59,6 +60,13 @@ class _RegistroUsuarioState extends State<RegistroUsuario> {
       } catch (_) {
         mensaje = 'Cuenta creada, pero no se pudo guardar tu nombre.';
       }
+      try {
+        await credencial.user!.reload();
+        final usuarioActual = FirebaseAuth.instance.currentUser;
+        if (usuarioActual != null) {
+          await PerfilesUsuarioRepository().sincronizar(usuarioActual);
+        }
+      } catch (_) {}
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,

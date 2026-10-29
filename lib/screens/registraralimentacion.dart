@@ -1,9 +1,10 @@
-import 'dart:async';
-
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:guaurdados_oficial/widgets/iconos.dart';
 import 'package:guaurdados_oficial/models/perro.dart';
 import 'package:guaurdados_oficial/services/cuidados.dart';
+import 'package:guaurdados_oficial/services/foro_repository.dart';
 import 'package:guaurdados_oficial/theme/app_colors.dart';
 import 'package:guaurdados_oficial/theme/colores_app.dart';
 import 'package:guaurdados_oficial/theme/formas.dart';
@@ -51,15 +52,13 @@ class _RegistrarAlimentacionState extends State<RegistrarAlimentacion> {
   _Unidad _unidadComida = _Unidad.punados;
   final _cantidades = {for (final u in _Unidad.values) u: u.inicial};
   final _otro = TextEditingController();
-  bool _avisoGuardado = false;
-  Timer? _temporizador;
+  bool _guardando = false;
 
   _Tipo get _tipo => _tipos[_elegido];
   _Unidad get _unidad => _tipo.enMl ? _Unidad.ml : _unidadComida;
 
   @override
   void dispose() {
-    _temporizador?.cancel();
     _otro.dispose();
     super.dispose();
   }
@@ -70,12 +69,48 @@ class _RegistrarAlimentacionState extends State<RegistrarAlimentacion> {
     setState(() => _cantidades[_unidad] = nueva);
   }
 
-  void _guardar() {
-    _temporizador?.cancel();
-    setState(() => _avisoGuardado = true);
-    _temporizador = Timer(const Duration(seconds: 2), () {
-      if (mounted) setState(() => _avisoGuardado = false);
-    });
+  Future<void> _guardar() async {
+    if (_guardando) return;
+    final usuario = FirebaseAuth.instance.currentUser;
+    if (usuario == null) {
+      _avisar('Inicia sesión para guardar el registro.');
+      return;
+    }
+    final tipoComida = _tipo.tipo == null ? _otro.text.trim() : _tipo.nombre.toLowerCase();
+    if (tipoComida.isEmpty) {
+      _avisar('Escribe qué alimento recibió.');
+      return;
+    }
+
+    final cantidadNumero = _cantidades[_unidad]!;
+    final unidad = _unidad == _Unidad.punados && cantidadNumero == 1 ? 'puñado' : _unidad.texto;
+    final cantidad = '$cantidadNumero $unidad';
+    setState(() => _guardando = true);
+    try {
+      await ForoRepository().registrarAlimentacion(
+        idPerro: widget.perro.id,
+        nombrePerro: widget.perro.nombre,
+        usuario: usuario,
+        tipoComida: tipoComida,
+        cantidadComida: cantidad,
+      );
+      if (!mounted) return;
+      final messenger = ScaffoldMessenger.of(context);
+      Navigator.of(context).pop();
+      messenger.showSnackBar(const SnackBar(content: Text('Alimentación guardada y agregada al foro.')));
+    } catch (error) {
+      if (!mounted) return;
+      final mensaje = error is FirebaseException && error.code == 'permission-denied'
+          ? 'Firestore rechazó el registro. Revisa las reglas de alimentación.'
+          : 'No se pudo guardar la alimentación. Inténtalo de nuevo.';
+      _avisar(mensaje);
+    } finally {
+      if (mounted) setState(() => _guardando = false);
+    }
+  }
+
+  void _avisar(String texto) {
+    if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(texto)));
   }
 
   @override
@@ -126,7 +161,10 @@ class _RegistrarAlimentacionState extends State<RegistrarAlimentacion> {
           ],
 
           const _Titulo('Tipo de alimento'),
-          _SelectorTipo(elegido: _elegido, alElegir: (i) => setState(() => _elegido = i)),
+          AbsorbPointer(
+            absorbing: _guardando,
+            child: _SelectorTipo(elegido: _elegido, alElegir: (i) => setState(() => _elegido = i)),
+          ),
           AnimatedSize(
             duration: const Duration(milliseconds: 300),
             curve: Curves.easeOutCubic,
@@ -137,6 +175,8 @@ class _RegistrarAlimentacionState extends State<RegistrarAlimentacion> {
                     decoration: Formas.fondo(c.superficie, 16),
                     child: TextField(
                       controller: _otro,
+                      enabled: !_guardando,
+                      maxLength: 60,
                       textCapitalization: TextCapitalization.sentences,
                       decoration: InputDecoration(
                         hintText: '¿Qué le diste? (ej.: arroz con pollo)',
@@ -197,7 +237,7 @@ class _RegistrarAlimentacionState extends State<RegistrarAlimentacion> {
           ],
           const SizedBox(height: 20),
 
-          _BotonGuardar(aviso: _avisoGuardado, alTocar: _guardar),
+          _BotonGuardar(guardando: _guardando, alTocar: _guardar),
         ]),
       ),
     );
@@ -412,8 +452,8 @@ class _NumeroAnimado extends StatelessWidget {
 }
 
 class _BotonGuardar extends StatelessWidget {
-  const _BotonGuardar({required this.aviso, required this.alTocar});
-  final bool aviso;
+  const _BotonGuardar({required this.guardando, required this.alTocar});
+  final bool guardando;
   final VoidCallback alTocar;
 
   @override
@@ -439,14 +479,17 @@ class _BotonGuardar extends StatelessWidget {
             child: AnimatedSwitcher(
               duration: const Duration(milliseconds: 250),
               child: Row(
-                key: ValueKey(aviso),
+                key: ValueKey(guardando),
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icono(aviso ? Iconos.info : Iconos.utensils, color: c.sobreAcento, size: aviso ? 22 : 26),
+                  if (guardando)
+                    SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2, color: c.sobreAcento))
+                  else
+                    Icono(Iconos.utensils, color: c.sobreAcento, size: 26),
                   const SizedBox(width: 10),
                   Text(
-                    aviso ? 'Guardar aún no está conectado' : 'Guardar registro',
-                    style: TextStyle(color: c.sobreAcento, fontSize: aviso ? 16 : 19, fontWeight: FontWeight.w700),
+                    guardando ? 'Guardando...' : 'Guardar registro',
+                    style: TextStyle(color: c.sobreAcento, fontSize: 19, fontWeight: FontWeight.w700),
                   ),
                 ],
               ),

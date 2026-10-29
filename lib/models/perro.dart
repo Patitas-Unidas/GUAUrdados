@@ -29,6 +29,24 @@ class Perro {
 
   final double? fotoCentroX, fotoCentroY;
 
+  /// En la lista, un estado saludable solo se considera vigente si también
+  /// hay un registro de alimentación dentro de las últimas 24 horas.
+  bool get alimentadoEnUltimas24Horas {
+    final fecha = ultimaComidaEn;
+    if (fecha == null) return false;
+    final transcurrido = DateTime.now().difference(fecha);
+    return !transcurrido.isNegative && transcurrido <= const Duration(hours: 24);
+  }
+
+  String get estadoResumen {
+    final estadoNormalizado = estado.trim().toLowerCase();
+    if (estadoNormalizado == 'sin estado') return 'Sin estado';
+    if (estadoNormalizado == 'saludable' && alimentadoEnUltimas24Horas) {
+      return estado;
+    }
+    return 'Revisar';
+  }
+
   Alignment get encuadre => fotoCentroX == null || fotoCentroY == null
       ? const Alignment(0, -.2)
       : Alignment(fotoCentroX! * 2 - 1, fotoCentroY! * 2 - 1);

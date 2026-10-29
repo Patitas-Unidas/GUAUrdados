@@ -484,7 +484,7 @@ class _AccionesPerfil extends StatelessWidget {
               style: _estilo(c.tonal),
               onPressed: () => Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => Foro(IDPerro: perro.id, nombrePerro: perro.nombre)),
+                MaterialPageRoute(builder: (_) => Foro(idPerro: perro.id, nombrePerro: perro.nombre)),
               ),
               icon: Icono(Iconos.messageCircle, color: c.sobreTonal, size: 28),
               label: Text('Foro', style: TextStyle(color: c.sobreTonal, fontSize: 20)),

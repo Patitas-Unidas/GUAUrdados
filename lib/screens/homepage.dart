@@ -287,8 +287,14 @@ class _TarjetaPerroState extends State<_TarjetaPerro> {
 
   Widget _contenidoCompacto() {
     final c = context.colores;
-    final saludable = perro.estado.toLowerCase() == 'saludable';
-    final color = saludable ? c.exitoTexto : c.advertenciaTexto;
+    final estado = perro.estadoResumen;
+    final sinEstado = estado.toLowerCase() == 'sin estado';
+    final saludable = estado.toLowerCase() == 'saludable';
+    final color = sinEstado
+        ? c.textoTenue
+        : saludable
+            ? c.exitoTexto
+            : c.advertenciaTexto;
     return Row(children: [
       _FotoPerro(key: _claveFoto, perro: perro, size: 40, circular: true),
       const SizedBox(width: 10),
@@ -306,7 +312,7 @@ class _TarjetaPerroState extends State<_TarjetaPerro> {
               Container(width: 6, height: 6, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
               const SizedBox(width: 4),
               Expanded(
-                child: Text(saludable ? perro.estado : perro.estado == 'Sin estado' ? perro.estado : 'Revisar',
+                child: Text(estado,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.w600)),
@@ -346,7 +352,7 @@ class _TarjetaPerroState extends State<_TarjetaPerro> {
             ),
           ),
           const SizedBox(width: 8),
-          _EtiquetaEstado(estado: perro.estado),
+          _EtiquetaEstado(estado: perro.estadoResumen),
           Icono(Iconos.chevronRight, color: c.divisor),
         ],
       );
@@ -389,8 +395,17 @@ class _EtiquetaEstado extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.colores;
     final saludable = estado.toLowerCase() == 'saludable';
-    final color = saludable ? c.exitoTexto : c.advertenciaTexto;
-    final fondo = saludable ? c.exitoSuave : c.advertenciaSuave;
+    final sinEstado = estado.toLowerCase() == 'sin estado';
+    final color = sinEstado
+        ? c.textoTenue
+        : saludable
+            ? c.exitoTexto
+            : c.advertenciaTexto;
+    final fondo = sinEstado
+        ? c.divisor
+        : saludable
+            ? c.exitoSuave
+            : c.advertenciaSuave;
     final texto = saludable ? estado : estado == 'Sin estado' ? estado : 'Revisar';
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
