@@ -535,7 +535,7 @@ class _NavegacionInferior extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.colores;
     return SizedBox(
-        height: 86,
+        height: (62 + MediaQuery.paddingOf(context).bottom).clamp(86.0, double.infinity),
         child: Stack(clipBehavior: Clip.none, alignment: Alignment.topCenter, children: [
           Container(color: c.navegacion),
           Positioned(

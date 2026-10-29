@@ -167,8 +167,9 @@ class _PlantillaPerfilState extends State<_PlantillaPerfil> with SingleTickerPro
         value: SystemUiOverlayStyle(
           statusBarColor: Colors.transparent,
           statusBarIconBrightness: Brightness.light,
-          systemNavigationBarColor: c.fondo,
+          systemNavigationBarColor: Colors.transparent,
           systemNavigationBarIconBrightness: oscuro ? Brightness.light : Brightness.dark,
+          systemNavigationBarContrastEnforced: false,
         ),
         child: Stack(children: [
           Positioned.fill(child: FadeTransition(opacity: _fondo, child: ColoredBox(color: c.fondo))),

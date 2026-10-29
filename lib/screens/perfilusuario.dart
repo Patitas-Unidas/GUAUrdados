@@ -22,8 +22,19 @@ import 'configuracion.dart';
 import 'iniciar_sesion.dart';
 import 'perfilperro.dart';
 
-class PerfilUsuario extends StatelessWidget{
+class PerfilUsuario extends StatefulWidget {
   const PerfilUsuario({super.key});
+
+  @override
+  State<PerfilUsuario> createState() => _PerfilUsuarioState();
+}
+
+class _PerfilUsuarioState extends State<PerfilUsuario> {
+  @override
+  void initState() {
+    super.initState();
+    FirebaseAuth.instance.currentUser?.reload().catchError((_) {});
+  }
 
   @override
   Widget build(BuildContext context){
@@ -448,7 +459,7 @@ class _BarraPerfilUsuario extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.colores;
     return SizedBox(
-    height: 86,
+    height: (62 + MediaQuery.paddingOf(context).bottom).clamp(86.0, double.infinity),
     child: Stack(
       clipBehavior: Clip.none,
       alignment: Alignment.topCenter,
