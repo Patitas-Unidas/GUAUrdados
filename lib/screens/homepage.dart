@@ -1,11 +1,16 @@
+import 'dart:math' as math;
+
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../widgets/imagen_remota.dart';
 import 'package:guaurdados_oficial/widgets/iconos.dart';
 import 'package:guaurdados_oficial/models/perro.dart';
 import 'package:guaurdados_oficial/screens/camara.dart';
 import 'package:guaurdados_oficial/screens/perfilperro.dart';
 import 'package:guaurdados_oficial/screens/reportar_emergencia.dart';
+import 'package:guaurdados_oficial/services/novedades_descartadas.dart';
 import 'package:guaurdados_oficial/services/perros_repository.dart';
 import 'package:guaurdados_oficial/theme/app_colors.dart';
 import 'package:guaurdados_oficial/theme/colores_app.dart';
@@ -32,10 +37,18 @@ class Homepage extends StatefulWidget {
 class _HomepageState extends State<Homepage> {
   late final PerrosRepository repository = widget._repository ?? PerrosRepository();
   final uid = FirebaseAuth.instance.currentUser?.uid;
-  final Set<String> idsDescartados = {};
+  late final NovedadesDescartadas _descartadas = NovedadesDescartadas(uid ?? '');
   late final Stream<List<Perro>> _perros = repository.observarPerros();
   late final Stream<List<Perro>> _novedadesPerros = repository.observarNovedadesSeguidos(uid ?? '');
   late final Stream<List<Map<String, dynamic>>> _novedadesForo = repository.observarPublicacionesForoSeguidos(uid ?? '');
+
+  @override
+  void initState() {
+    super.initState();
+    _descartadas.cargar().then((_) {
+      if (mounted) setState(() {});
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -57,30 +70,17 @@ class _HomepageState extends State<Homepage> {
               builder: (context, snapshotPerros) => StreamBuilder<List<Map<String, dynamic>>>(
                 stream: _novedadesForo,
                 builder: (context, snapshotForo) {
-                  final perros = (snapshotPerros.data ?? []).where((p) => !idsDescartados.contains('perro_${p.id}'));
-                  final foro = (snapshotForo.data ?? []).where((f) => !idsDescartados.contains('foro_${f['id']}'));
-                  final totalNovedades = perros.length + foro.length;
-                  return Badge(
-                    isLabelVisible: totalNovedades > 0,
-                    label: Text('$totalNovedades'),
-                    backgroundColor: c.emergencia,
-                    textColor: c.sobreAcento,
-                    child: IconButton.filled(
-                      tooltip: 'Novedades',
-                      onPressed: () => mostrarHoja(
-                        context,
-                        builder: (_) => _HojaNovedades(
-                          repository: repository,
-                          uid: uid ?? '',
-                          idsDescartados: idsDescartados,
-                          alDescartar: () => setState(() {}),
-                        ),
+                  final totalNovedades = _armarNovedades(c, snapshotForo.data, _descartadas, uid).length;
+                  return _Campana(
+                    total: totalNovedades,
+                    alTocar: () => mostrarHoja(
+                      context,
+                      builder: (_) => _HojaNovedades(
+                        repository: repository,
+                        uid: uid ?? '',
+                        descartadas: _descartadas,
+                        alDescartar: () => setState(() {}),
                       ),
-                      style: IconButton.styleFrom(
-                        backgroundColor: c.superficie,
-                        foregroundColor: c.advertencia,
-                      ),
-                      icon: const Icono(Iconos.bell),
                     ),
                   );
                 },
@@ -209,7 +209,7 @@ class ListaPerrosSeguidos extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(18, 14, 18, 4),
           scrollDirection: Axis.horizontal,
           itemCount: listaPerrosSeguidos.length,
-          separatorBuilder: (_, __) => const SizedBox(width: 8),
+          separatorBuilder: (_, _) => const SizedBox(width: 8),
           physics: const BouncingScrollPhysics(),
           itemBuilder: (context, index) => Aparicion(
             indice: index,
@@ -232,7 +232,7 @@ class ListaTodosLosPerros extends StatelessWidget {
   Widget build(BuildContext context) => ListView.separated(
         padding: const EdgeInsets.fromLTRB(18, 8, 18, 20),
         itemCount: listaPerros.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 10),
+        separatorBuilder: (_, _) => const SizedBox(height: 10),
         physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
         itemBuilder: (context, index) => Aparicion(
           indice: index,
@@ -291,7 +291,7 @@ class _TarjetaPerroState extends State<_TarjetaPerro> {
     final sinEstado = estado.toLowerCase() == 'sin estado';
     final saludable = estado.toLowerCase() == 'saludable';
     final color = sinEstado
-        ? c.textoTenue
+        ? c.neutroTexto
         : saludable
             ? c.exitoTexto
             : c.advertenciaTexto;
@@ -370,7 +370,7 @@ class _FotoPerro extends StatelessWidget {
     final image = perro.fotoUrl.isNotEmpty
         ? ImagenRemota(url: perro.fotoUrl, fit: BoxFit.cover, alignment: perro.encuadre, cargando: BloqueEsqueleto(circular: circular, radio: 10), error: _sinImagen(c))
         : perro.imagenAsset.isNotEmpty
-            ? Image.asset('fotos/${perro.imagenAsset}', fit: BoxFit.cover, alignment: perro.encuadre, errorBuilder: (_, __, ___) => _sinImagen(c))
+            ? Image.asset('fotos/${perro.imagenAsset}', fit: BoxFit.cover, alignment: perro.encuadre, errorBuilder: (_, _, _) => _sinImagen(c))
             : _sinImagen(c);
     return SizedBox(
       width: size,
@@ -397,7 +397,7 @@ class _EtiquetaEstado extends StatelessWidget {
     final saludable = estado.toLowerCase() == 'saludable';
     final sinEstado = estado.toLowerCase() == 'sin estado';
     final color = sinEstado
-        ? c.textoTenue
+        ? c.neutroTexto
         : saludable
             ? c.exitoTexto
             : c.advertenciaTexto;
@@ -573,23 +573,119 @@ class _NavegacionInferior extends StatelessWidget {
   }
 }
 
+class _Campana extends StatefulWidget {
+  const _Campana({required this.total, required this.alTocar});
+  final int total;
+  final VoidCallback alTocar;
+
+  @override
+  State<_Campana> createState() => _CampanaState();
+}
+
+class _CampanaState extends State<_Campana> with SingleTickerProviderStateMixin {
+  late final AnimationController _meneo = AnimationController(vsync: this, duration: const Duration(milliseconds: 800));
+
+  @override
+  void didUpdateWidget(_Campana anterior) {
+    super.didUpdateWidget(anterior);
+    if (widget.total > anterior.total) _meneo.forward(from: 0);
+  }
+
+  @override
+  void dispose() {
+    _meneo.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colores;
+    final hay = widget.total > 0;
+    return Stack(clipBehavior: Clip.none, children: [
+      Presionable(
+        child: IconButton.filled(
+          tooltip: 'Novedades',
+          onPressed: widget.alTocar,
+          style: IconButton.styleFrom(backgroundColor: c.superficie, foregroundColor: c.advertencia),
+          icon: AnimatedBuilder(
+            animation: _meneo,
+            builder: (context, campana) {
+              final t = _meneo.value;
+              return Transform.rotate(
+                angle: math.sin(t * math.pi * 6) * (1 - t) * .4,
+                alignment: Alignment.topCenter,
+                child: campana,
+              );
+            },
+            child: const Icono(Iconos.bell),
+          ),
+        ),
+      ),
+      Positioned(
+        top: -3,
+        right: -3,
+        child: AnimatedScale(
+          scale: hay ? 1 : 0,
+          duration: Duration(milliseconds: hay ? 420 : 220),
+          curve: hay ? Curves.easeOutBack : Curves.easeIn,
+          child: Container(
+            constraints: const BoxConstraints(minWidth: 20, minHeight: 20),
+            padding: const EdgeInsets.symmetric(horizontal: 5),
+            alignment: Alignment.center,
+            decoration: ShapeDecoration(color: c.emergencia, shape: const StadiumBorder()),
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 260),
+              transitionBuilder: (numero, animacion) => ScaleTransition(scale: animacion, child: numero),
+              child: Text(
+                '${widget.total}',
+                key: ValueKey(widget.total),
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: c.sobreAcento),
+              ),
+            ),
+          ),
+        ),
+      ),
+    ]);
+  }
+}
+
 class _HojaNovedades extends StatefulWidget {
-  const _HojaNovedades({required this.repository, required this.uid, required this.idsDescartados, required this.alDescartar});
+  const _HojaNovedades({required this.repository, required this.uid, required this.descartadas, required this.alDescartar});
   final PerrosRepository repository;
   final String uid;
-  final Set<String> idsDescartados;
+  final NovedadesDescartadas descartadas;
   final VoidCallback alDescartar;
 
   @override
   State<_HojaNovedades> createState() => _HojaNovedadesState();
 }
 
-class _HojaNovedadesState extends State<_HojaNovedades> {
+class _HojaNovedadesState extends State<_HojaNovedades> with SingleTickerProviderStateMixin {
   late final Stream<List<Perro>> _perros = widget.repository.observarNovedadesSeguidos(widget.uid);
   late final Stream<List<Map<String, dynamic>>> _foro = widget.repository.observarPublicacionesForoSeguidos(widget.uid);
+  late final AnimationController _vaciado = AnimationController(vsync: this, duration: const Duration(milliseconds: 560));
+  bool _vaciando = false;
 
-  void _descartar(String clave) {
-    setState(() => widget.idsDescartados.add(clave));
+  @override
+  void dispose() {
+    _vaciado.dispose();
+    super.dispose();
+  }
+
+  void _descartar(_Novedad novedad) {
+    HapticFeedback.lightImpact();
+    widget.descartadas.descartar({novedad.clave: novedad.version});
+    setState(() {});
+    widget.alDescartar();
+  }
+
+  Future<void> _borrarTodo(List<_Novedad> novedades) async {
+    HapticFeedback.mediumImpact();
+    setState(() => _vaciando = true);
+    await _vaciado.forward(from: 0);
+    if (!mounted) return;
+    widget.descartadas.descartar({for (final n in novedades) n.clave: n.version});
+    setState(() => _vaciando = false);
     widget.alDescartar();
   }
 
@@ -600,115 +696,194 @@ class _HojaNovedadesState extends State<_HojaNovedades> {
       height: MediaQuery.sizeOf(context).height * .6,
       decoration: ShapeDecoration(color: c.fondo, shape: Formas.squircleArriba(28)),
       padding: EdgeInsets.fromLTRB(16, 10, 16, 12 + MediaQuery.paddingOf(context).bottom),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        Center(
-          child: Container(width: 36, height: 4, margin: const EdgeInsets.only(bottom: 12), decoration: Formas.fondo(c.divisor, 2)),
+      child: StreamBuilder<List<Perro>>(
+        stream: _perros,
+        builder: (context, snapshotPerros) => StreamBuilder<List<Map<String, dynamic>>>(
+          stream: _foro,
+          builder: (context, snapshotForo) {
+            final cargando = !snapshotForo.hasData;
+            final novedades = _armarNovedades(c, snapshotForo.data, widget.descartadas, widget.uid);
+            final hay = !cargando && novedades.isNotEmpty;
+
+            final Widget contenido;
+            if (cargando) {
+              contenido = ListView.separated(
+                key: const ValueKey('cargando'),
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: 3,
+                separatorBuilder: (_, _) => const SizedBox(height: 8),
+                itemBuilder: (_, _) => const BloqueEsqueleto(alto: 64, radio: 16),
+              );
+            } else if (!hay) {
+              contenido = Center(
+                key: const ValueKey('vacio'),
+                child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  Aparicion(child: Icono(Iconos.pawPrint, size: 44, color: c.acento)),
+                  const SizedBox(height: 10),
+                  Aparicion(
+                    indice: 1,
+                    child: Text('¡Estás al día con tus perritos!', textAlign: TextAlign.center, style: TextStyle(color: c.textoSecundario)),
+                  ),
+                ]),
+              );
+            } else {
+              contenido = ListView.separated(
+                key: const ValueKey('lista'),
+                physics: const BouncingScrollPhysics(),
+                itemCount: novedades.length,
+                separatorBuilder: (_, _) => const SizedBox(height: 8),
+                itemBuilder: (context, index) => _tarjeta(c, novedades[index], index, novedades.length),
+              );
+            }
+
+            return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              Center(
+                child: Container(width: 36, height: 4, margin: const EdgeInsets.only(bottom: 12), decoration: Formas.fondo(c.divisor, 2)),
+              ),
+              SizedBox(
+                height: 44,
+                child: Row(children: [
+                  Expanded(
+                    child: Text('Novedades recientes', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800).display),
+                  ),
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 250),
+                    transitionBuilder: (boton, animacion) => FadeTransition(
+                      opacity: animacion,
+                      child: ScaleTransition(scale: animacion, child: boton),
+                    ),
+                    child: hay && !_vaciando
+                        ? TextButton.icon(
+                            key: const ValueKey('borrar'),
+                            onPressed: () => _borrarTodo(novedades),
+                            icon: Icono(Iconos.trash2, size: 16, color: c.acento),
+                            label: Text('Borrar todo', style: TextStyle(color: c.acento, fontWeight: FontWeight.w600)),
+                          )
+                        : const SizedBox.shrink(),
+                  ),
+                ]),
+              ),
+              AnimatedSize(
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeOut,
+                child: hay
+                    ? Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: Text('Desliza una novedad hacia un lado para descartarla.', style: TextStyle(fontSize: 12, color: c.textoTenue)),
+                      )
+                    : const SizedBox(width: double.infinity),
+              ),
+              Expanded(
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 350),
+                  switchInCurve: Curves.easeOutBack,
+                  transitionBuilder: (hijo, animacion) => FadeTransition(
+                    opacity: animacion,
+                    child: ScaleTransition(scale: Tween(begin: .92, end: 1.0).animate(animacion), child: hijo),
+                  ),
+                  child: contenido,
+                ),
+              ),
+            ]);
+          },
         ),
-        Row(children: [
-          Expanded(
-            child: Text('Novedades recientes', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800).display),
+      ),
+    );
+  }
+
+  Widget _tarjeta(ColoresApp c, _Novedad n, int index, int total) {
+    Widget fondo(Alignment lado) => Container(
+      alignment: lado,
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      decoration: Formas.fondo(c.emergencia.withValues(alpha: .14), 16),
+      child: Icono(Iconos.trash2, size: 20, color: c.emergencia),
+    );
+
+    Widget tarjeta = Dismissible(
+      key: ValueKey(n.clave),
+      onDismissed: (_) => _descartar(n),
+      background: fondo(Alignment.centerLeft),
+      secondaryBackground: fondo(Alignment.centerRight),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: Formas.fondo(c.superficie, 16),
+        child: Row(children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: Formas.fondo(n.color.withValues(alpha: .12), 12),
+            child: Icono(n.icono, size: 20, color: n.color),
           ),
-          IconButton(
-            tooltip: 'Cerrar',
-            onPressed: () => Navigator.pop(context),
-            icon: Icono(Iconos.x, color: c.textoSecundario),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(n.titulo, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+              const SizedBox(height: 2),
+              Text(n.detalle, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12, color: c.textoSecundario)),
+            ]),
           ),
         ]),
-        const SizedBox(height: 8),
-        Expanded(
-          child: StreamBuilder<List<Perro>>(
-            stream: _perros,
-            builder: (context, snapshotPerros) => StreamBuilder<List<Map<String, dynamic>>>(
-              stream: _foro,
-              builder: (context, snapshotForo) {
-                if (!snapshotPerros.hasData && !snapshotForo.hasData) {
-                  return ListView.separated(
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: 3,
-                    separatorBuilder: (_, _) => const SizedBox(height: 8),
-                    itemBuilder: (_, _) => const BloqueEsqueleto(alto: 64, radio: 16),
-                  );
-                }
-
-                final novedades = <_Novedad>[
-                  for (final p in snapshotPerros.data ?? <Perro>[])
-                    if (!widget.idsDescartados.contains('perro_${p.id}'))
-                      _Novedad(
-                        clave: 'perro_${p.id}',
-                        icono: Iconos.utensils,
-                        color: c.acento,
-                        titulo: 'Alimentación registrada para ${p.nombre}',
-                        detalle: 'Última comida a las ${p.ultimaComida} · ${_fechaRelativa(p.actualizadoEn)}',
-                      ),
-                  for (final f in snapshotForo.data ?? <Map<String, dynamic>>[])
-                    if (!widget.idsDescartados.contains('foro_${f['id']}'))
-                      _Novedad(
-                        clave: 'foro_${f['id']}',
-                        icono: Iconos.messageCircle,
-                        color: AppColors.azulAgua,
-                        titulo: 'Nueva publicación de ${f['nombrePerro']} en el foro',
-                        detalle: '"${f['comentario']}"',
-                      ),
-                ];
-
-                if (novedades.isEmpty) {
-                  return Center(
-                    child: Column(mainAxisSize: MainAxisSize.min, children: [
-                      Icono(Iconos.pawPrint, size: 40, color: c.acento),
-                      const SizedBox(height: 10),
-                      Text('¡Estás al día con tus perritos!', textAlign: TextAlign.center, style: TextStyle(color: c.textoSecundario)),
-                    ]),
-                  );
-                }
-
-                return ListView.separated(
-                  physics: const BouncingScrollPhysics(),
-                  itemCount: novedades.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 8),
-                  itemBuilder: (context, index) {
-                    final n = novedades[index];
-                    return Aparicion(
-                      indice: index,
-                      child: Container(
-                        padding: const EdgeInsets.fromLTRB(12, 10, 4, 10),
-                        decoration: Formas.fondo(c.superficie, 16),
-                        child: Row(children: [
-                          Container(
-                            width: 40,
-                            height: 40,
-                            decoration: Formas.fondo(n.color.withValues(alpha: .12), 12),
-                            child: Icono(n.icono, size: 20, color: n.color),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                              Text(n.titulo, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-                              const SizedBox(height: 2),
-                              Text(n.detalle, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12, color: c.textoSecundario)),
-                            ]),
-                          ),
-                          IconButton(
-                            tooltip: 'Descartar',
-                            onPressed: () => _descartar(n.clave),
-                            icon: Icono(Iconos.x, size: 18, color: c.textoTenue),
-                          ),
-                        ]),
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
-          ),
-        ),
-      ]),
+      ),
     );
+
+    if (_vaciando) {
+      final inicio = total <= 1 ? 0.0 : index / (total - 1) * .45;
+      final salida = _vaciado.drive(CurveTween(curve: Interval(inicio, inicio + .55, curve: Curves.easeInCubic)));
+      tarjeta = AnimatedBuilder(
+        animation: salida,
+        builder: (context, hijo) => Opacity(
+          opacity: 1 - salida.value,
+          child: Transform.translate(offset: Offset(salida.value * 140, 0), child: hijo),
+        ),
+        child: tarjeta,
+      );
+    }
+
+    return Aparicion(indice: index, child: tarjeta);
   }
 }
 
+const _antiguedadMaxima = Duration(days: 7);
+
+List<_Novedad> _armarNovedades(ColoresApp c, List<Map<String, dynamic>>? foro, NovedadesDescartadas descartadas, String? uid) {
+  final limite = DateTime.now().subtract(_antiguedadMaxima);
+  final novedades = <_Novedad>[];
+  for (final f in foro ?? <Map<String, dynamic>>[]) {
+    if (uid != null && f['idUsuario'] == uid) continue;
+    final crudo = f['fecha'];
+    final fecha = crudo is Timestamp ? crudo.toDate() : null;
+    if (fecha != null && fecha.isBefore(limite)) continue;
+    final clave = 'foro_${f['id']}';
+    final version = fecha?.millisecondsSinceEpoch ?? 0;
+    if (descartadas.estaDescartada(clave, version)) continue;
+    final tipo = f['tipoPublicacion'];
+    final usuario = f['nombreUsuario'] ?? 'Alguien';
+    final perro = f['nombrePerro'];
+    final comentario = '${f['comentario'] ?? ''}'.trim();
+    final cuando = fecha == null ? 'Recién' : _fechaRelativa(Timestamp.fromDate(fecha));
+    novedades.add(_Novedad(
+      clave: clave,
+      version: version,
+      fecha: fecha,
+      icono: tipo == 'alimentacion' ? Iconos.utensils : tipo == 'estado_medico' ? Iconos.stethoscope : Iconos.messageCircle,
+      color: tipo == 'alimentacion' ? c.acento : tipo == 'estado_medico' ? c.medico : AppColors.azulAgua,
+      titulo: tipo == 'alimentacion'
+          ? '$usuario registró alimentación para $perro'
+          : tipo == 'estado_medico'
+              ? '$usuario actualizó el estado médico de $perro'
+              : '$usuario publicó en el foro de $perro',
+      detalle: comentario.isEmpty || tipo == 'alimentacion' ? cuando : '"$comentario" · $cuando',
+    ));
+  }
+  novedades.sort((a, b) => b.version.compareTo(a.version));
+  return novedades;
+}
+
 class _Novedad {
-  const _Novedad({required this.clave, required this.icono, required this.color, required this.titulo, required this.detalle});
+  const _Novedad({required this.clave, required this.version, this.fecha, required this.icono, required this.color, required this.titulo, required this.detalle});
   final String clave;
+  final int version;
+  final DateTime? fecha;
   final IconData icono;
   final Color color;
   final String titulo;
