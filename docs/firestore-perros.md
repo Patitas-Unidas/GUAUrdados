@@ -14,6 +14,22 @@ Cada documento puede usar un ID automático o uno legible, por ejemplo `scooby`.
 | `actualizadoEn` | timestamp | Timestamp actual de Firestore |
 | `seguidores` | array de strings | UIDs de Firebase Auth que siguen al perro |
 
+### Campos opcionales de cuidado
+
+Si no existen, la app muestra "Sin registrar". Con las fechas calcula sola la
+próxima alimentación sugerida, cuándo vencen vacunas y desparasitación, y los
+avisos del perfil (reglas en `lib/services/cuidados.dart`).
+
+| Campo | Tipo | Ejemplo |
+| --- | --- | --- |
+| `ultimaComidaEn` | timestamp | Hora en que se registró la última comida |
+| `ultimaVacunaEn` | timestamp | Fecha de la última vacuna |
+| `ultimaDesparasitacionEn` | timestamp | Fecha de la última desparasitación |
+| `esterilizado` | boolean o string | `true`, `"Sí"`, `"No"` |
+| `condiciones` | array de strings | Condiciones médicas: `["Displasia de cadera"]` (se ven en Estado médico) |
+| `restricciones` | array de strings | Restricciones de alimentación: `["Sin pollo", "Sin gluten"]` (se ven en Registrar alimentación) |
+| `fotoCentro` | string o map | Dónde está la cara del perro en la foto, de 0 a 1 (horizontal, vertical): `"0.5, 0.35"` o `{x: 0.5, y: 0.35}`. Las fotos se recortan para que la cara quede a la vista; sin este campo se usa un punto un poco arriba del centro |
+
 ## Primer documento
 
 En Firebase Console: **Firestore Database → Create database → Start in production mode**.
