@@ -130,7 +130,7 @@ class _CamaraState extends State<Camara> {
             child: IconButton.filledTonal(
               icon: const Icon(Icons.arrow_back),
               iconSize: 20,
-              color: Colors.white,
+              color: Colors.black,
               onPressed: () => Navigator.pop(context),
             ),
           ),
