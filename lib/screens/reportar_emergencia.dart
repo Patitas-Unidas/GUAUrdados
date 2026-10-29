@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../models/perro.dart';
 import '../services/emergencias_repository.dart';
 import '../services/perros_repository.dart';
@@ -150,6 +151,7 @@ class _ReportarEmergenciaState extends State<ReportarEmergencia> {
                 child: TextField(
                   controller: _ubicacion,
                   textInputAction: TextInputAction.done,
+                  inputFormatters: [LengthLimitingTextInputFormatter(200)],
                   decoration: InputDecoration(
                     hintText: 'Ej: Patio Central, Entrada...',
                     hintStyle: TextStyle(color: c.textoTenue),
