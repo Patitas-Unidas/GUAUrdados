@@ -1,17 +1,23 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../widgets/imagen_remota.dart';
+import 'package:guaurdados_oficial/widgets/iconos.dart';
 import 'package:guaurdados_oficial/models/perro.dart';
 import 'package:guaurdados_oficial/screens/camara.dart';
 import 'package:guaurdados_oficial/screens/perfilperro.dart';
 import 'package:guaurdados_oficial/screens/reportar_emergencia.dart';
 import 'package:guaurdados_oficial/services/perros_repository.dart';
+import 'package:guaurdados_oficial/theme/app_colors.dart';
+import 'package:guaurdados_oficial/theme/colores_app.dart';
+import 'package:guaurdados_oficial/theme/formas.dart';
+import 'package:guaurdados_oficial/theme/tipografia.dart';
+import 'package:guaurdados_oficial/widgets/aparicion.dart';
+import 'package:guaurdados_oficial/widgets/esqueleto.dart';
+import 'package:guaurdados_oficial/widgets/hoja.dart';
+import 'package:guaurdados_oficial/widgets/logo.dart';
+import 'package:guaurdados_oficial/widgets/presionable.dart';
 import 'foro.dart';
 import 'package:guaurdados_oficial/screens/perfilusuario.dart';
-
-const _fondo = Color(0xfff0d2c2);
-const _tarjeta = Color(0xfffff9f6);
-const _coral = Color(0xffe85042);
 
 class Homepage extends StatefulWidget {
   const Homepage({super.key, PerrosRepository? perrosRepository})
@@ -24,72 +30,71 @@ class Homepage extends StatefulWidget {
 }
 
 class _HomepageState extends State<Homepage> {
+  late final PerrosRepository repository = widget._repository ?? PerrosRepository();
+  final uid = FirebaseAuth.instance.currentUser?.uid;
   final Set<String> idsDescartados = {};
+  late final Stream<List<Perro>> _perros = repository.observarPerros();
+  late final Stream<List<Perro>> _novedadesPerros = repository.observarNovedadesSeguidos(uid ?? '');
+  late final Stream<List<Map<String, dynamic>>> _novedadesForo = repository.observarPublicacionesForoSeguidos(uid ?? '');
 
   @override
   Widget build(BuildContext context) {
-    final repository = widget._repository ?? PerrosRepository();
-    final uid = FirebaseAuth.instance.currentUser?.uid;
+    final c = context.colores;
 
     return Scaffold(
-      backgroundColor: _fondo,
+      backgroundColor: c.fondoCalido,
       appBar: AppBar(
         toolbarHeight: 76,
-        backgroundColor: _fondo,
+        backgroundColor: c.fondoCalido,
         elevation: 0,
         titleSpacing: 18,
         title: Row(
           children: [
-            Image.asset('fotos/Letras.png', width: 154),
+            const NombreGUAUrdados(ancho: 154),
             const Spacer(),
             StreamBuilder<List<Perro>>(
-              stream: repository.observarNovedadesSeguidos(uid ?? ''),
-              builder: (context, snapshotPerros) {
-                return StreamBuilder<List<Map<String, dynamic>>>(
-                  stream: repository.observarPublicacionesForoSeguidos(uid ?? ''),
-                  builder: (context, snapshotForo) {
-                    final perros = snapshotPerros.hasData ? snapshotPerros.data! : [];
-                    final perritosValidos = perros.where((p) => !idsDescartados.contains('perro_${p.id}')).toList();
-
-                    final foroList = snapshotForo.hasData ? snapshotForo.data! : [];
-                    final foroValidos = foroList.where((f) => !idsDescartados.contains('foro_${f['id']}')).toList();
-
-                    final totalNovedades = perritosValidos.length + foroValidos.length;
-
-                    return Badge(
-                      isLabelVisible: totalNovedades > 0,
-                      label: Text('$totalNovedades'),
-                      backgroundColor: const Color(0xffff0041),
-                      child: IconButton.filled(
-                        onPressed: () {
-                          _mostrarModalNovedades(
-                              context,
-                              repository,
-                              uid ?? '',
-                              idsDescartados,
-                                  () => setState(() {})
-                          );
-                        },
-                        style: IconButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: const Color(0xffff8500),
+              stream: _novedadesPerros,
+              builder: (context, snapshotPerros) => StreamBuilder<List<Map<String, dynamic>>>(
+                stream: _novedadesForo,
+                builder: (context, snapshotForo) {
+                  final perros = (snapshotPerros.data ?? []).where((p) => !idsDescartados.contains('perro_${p.id}'));
+                  final foro = (snapshotForo.data ?? []).where((f) => !idsDescartados.contains('foro_${f['id']}'));
+                  final totalNovedades = perros.length + foro.length;
+                  return Badge(
+                    isLabelVisible: totalNovedades > 0,
+                    label: Text('$totalNovedades'),
+                    backgroundColor: c.emergencia,
+                    textColor: c.sobreAcento,
+                    child: IconButton.filled(
+                      tooltip: 'Novedades',
+                      onPressed: () => mostrarHoja(
+                        context,
+                        builder: (_) => _HojaNovedades(
+                          repository: repository,
+                          uid: uid ?? '',
+                          idsDescartados: idsDescartados,
+                          alDescartar: () => setState(() {}),
                         ),
-                        icon: const Icon(Icons.notifications_none),
                       ),
-                    );
-                  },
-                );
-              },
+                      style: IconButton.styleFrom(
+                        backgroundColor: c.superficie,
+                        foregroundColor: c.advertencia,
+                      ),
+                      icon: const Icono(Iconos.bell),
+                    ),
+                  );
+                },
+              ),
             ),
             const SizedBox(width: 9),
             ElevatedButton(
               onPressed: () => ReportarEmergencia.mostrar(context),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xffff0041),
-                foregroundColor: Colors.white,
+                backgroundColor: c.emergencia,
+                foregroundColor: c.sobreAcento,
                 elevation: 3,
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                shape: const StadiumBorder(),
+                shape: Formas.squircle(20),
               ),
               child: const Text('Emergencia', style: TextStyle(fontSize: 12)),
             ),
@@ -97,31 +102,40 @@ class _HomepageState extends State<Homepage> {
         ),
       ),
       body: StreamBuilder<List<Perro>>(
-        stream: repository.observarPerros(),
+        stream: _perros,
         builder: (context, snapshot) {
           if (snapshot.hasError) return _EstadoError(error: snapshot.error);
-          if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
 
-          final perros = snapshot.data!;
+          final perros = snapshot.data == null ? null : ([...snapshot.data!]..sort((a, b) => _paraOrdenar(a.nombre).compareTo(_paraOrdenar(b.nombre))));
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (uid != null) _PerrosSeguidos(repository: repository, uid: uid),
-              const Padding(
-                padding: EdgeInsets.fromLTRB(18, 10, 18, 8),
-                child: BotonForo(),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(18, 0, 18, 0),
+                child: Row(children: [
+                  Expanded(
+                    child: Text('Patitas seguidas', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700).display),
+                  ),
+                  const BotonForo(),
+                ]),
               ),
-              const Padding(
-                padding: EdgeInsets.fromLTRB(18, 8, 18, 5),
+              if (uid != null) _PerrosSeguidos(repository: repository, uid: uid!),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(18, 6, 18, 5),
                 child: Text(
                   'Todos los perritos',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700).display,
                 ),
               ),
               Expanded(
-                child: perros.isEmpty
-                    ? const Center(child: Text('Aún no hay perros publicados.'))
-                    : ListaTodosLosPerros(listaPerros: perros),
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 300),
+                  child: perros == null
+                      ? const _ListaEsqueleto()
+                      : perros.isEmpty
+                          ? const Center(child: Text('Aún no hay perros publicados.'))
+                          : ListaTodosLosPerros(listaPerros: perros),
+                ),
               ),
             ],
           );
@@ -139,28 +153,22 @@ class _PerrosSeguidos extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => StreamBuilder<List<Perro>>(
-    stream: repository.observarPerrosSeguidos(uid),
-    builder: (context, snapshot) {
-      if (!snapshot.hasData) return const SizedBox.shrink();
-      if (snapshot.data!.isEmpty) {
-        return const Padding(
-          padding: EdgeInsets.fromLTRB(18, 8, 18, 10),
-          child: _MensajeSinSeguidos(),
-        );
-      }
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Padding(
-            padding: EdgeInsets.fromLTRB(18, 8, 18, 2),
-            child: Text('Patitas seguidas',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-          ),
-          ListaPerrosSeguidos(listaPerrosSeguidos: snapshot.data!),
-        ],
+        stream: repository.observarPerrosSeguidos(uid),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) return const _SeguidosEsqueleto();
+          if (snapshot.data!.isEmpty) {
+            return const Padding(
+              padding: EdgeInsets.fromLTRB(18, 14, 18, 6),
+              child: _MensajeSinSeguidos(),
+            );
+          }
+          final seguidos = [...snapshot.data!]..sort((a, b) {
+            final porFecha = (b.actualizadoEn?.millisecondsSinceEpoch ?? 0).compareTo(a.actualizadoEn?.millisecondsSinceEpoch ?? 0);
+            return porFecha != 0 ? porFecha : _paraOrdenar(a.nombre).compareTo(_paraOrdenar(b.nombre));
+          });
+          return ListaPerrosSeguidos(listaPerrosSeguidos: seguidos);
+        },
       );
-    },
-  );
 }
 
 class _MensajeSinSeguidos extends StatelessWidget {
@@ -170,21 +178,18 @@ class _MensajeSinSeguidos extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     width: double.infinity,
     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-    decoration: BoxDecoration(
-      color: const Color(0xfffff9f6),
-      borderRadius: BorderRadius.circular(18),
-    ),
-    child: const Row(
+    decoration: Formas.fondo(context.colores.superficieSuave, 18),
+    child: Row(
       children: [
-        Icon(Icons.pets_outlined, size: 28, color: _coral),
-        SizedBox(width: 10),
+        Icono(Iconos.pawPrint, size: 28, color: context.colores.acento),
+        const SizedBox(width: 10),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Aún no sigues a ningún perrito', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
-              SizedBox(height: 2),
-              Text('Conoce a nuestros perritos y sigue a tus favoritos.', style: TextStyle(fontSize: 11, color: Color(0xff776d68))),
+              const Text('Aún no sigues a ningún perrito', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+              const SizedBox(height: 2),
+              Text('Conoce a nuestros perritos y sigue a tus favoritos.', style: TextStyle(fontSize: 11, color: context.colores.textoSecundario)),
             ],
           ),
         ),
@@ -199,18 +204,24 @@ class ListaPerrosSeguidos extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SizedBox(
-    height: 184,
-    child: ListView.separated(
-      padding: const EdgeInsets.fromLTRB(18, 10, 18, 6),
-      scrollDirection: Axis.horizontal,
-      itemCount: listaPerrosSeguidos.length,
-      separatorBuilder: (_, __) => const SizedBox(width: 12),
-      itemBuilder: (context, index) => _TarjetaPerro(
-        perro: listaPerrosSeguidos[index],
-        compacta: true,
-      ),
-    ),
-  );
+        height: 82,
+        child: ListView.separated(
+          padding: const EdgeInsets.fromLTRB(18, 14, 18, 4),
+          scrollDirection: Axis.horizontal,
+          itemCount: listaPerrosSeguidos.length,
+          separatorBuilder: (_, __) => const SizedBox(width: 8),
+          physics: const BouncingScrollPhysics(),
+          itemBuilder: (context, index) => Aparicion(
+            indice: index,
+            child: Presionable(
+              child: _TarjetaPerro(
+                perro: listaPerrosSeguidos[index],
+                compacta: true,
+              ),
+            ),
+          ),
+        ),
+      );
 }
 
 class ListaTodosLosPerros extends StatelessWidget {
@@ -219,35 +230,54 @@ class ListaTodosLosPerros extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ListView.separated(
-    padding: const EdgeInsets.fromLTRB(18, 8, 18, 20),
-    itemCount: listaPerros.length,
-    separatorBuilder: (_, __) => const SizedBox(height: 10),
-    itemBuilder: (context, index) => _TarjetaPerro(perro: listaPerros[index]),
-  );
+        padding: const EdgeInsets.fromLTRB(18, 8, 18, 20),
+        itemCount: listaPerros.length,
+        separatorBuilder: (_, __) => const SizedBox(height: 10),
+        physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+        itemBuilder: (context, index) => Aparicion(
+          indice: index,
+          child: Presionable(escala: .97, child: _TarjetaPerro(perro: listaPerros[index])),
+        ),
+      );
 }
 
-class _TarjetaPerro extends StatelessWidget {
+class _TarjetaPerro extends StatefulWidget {
   const _TarjetaPerro({required this.perro, this.compacta = false});
   final Perro perro;
   final bool compacta;
 
   @override
+  State<_TarjetaPerro> createState() => _TarjetaPerroState();
+}
+
+class _TarjetaPerroState extends State<_TarjetaPerro> {
+  final _claveFoto = GlobalKey();
+
+  Perro get perro => widget.perro;
+  bool get compacta => widget.compacta;
+
+  void _abrirPerfil() {
+    final caja = _claveFoto.currentContext?.findRenderObject() as RenderBox?;
+    final origen = caja == null ? null : caja.localToGlobal(Offset.zero) & caja.size;
+    Navigator.push(context, PerfilPerro.ruta(perro, origenFoto: origen, radioOrigen: compacta ? 20 : 10));
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final contenido = compacta ? _contenidoCompacto() : _contenidoLista();
+    final c = context.colores;
+    final contenido = compacta ? _contenidoCompacto() : _contenidoLista(c);
+    final forma = Formas.squircle(compacta ? 16 : 18);
     return Material(
-      color: _tarjeta,
-      borderRadius: BorderRadius.circular(compacta ? 20 : 18),
+      color: c.superficieSuave,
+      shape: forma,
       child: InkWell(
-        borderRadius: BorderRadius.circular(compacta ? 20 : 18),
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => PerfilPerro(idPerro: perro.id)),
-        ),
+        customBorder: forma,
+        onTap: _abrirPerfil,
         child: SizedBox(
-          width: compacta ? 138 : double.infinity,
-          height: compacta ? 160 : 88,
+          width: compacta ? 152 : double.infinity,
+          height: compacta ? 64 : 88,
           child: Padding(
-            padding: const EdgeInsets.all(12),
+            padding: EdgeInsets.all(compacta ? 10 : 12),
             child: contenido,
           ),
         ),
@@ -255,24 +285,13 @@ class _TarjetaPerro extends StatelessWidget {
     );
   }
 
-  Widget _contenidoCompacto() => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Center(child: _FotoPerro(perro: perro, size: 54, circular: true)),
-      const SizedBox(height: 8),
-      Text(perro.nombre,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(fontWeight: FontWeight.w600)),
-      const Spacer(),
-      _EtiquetaEstado(estado: perro.estado, compacta: true),
-    ],
-  );
-
-  Widget _contenidoLista() => Row(
-    children: [
-      _FotoPerro(perro: perro, size: 52),
-      const SizedBox(width: 12),
+  Widget _contenidoCompacto() {
+    final c = context.colores;
+    final saludable = perro.estado.toLowerCase() == 'saludable';
+    final color = saludable ? c.exitoTexto : c.advertenciaTexto;
+    return Row(children: [
+      _FotoPerro(key: _claveFoto, perro: perro, size: 40, circular: true),
+      const SizedBox(width: 10),
       Expanded(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -281,78 +300,179 @@ class _TarjetaPerro extends StatelessWidget {
             Text(perro.nombre,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
-            const SizedBox(height: 3),
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 2),
             Row(children: [
-              const Icon(Icons.access_time, size: 13, color: Color(0xff867d78)),
-              const SizedBox(width: 3),
+              Container(width: 6, height: 6, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+              const SizedBox(width: 4),
               Expanded(
-                child: Text(_fechaRelativa(perro.actualizadoEn),
+                child: Text(saludable ? perro.estado : perro.estado == 'Sin estado' ? perro.estado : 'Revisar',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 12, color: Color(0xff625b57))),
+                    style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.w600)),
               ),
             ]),
           ],
         ),
       ),
-      const SizedBox(width: 8),
-      _EtiquetaEstado(estado: perro.estado),
-      const Icon(Icons.chevron_right, color: Color(0xffd8cfca)),
-    ],
-  );
+    ]);
+  }
+
+  Widget _contenidoLista(ColoresApp c) => Row(
+        children: [
+          _FotoPerro(key: _claveFoto, perro: perro, size: 52),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(perro.nombre,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                const SizedBox(height: 3),
+                Row(children: [
+                  Icono(Iconos.clock, size: 13, color: c.textoTenue),
+                  const SizedBox(width: 3),
+                  Expanded(
+                    child: Text(_fechaRelativa(perro.actualizadoEn),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontSize: 12, color: c.textoSecundario)),
+                  ),
+                ]),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          _EtiquetaEstado(estado: perro.estado),
+          Icono(Iconos.chevronRight, color: c.divisor),
+        ],
+      );
 }
 
 class _FotoPerro extends StatelessWidget {
-  const _FotoPerro({required this.perro, required this.size, this.circular = false});
+  const _FotoPerro({super.key, required this.perro, required this.size, this.circular = false});
   final Perro perro;
   final double size;
   final bool circular;
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colores;
     final image = perro.fotoUrl.isNotEmpty
-        ? ImagenRemota(url: perro.fotoUrl, fit: BoxFit.cover, error: _sinImagen())
+        ? ImagenRemota(url: perro.fotoUrl, fit: BoxFit.cover, alignment: perro.encuadre, cargando: BloqueEsqueleto(circular: circular, radio: 10), error: _sinImagen(c))
         : perro.imagenAsset.isNotEmpty
-        ? Image.asset('fotos/${perro.imagenAsset}', fit: BoxFit.cover, errorBuilder: (_, __, ___) => _sinImagen())
-        : _sinImagen();
+            ? Image.asset('fotos/${perro.imagenAsset}', fit: BoxFit.cover, alignment: perro.encuadre, errorBuilder: (_, __, ___) => _sinImagen(c))
+            : _sinImagen(c);
     return SizedBox(
       width: size,
       height: size,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(circular ? size / 2 : 10),
-        child: image,
-      ),
+      child: circular
+          ? ClipOval(child: image)
+          : ClipRSuperellipse(borderRadius: BorderRadius.circular(10), child: image),
     );
   }
 
-  Widget _sinImagen() => const ColoredBox(
-    color: Color(0xffe7d9ff),
-    child: Icon(Icons.pets, color: Color(0xff6345a2)),
-  );
+  Widget _sinImagen(ColoresApp c) => ColoredBox(
+        color: c.contenedor,
+        child: Icono(Iconos.pawPrint, color: c.textoTenue),
+      );
 }
 
 class _EtiquetaEstado extends StatelessWidget {
-  const _EtiquetaEstado({required this.estado, this.compacta = false});
+  const _EtiquetaEstado({required this.estado});
   final String estado;
-  final bool compacta;
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colores;
     final saludable = estado.toLowerCase() == 'saludable';
-    final color = saludable ? const Color(0xff35ae7b) : const Color(0xffff8d17);
-    final fondo = saludable ? const Color(0xffe4f5ec) : const Color(0xffffedda);
+    final color = saludable ? c.exitoTexto : c.advertenciaTexto;
+    final fondo = saludable ? c.exitoSuave : c.advertenciaSuave;
     final texto = saludable ? estado : estado == 'Sin estado' ? estado : 'Revisar';
     return Container(
-      constraints: BoxConstraints(maxWidth: compacta ? 112 : 72),
-      padding: EdgeInsets.symmetric(horizontal: compacta ? 7 : 9, vertical: 7),
-      decoration: BoxDecoration(color: fondo, borderRadius: BorderRadius.circular(18)),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [
-        if (compacta) ...[Container(width: 5, height: 5, decoration: BoxDecoration(color: color, shape: BoxShape.circle)), const SizedBox(width: 4)],
-        Text(texto, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: color, fontSize: compacta ? 10 : 11, fontWeight: FontWeight.w600)),
-      ]),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
+      decoration: Formas.fondo(fondo, 18),
+      child: Text(texto, maxLines: 1, style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w600)),
     );
   }
+}
+
+class _SeguidosEsqueleto extends StatelessWidget {
+  const _SeguidosEsqueleto();
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+        height: 82,
+        child: ListView.separated(
+          padding: const EdgeInsets.fromLTRB(18, 14, 18, 4),
+          scrollDirection: Axis.horizontal,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: 3,
+          separatorBuilder: (_, _) => const SizedBox(width: 8),
+          itemBuilder: (context, _) => Container(
+            width: 152,
+            padding: const EdgeInsets.all(10),
+            decoration: Formas.fondo(context.colores.superficieSuave, 16),
+            child: const Row(children: [
+              BloqueEsqueleto(ancho: 40, alto: 40, circular: true),
+              SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    BloqueEsqueleto(ancho: 70, alto: 13),
+                    SizedBox(height: 6),
+                    BloqueEsqueleto(ancho: 50, alto: 10),
+                  ],
+                ),
+              ),
+            ]),
+          ),
+        ),
+      );
+}
+
+class _ListaEsqueleto extends StatelessWidget {
+  const _ListaEsqueleto();
+
+  @override
+  Widget build(BuildContext context) => ListView.separated(
+        padding: const EdgeInsets.fromLTRB(18, 8, 18, 20),
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: 6,
+        separatorBuilder: (_, _) => const SizedBox(height: 10),
+        itemBuilder: (context, _) => Container(
+          height: 88,
+          padding: const EdgeInsets.all(12),
+          decoration: Formas.fondo(context.colores.superficieSuave, 18),
+          child: const Row(children: [
+            BloqueEsqueleto(ancho: 52, alto: 52, radio: 10),
+            SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  BloqueEsqueleto(ancho: 110, alto: 16),
+                  SizedBox(height: 8),
+                  BloqueEsqueleto(ancho: 80, alto: 12),
+                ],
+              ),
+            ),
+            SizedBox(width: 8),
+            BloqueEsqueleto(ancho: 72, alto: 28, radio: 14),
+          ]),
+        ),
+      );
+}
+
+String _paraOrdenar(String nombre) {
+  const tildes = {'á': 'a', 'é': 'e', 'í': 'i', 'ó': 'o', 'ú': 'u', 'ü': 'u', 'ñ': 'n~'};
+  return nombre.toLowerCase().split('').map((letra) => tildes[letra] ?? letra).join();
 }
 
 String _fechaRelativa(dynamic timestamp) {
@@ -361,7 +481,7 @@ String _fechaRelativa(dynamic timestamp) {
   if (difference.inMinutes < 1) return 'Hace unos instantes';
   if (difference.inMinutes < 60) return 'Hace ${difference.inMinutes} min';
   if (difference.inHours < 24) return 'Hace ${difference.inHours} h';
-  return 'Hace ${difference.inDays} días';
+  return 'Hace ${difference.inDays} ${difference.inDays == 1 ? 'día' : 'días'}';
 }
 
 class _EstadoError extends StatelessWidget {
@@ -374,197 +494,208 @@ class _EstadoError extends StatelessWidget {
 class BotonForo extends StatelessWidget {
   const BotonForo({super.key});
   @override
-  Widget build(BuildContext context) => SizedBox(
-    width: double.infinity,
-    height: 39,
-    child: FilledButton.icon(
-      style: FilledButton.styleFrom(backgroundColor: _coral, shape: const StadiumBorder()),
-      onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const Foro())),
-      icon: const Icon(Icons.chat_bubble_outline, size: 18),
-      label: const Text('Foros', style: TextStyle(fontWeight: FontWeight.w700)),
-    ),
-  );
+  Widget build(BuildContext context) => Presionable(
+        child: SizedBox(
+          height: 34,
+          child: FilledButton.icon(
+            style: FilledButton.styleFrom(
+              backgroundColor: context.colores.acento,
+              foregroundColor: context.colores.sobreAcento,
+              shape: Formas.squircle(14),
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              minimumSize: const Size(0, 34),
+              tapTargetSize: MaterialTapTargetSize.padded,
+            ),
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const Foro())),
+            icon: const Icono(Iconos.messageCircle, size: 16),
+            label: const Text('Foros', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+          ),
+        ),
+      );
 }
 
 class _NavegacionInferior extends StatelessWidget {
   const _NavegacionInferior();
   @override
-  Widget build(BuildContext context) => SizedBox(
-    height: 86,
-    child: Stack(clipBehavior: Clip.none, alignment: Alignment.topCenter, children: [
-      Container(color: const Color(0xfff4bea5)),
-      Positioned(
-        left: 0,
-        right: 0,
-        top: 10,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            IconButton(
-              tooltip: 'Inicio',
-              onPressed: () {},
-              icon: const Icon(Icons.home_outlined, color: _coral, size: 32),
-            ),
-            const SizedBox(width: 48),
-            IconButton(
-              tooltip: 'Mi perfil',
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const PerfilUsuario()),
-              ),
-              icon: const Icon(Icons.person_outline, color: Color(0xff776d68), size: 31),
-            ),
-          ],
-        ),
-      ),
-      Positioned(top: -20, child: InkWell(
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const Camara()),
-          ),
-          child: Container(width: 78, height: 78, decoration: const BoxDecoration(color: _coral, shape: BoxShape.circle), child: const Icon(Icons.camera_alt_outlined, color: Colors.white, size: 31)))),
-    ]),
-  );
-}
-
-void _mostrarModalNovedades(
-    BuildContext context,
-    PerrosRepository repository,
-    String uid,
-    Set<String> idsDescartados,
-    VoidCallback onActualizarBadge,
-    ) {
-  showModalBottomSheet(
-    context: context,
-    backgroundColor: const Color(0xfffff9f6),
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-    ),
-    builder: (BuildContext innerContext) {
-      return StatefulBuilder(
-        builder: (context, setStateModal) {
-          return Container(
-            padding: const EdgeInsets.all(20),
-            height: 450,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+  Widget build(BuildContext context) {
+    final c = context.colores;
+    return SizedBox(
+        height: 86,
+        child: Stack(clipBehavior: Clip.none, alignment: Alignment.topCenter, children: [
+          Container(color: c.navegacion),
+          Positioned(
+            left: 0,
+            right: 0,
+            top: 10,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Novedades recientes',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xff332c28)),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () => Navigator.pop(innerContext),
-                    ),
-                  ],
+                IconButton(
+                  tooltip: 'Inicio',
+                  onPressed: () {},
+                  icon: Icono(Iconos.house, color: c.acento, size: 32),
                 ),
-                const Divider(),
-                Expanded(
-                  child: StreamBuilder<List<Perro>>(
-                    stream: repository.observarNovedadesSeguidos(uid),
-                    builder: (context, snapshotPerros) {
-                      return StreamBuilder<List<Map<String, dynamic>>>(
-                        stream: repository.observarPublicacionesForoSeguidos(uid),
-                        builder: (context, snapshotForo) {
-                          if (snapshotPerros.connectionState == ConnectionState.waiting &&
-                              snapshotForo.connectionState == ConnectionState.waiting) {
-                            return const Center(child: CircularProgressIndicator());
-                          }
-
-                          // 1. Perros
-                          final perros = snapshotPerros.hasData ? snapshotPerros.data! : [];
-                          final perritosFiltrados = perros
-                              .where((p) => !idsDescartados.contains('perro_${p.id}'))
-                              .toList();
-
-                          // 2. Foro
-                          final foroItems = snapshotForo.hasData ? snapshotForo.data! : [];
-                          final foroFiltrados = foroItems
-                              .where((f) => !idsDescartados.contains('foro_${f['id']}'))
-                              .toList();
-
-
-                          final List<Map<String, dynamic>> todasLasNovedades = [];
-
-                          for (var p in perritosFiltrados) {
-                            todasLasNovedades.add({
-                              'key': 'perro_${p.id}',
-                              'tipo': 'alimentacion',
-                              'titulo': 'Alimentación registrada para ${p.nombre}',
-                              'sub': 'Última comida a las ${p.ultimaComida} • ${_fechaRelativa(p.actualizadoEn)}',
-                              'icono': Icons.restaurant,
-                              'colorIcono': const Color.fromRGBO(222, 79, 65, 1),
-                              'fondoIcono': const Color.fromRGBO(222, 79, 65, 0.12),
-                            });
-                          }
-
-                          for (var f in foroFiltrados) {
-                            todasLasNovedades.add({
-                              'key': 'foro_${f['id']}',
-                              'tipo': 'foro',
-                              'titulo': 'Nueva publicación de ${f['nombrePerro']} en el foro',
-                              'sub': '"${f['comentario']}"',
-                              'icono': Icons.forum,
-                              'colorIcono': const Color(0xffff8d17),
-                              'fondoIcono': const Color(0xffffedda),
-                            });
-                          }
-
-                          if (todasLasNovedades.isEmpty) {
-                            return const Center(
-                              child: Text(
-                                '¡Estás al día con tus perritos!',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(color: Color(0xff776d68)),
-                              ),
-                            );
-                          }
-
-                          return ListView.separated(
-                            itemCount: todasLasNovedades.length,
-                            separatorBuilder: (_, __) => const Divider(height: 1),
-                            itemBuilder: (context, index) {
-                              final item = todasLasNovedades[index];
-                              return ListTile(
-                                leading: CircleAvatar(
-                                  backgroundColor: item['fondoIcono'],
-                                  child: Icon(item['icono'], color: item['colorIcono'], size: 20),
-                                ),
-                                title: Text(
-                                  item['titulo'],
-                                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-                                ),
-                                subtitle: Text(
-                                  item['sub'],
-                                  style: const TextStyle(fontSize: 12),
-                                ),
-                                trailing: IconButton(
-                                  icon: const Icon(Icons.close, size: 18, color: Color(0xff867d78)),
-                                  onPressed: () {
-                                    setStateModal(() {
-                                      idsDescartados.add(item['key']);
-                                    });
-
-                                    onActualizarBadge();
-                                  },
-                                ),
-                              );
-                            },
-                          );
-                        },
-                      );
-                    },
+                const SizedBox(width: 48),
+                IconButton(
+                  tooltip: 'Mi perfil',
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const PerfilUsuario()),
                   ),
+                  icon: Icono(Iconos.user, color: c.textoSecundario, size: 31),
                 ),
               ],
             ),
-          );
-        },
+          ),
+          Positioned(top: -20, child: InkWell(
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const Camara()),
+              ),
+              child: Container(width: 78, height: 78, decoration: BoxDecoration(color: c.acento, shape: BoxShape.circle), child: Icono(Iconos.camera, color: c.sobreAcento, size: 31)))),
+        ]),
       );
-    },
-  );
+  }
+}
+
+class _HojaNovedades extends StatefulWidget {
+  const _HojaNovedades({required this.repository, required this.uid, required this.idsDescartados, required this.alDescartar});
+  final PerrosRepository repository;
+  final String uid;
+  final Set<String> idsDescartados;
+  final VoidCallback alDescartar;
+
+  @override
+  State<_HojaNovedades> createState() => _HojaNovedadesState();
+}
+
+class _HojaNovedadesState extends State<_HojaNovedades> {
+  late final Stream<List<Perro>> _perros = widget.repository.observarNovedadesSeguidos(widget.uid);
+  late final Stream<List<Map<String, dynamic>>> _foro = widget.repository.observarPublicacionesForoSeguidos(widget.uid);
+
+  void _descartar(String clave) {
+    setState(() => widget.idsDescartados.add(clave));
+    widget.alDescartar();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colores;
+    return Container(
+      height: MediaQuery.sizeOf(context).height * .6,
+      decoration: ShapeDecoration(color: c.fondo, shape: Formas.squircleArriba(28)),
+      padding: EdgeInsets.fromLTRB(16, 10, 16, 12 + MediaQuery.paddingOf(context).bottom),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Center(
+          child: Container(width: 36, height: 4, margin: const EdgeInsets.only(bottom: 12), decoration: Formas.fondo(c.divisor, 2)),
+        ),
+        Row(children: [
+          Expanded(
+            child: Text('Novedades recientes', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800).display),
+          ),
+          IconButton(
+            tooltip: 'Cerrar',
+            onPressed: () => Navigator.pop(context),
+            icon: Icono(Iconos.x, color: c.textoSecundario),
+          ),
+        ]),
+        const SizedBox(height: 8),
+        Expanded(
+          child: StreamBuilder<List<Perro>>(
+            stream: _perros,
+            builder: (context, snapshotPerros) => StreamBuilder<List<Map<String, dynamic>>>(
+              stream: _foro,
+              builder: (context, snapshotForo) {
+                if (!snapshotPerros.hasData && !snapshotForo.hasData) {
+                  return ListView.separated(
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: 3,
+                    separatorBuilder: (_, _) => const SizedBox(height: 8),
+                    itemBuilder: (_, _) => const BloqueEsqueleto(alto: 64, radio: 16),
+                  );
+                }
+
+                final novedades = <_Novedad>[
+                  for (final p in snapshotPerros.data ?? <Perro>[])
+                    if (!widget.idsDescartados.contains('perro_${p.id}'))
+                      _Novedad(
+                        clave: 'perro_${p.id}',
+                        icono: Iconos.utensils,
+                        color: c.acento,
+                        titulo: 'Alimentación registrada para ${p.nombre}',
+                        detalle: 'Última comida a las ${p.ultimaComida} · ${_fechaRelativa(p.actualizadoEn)}',
+                      ),
+                  for (final f in snapshotForo.data ?? <Map<String, dynamic>>[])
+                    if (!widget.idsDescartados.contains('foro_${f['id']}'))
+                      _Novedad(
+                        clave: 'foro_${f['id']}',
+                        icono: Iconos.messageCircle,
+                        color: AppColors.azulAgua,
+                        titulo: 'Nueva publicación de ${f['nombrePerro']} en el foro',
+                        detalle: '"${f['comentario']}"',
+                      ),
+                ];
+
+                if (novedades.isEmpty) {
+                  return Center(
+                    child: Column(mainAxisSize: MainAxisSize.min, children: [
+                      Icono(Iconos.pawPrint, size: 40, color: c.acento),
+                      const SizedBox(height: 10),
+                      Text('¡Estás al día con tus perritos!', textAlign: TextAlign.center, style: TextStyle(color: c.textoSecundario)),
+                    ]),
+                  );
+                }
+
+                return ListView.separated(
+                  physics: const BouncingScrollPhysics(),
+                  itemCount: novedades.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: 8),
+                  itemBuilder: (context, index) {
+                    final n = novedades[index];
+                    return Aparicion(
+                      indice: index,
+                      child: Container(
+                        padding: const EdgeInsets.fromLTRB(12, 10, 4, 10),
+                        decoration: Formas.fondo(c.superficie, 16),
+                        child: Row(children: [
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: Formas.fondo(n.color.withValues(alpha: .12), 12),
+                            child: Icono(n.icono, size: 20, color: n.color),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                              Text(n.titulo, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                              const SizedBox(height: 2),
+                              Text(n.detalle, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12, color: c.textoSecundario)),
+                            ]),
+                          ),
+                          IconButton(
+                            tooltip: 'Descartar',
+                            onPressed: () => _descartar(n.clave),
+                            icon: Icono(Iconos.x, size: 18, color: c.textoTenue),
+                          ),
+                        ]),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ),
+      ]),
+    );
+  }
+}
+
+class _Novedad {
+  const _Novedad({required this.clave, required this.icono, required this.color, required this.titulo, required this.detalle});
+  final String clave;
+  final IconData icono;
+  final Color color;
+  final String titulo;
+  final String detalle;
 }

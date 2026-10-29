@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:guaurdados_oficial/theme/colores_app.dart';
+import 'package:guaurdados_oficial/theme/formas.dart';
+import 'package:guaurdados_oficial/theme/tipografia.dart';
+import 'package:guaurdados_oficial/widgets/logo.dart';
 import 'iniciar_sesion.dart';
 import 'homepage.dart';
 
@@ -96,8 +100,9 @@ class _RegistroUsuarioState extends State<RegistroUsuario> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colores;
     return Scaffold(
-      backgroundColor: const Color(0xFFF4E2D7),
+      backgroundColor: c.fondoCalido,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 24.0),
@@ -107,15 +112,15 @@ class _RegistroUsuarioState extends State<RegistroUsuario> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 const SizedBox(height: 40),
-                const Text(
+                Text(
                   "Únete a",
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF2B2B2B),
-                  ),
+                    color: c.texto,
+                  ).display,
                 ),
-                Image.asset('fotos/Letras.png', height: 40),
+                const NombreGUAUrdados(alto: 40),
                 const SizedBox(height: 40),
 
                 _buildTextField(
@@ -169,27 +174,29 @@ class _RegistroUsuarioState extends State<RegistroUsuario> {
                           : (value) => setState(
                               () => _aceptaTerminos = value ?? false,
                             ),
-                      activeColor: Colors.blue,
+                      activeColor: c.acento,
                     ),
-                    const Expanded(
+                    Expanded(
                       child: Text.rich(
                         TextSpan(
                           text: "Acepto los ",
-                          style: TextStyle(fontSize: 12, color: Colors.black54),
+                          style: TextStyle(fontSize: 12, color: c.textoSecundario),
                           children: [
                             TextSpan(
-                              text: "Términos y Condiciones",
+                              text: "Términos y condiciones",
                               style: TextStyle(
-                                color: Color(0xFFE86A4D),
+                                color: c.acento,
                                 decoration: TextDecoration.underline,
+                                decorationColor: c.acento,
                               ),
                             ),
-                            TextSpan(text: " y la "),
+                            const TextSpan(text: " y la "),
                             TextSpan(
-                              text: "Política de Privacidad",
+                              text: "Política de privacidad",
                               style: TextStyle(
-                                color: Color(0xFFE86A4D),
+                                color: c.acento,
                                 decoration: TextDecoration.underline,
+                                decorationColor: c.acento,
                               ),
                             ),
                           ],
@@ -201,31 +208,29 @@ class _RegistroUsuarioState extends State<RegistroUsuario> {
 
                 const SizedBox(height: 32),
 
-                // Botón Iniciar Sesión
+                // Botón crear cuenta
                 SizedBox(
                   width: double.infinity,
                   height: 55,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF826C63), // Color café
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(24),
-                      ),
+                      backgroundColor: c.secundario,
+                      shape: Formas.squircle(24),
                       elevation: 4,
                     ),
                     onPressed: _isLoading ? null : _registrar,
                     child: _isLoading
-                        ? const SizedBox(
+                        ? SizedBox(
                             width: 24,
                             height: 24,
                             child: CircularProgressIndicator(
-                              color: Colors.white,
+                              color: c.sobreAcento,
                             ),
                           )
-                        : const Text(
+                        : Text(
                             "Crear cuenta",
                             style: TextStyle(
-                              color: Colors.white,
+                              color: c.sobreAcento,
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                             ),
@@ -239,9 +244,9 @@ class _RegistroUsuarioState extends State<RegistroUsuario> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text(
+                    Text(
                       "¿Ya tienes cuenta? ",
-                      style: TextStyle(color: Colors.black54),
+                      style: TextStyle(color: c.textoSecundario),
                     ),
                     GestureDetector(
                       onTap: _isLoading
@@ -254,12 +259,13 @@ class _RegistroUsuarioState extends State<RegistroUsuario> {
                                 ),
                               );
                             },
-                      child: const Text(
-                        "Inicia Sesión",
+                      child: Text(
+                        "Inicia sesión",
                         style: TextStyle(
-                          color: Color(0xFFE86A4D),
+                          color: c.acento,
                           fontWeight: FontWeight.bold,
                           decoration: TextDecoration.underline,
+                          decorationColor: c.acento,
                         ),
                       ),
                     ),
@@ -279,46 +285,38 @@ class _RegistroUsuarioState extends State<RegistroUsuario> {
     TextEditingController controller,
     String? Function(String?) validator,
   ) {
-    return Container(
-      decoration: BoxDecoration(
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: TextFormField(
-        controller: controller,
-        validator: validator,
-        enabled: !_isLoading,
-        autocorrect: !isObscure,
-        enableSuggestions: !isObscure,
-        keyboardType: controller == _correo
-            ? TextInputType.emailAddress
-            : TextInputType.text,
-        textInputAction: controller == _confirmacion
-            ? TextInputAction.done
-            : TextInputAction.next,
-        onFieldSubmitted: controller == _confirmacion
-            ? (_) => _registrar()
-            : null,
-        obscureText: isObscure,
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: const TextStyle(color: Colors.grey),
-          filled: true,
-          fillColor: Colors.white,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 20,
-            vertical: 18,
-          ),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(24),
-            borderSide: BorderSide.none,
-          ),
+    final c = context.colores;
+    return TextFormField(
+      controller: controller,
+      validator: validator,
+      enabled: !_isLoading,
+      autocorrect: !isObscure,
+      enableSuggestions: !isObscure,
+      keyboardType: controller == _correo
+          ? TextInputType.emailAddress
+          : TextInputType.text,
+      textInputAction: controller == _confirmacion
+          ? TextInputAction.done
+          : TextInputAction.next,
+      onFieldSubmitted: controller == _confirmacion
+          ? (_) => _registrar()
+          : null,
+      obscureText: isObscure,
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: TextStyle(color: c.textoTenue),
+        filled: true,
+        fillColor: c.superficie,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 20,
+          vertical: 18,
         ),
+        border: const BordeSquircle(),
+        enabledBorder: const BordeSquircle(),
+        focusedBorder: BordeSquircle(borderSide: BorderSide(color: c.acento, width: 1.5)),
+        errorBorder: BordeSquircle(borderSide: BorderSide(color: c.emergencia)),
+        focusedErrorBorder: BordeSquircle(borderSide: BorderSide(color: c.emergencia, width: 1.5)),
+        errorStyle: TextStyle(color: c.emergencia),
       ),
     );
   }

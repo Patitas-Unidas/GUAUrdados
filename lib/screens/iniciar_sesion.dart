@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:guaurdados_oficial/services/notificaciones_service.dart';
+import 'package:guaurdados_oficial/theme/colores_app.dart';
+import 'package:guaurdados_oficial/theme/formas.dart';
+import 'package:guaurdados_oficial/theme/tipografia.dart';
+import 'package:guaurdados_oficial/widgets/logo.dart';
 import 'homepage.dart';
 import 'registro_usuario.dart';
 
@@ -34,9 +38,9 @@ class _IniciarSesionState extends State<IniciarSesion> {
 
       // Mensaje de éxito agregado
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('¡Inicio de sesión exitoso!'),
-          backgroundColor: Colors.green,
+        SnackBar(
+          content: const Text('¡Inicio de sesión exitoso!'),
+          backgroundColor: context.colores.exito,
         ),
       );
 
@@ -61,14 +65,14 @@ class _IniciarSesionState extends State<IniciarSesion> {
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(mensajeError), backgroundColor: Colors.red),
+        SnackBar(content: Text(mensajeError), backgroundColor: context.colores.emergencia),
       );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Error inesperado de conexión.'),
-          backgroundColor: Colors.red,
+        SnackBar(
+          content: const Text('Error inesperado de conexión.'),
+          backgroundColor: context.colores.emergencia,
         ),
       );
     } finally {
@@ -82,8 +86,9 @@ class _IniciarSesionState extends State<IniciarSesion> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colores;
     return Scaffold(
-      backgroundColor: const Color(0xFFF4E2D7),
+      backgroundColor: c.fondoCalido,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 24.0),
@@ -92,21 +97,17 @@ class _IniciarSesionState extends State<IniciarSesion> {
             children: [
               const SizedBox(height: 20),
 
-              const Text(
+              Text(
                 "Bienvenido a",
                 style: TextStyle(
                   fontSize: 26,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF2B2B2B),
-                ),
+                  color: c.texto,
+                ).display,
               ),
               const SizedBox(height: 10),
 
-              Image.asset(
-                'fotos/GUAUrdados.png',
-                height: 180,
-                fit: BoxFit.contain,
-              ),
+              const LogoGUAUrdados(alto: 180),
 
               const SizedBox(height: 30),
 
@@ -130,12 +131,12 @@ class _IniciarSesionState extends State<IniciarSesion> {
 
               const SizedBox(height: 12),
 
-              const Align(
+              Align(
                 alignment: Alignment.centerRight,
                 child: Text(
                   "¿Olvidaste tu contraseña?",
                   style: TextStyle(
-                    color: Color(0xFFE86A4D),
+                    color: c.acento,
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
                   ),
@@ -149,19 +150,17 @@ class _IniciarSesionState extends State<IniciarSesion> {
                 height: 55,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF826C63),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(24),
-                    ),
+                    backgroundColor: c.secundario,
+                    shape: Formas.squircle(24),
                     elevation: 4,
                   ),
                   onPressed: _isLoading ? null : _iniciarSesion,
                   child: _isLoading
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text(
-                          "Iniciar Sesión",
+                      ? CircularProgressIndicator(color: c.sobreAcento)
+                      : Text(
+                          "Iniciar sesión",
                           style: TextStyle(
-                            color: Colors.white,
+                            color: c.sobreAcento,
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                           ),
@@ -174,9 +173,9 @@ class _IniciarSesionState extends State<IniciarSesion> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Text(
+                  Text(
                     "¿No tienes cuenta? ",
-                    style: TextStyle(color: Colors.black54, fontSize: 14),
+                    style: TextStyle(color: c.textoSecundario, fontSize: 14),
                   ),
                   GestureDetector(
                     onTap: _isLoading
@@ -189,13 +188,14 @@ class _IniciarSesionState extends State<IniciarSesion> {
                               ),
                             );
                           },
-                    child: const Text(
+                    child: Text(
                       "Regístrate",
                       style: TextStyle(
-                        color: Color(0xFFE86A4D),
+                        color: c.acento,
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
                         decoration: TextDecoration.underline,
+                        decorationColor: c.acento,
                       ),
                     ),
                   ),
@@ -208,7 +208,7 @@ class _IniciarSesionState extends State<IniciarSesion> {
     );
   }
 
-  // El teclado también activa el boton de inicar sesión
+  // El teclado también activa el botón de iniciar sesión
   Widget _buildTextField(
     String hint,
     bool isObscure,
@@ -216,39 +216,31 @@ class _IniciarSesionState extends State<IniciarSesion> {
     TextInputAction textInputAction = TextInputAction.next,
     VoidCallback? onSubmitted,
   }) {
-    return Container(
-      decoration: BoxDecoration(
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: TextField(
-        controller: controller,
-        obscureText: isObscure,
-        textInputAction: textInputAction,
-        onSubmitted: (_) {
-          if (onSubmitted != null) {
-            onSubmitted();
-          }
-        },
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: const TextStyle(color: Colors.grey),
-          filled: true,
-          fillColor: Colors.white,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 20,
-            vertical: 18,
-          ),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(24),
-            borderSide: BorderSide.none,
-          ),
+    final c = context.colores;
+    return TextField(
+      controller: controller,
+      obscureText: isObscure,
+      textInputAction: textInputAction,
+      onSubmitted: (_) {
+        if (onSubmitted != null) {
+          onSubmitted();
+        }
+      },
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: TextStyle(color: c.textoTenue),
+        filled: true,
+        fillColor: c.superficie,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 20,
+          vertical: 18,
         ),
+        border: const BordeSquircle(),
+        enabledBorder: const BordeSquircle(),
+        focusedBorder: BordeSquircle(borderSide: BorderSide(color: c.acento, width: 1.5)),
+        errorBorder: BordeSquircle(borderSide: BorderSide(color: c.emergencia)),
+        focusedErrorBorder: BordeSquircle(borderSide: BorderSide(color: c.emergencia, width: 1.5)),
+        errorStyle: TextStyle(color: c.emergencia),
       ),
     );
   }

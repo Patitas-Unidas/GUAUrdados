@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:guaurdados_oficial/widgets/iconos.dart';
 import 'package:guaurdados_oficial/screens/comentarios.dart';
+import 'package:guaurdados_oficial/theme/colores_app.dart';
+import 'package:guaurdados_oficial/widgets/hoja.dart';
 
 class Publicacion extends StatelessWidget {
   const Publicacion({
@@ -24,6 +27,7 @@ class Publicacion extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colores;
     if (TipoPub == 'Alimentación') {
       return ActualizacionComida(
         IDPerro: IDPerro,
@@ -32,7 +36,7 @@ class Publicacion extends StatelessWidget {
         tiempo: tiempo!,
       );
     }
-    else if (TipoPub == 'Estado Médico') {
+    else if (TipoPub == 'Estado médico') {
       return ActualizacionEstadoMedico(
         IDPerro: IDPerro,
         IDUsuario: IDUsuario,
@@ -43,7 +47,7 @@ class Publicacion extends StatelessWidget {
     else {
       return Card(
         margin: EdgeInsets.all(10),
-        color: Colors.white,
+        color: c.superficie,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -90,17 +94,18 @@ class ActualizacionComida extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colores;
     return Card(
       margin: EdgeInsets.all(10),
-      color: Color.fromRGBO(222, 79, 65, 1),
+      color: c.acento,
       child: Padding(
         padding: EdgeInsets.only(left: 5, top: 10, bottom: 10, right: 5),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Icon(
-              Icons.flatware,
-              color: Colors.white,
+            Icono(
+              Iconos.utensils,
+              color: c.sobreAcento,
               size: 40,
             ),
             Expanded(
@@ -114,7 +119,7 @@ class ActualizacionComida extends StatelessWidget {
                     maxLines: 1,
                     softWrap: false,
                     style: TextStyle(
-                      color: Colors.white,
+                      color: c.sobreAcento,
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
                     ),
@@ -125,7 +130,7 @@ class ActualizacionComida extends StatelessWidget {
                       child: Text(
                         'Se ha registrado que $IDPerro ha recibido ${comida[0]} de ${comida[1]} ${tiempo[0]} a las ${tiempo[1]}.',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: c.sobreAcento,
                           fontSize: 13,
                           fontWeight: FontWeight.w400,
                         ),
@@ -157,17 +162,18 @@ class ActualizacionEstadoMedico extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colores;
     return Card(
       margin: EdgeInsets.all(10),
-      color: Color.fromRGBO(31, 179, 156, 1),
+      color: c.medico,
       child: Padding(
         padding: EdgeInsets.only(left: 5, top: 10, bottom: 10, right: 5),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Icon(
-              Icons.medical_information_outlined,
-              color: Colors.white,
+            Icono(
+              Iconos.stethoscope,
+              color: c.sobreAcento,
               size: 40,
             ),
             Expanded(
@@ -181,7 +187,7 @@ class ActualizacionEstadoMedico extends StatelessWidget {
                     maxLines: 1,
                     softWrap: false,
                     style: TextStyle(
-                      color: Colors.white,
+                      color: c.sobreAcento,
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
                     ),
@@ -192,7 +198,7 @@ class ActualizacionEstadoMedico extends StatelessWidget {
                       child: Text(
                         'Se ha registrado que $IDPerro ha recibido el siguiente procedimiento ${tiempo[0]} a las ${tiempo[1]}: $procedimiento.',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: c.sobreAcento,
                           fontSize: 13,
                           fontWeight: FontWeight.w400,
                         ),
@@ -218,6 +224,7 @@ class BarraUsuario extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colores;
     return Padding(
       padding: EdgeInsets.all(15),
       child: Row(
@@ -242,7 +249,7 @@ class BarraUsuario extends StatelessWidget {
                       '${IDUsuario[1]}   Hace 2 horas',
                       style: TextStyle(
                         fontSize: 12,
-                        color: Color.fromRGBO(56, 54, 53, .5),
+                        color: c.textoTenue,
                       ),
                     ),
                   ],
@@ -254,7 +261,7 @@ class BarraUsuario extends StatelessWidget {
             padding: EdgeInsets.only(right: 10),
             child: InkWell(
               onTap: () {},
-              child: Icon(Icons.more_horiz),
+              child: Icono(Iconos.ellipsis),
             ),
           ),
         ],
@@ -274,6 +281,7 @@ class BarraAcciones extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colores;
     return Padding(
       padding: EdgeInsets.only(top: 5, left: 25, right: 25, bottom: 10,),
       child: Row(
@@ -289,16 +297,16 @@ class BarraAcciones extends StatelessWidget {
                     children: [
                       Padding(
                         padding: EdgeInsets.only(right: 3),
-                        child: Icon(
-                          Icons.favorite_border,
-                          color: Color.fromRGBO(56, 54, 53, .5),
+                        child: Icono(
+                          Iconos.heart,
+                          color: c.textoTenue,
                           size: 20,
                         ),
                       ),
                       Text(
                         '14',
                         style: TextStyle(
-                          color: Color.fromRGBO(56, 54, 53, .5),
+                          color: c.textoTenue,
                           fontSize: 15,
                         ),
                       ),
@@ -309,9 +317,8 @@ class BarraAcciones extends StatelessWidget {
 
               InkWell(
                 onTap: () {
-                  showModalBottomSheet<void>(
-                    isScrollControlled: true,
-                    context: context, 
+                  mostrarHoja<void>(
+                    context,
                     builder: (BuildContext context) {
                       return Comentarios(
                         IDComentario: [IDPublicacion],
@@ -324,16 +331,16 @@ class BarraAcciones extends StatelessWidget {
                   children: [
                     Padding(
                       padding: EdgeInsets.only(right: 5),
-                      child: Icon(
-                        Icons.chat_bubble_outline,
-                        color: Color.fromRGBO(56, 54, 53, .5),
+                      child: Icono(
+                        Iconos.messageCircle,
+                        color: c.textoTenue,
                         size: 19,
                       ),
                     ),
                     Text(
                       '3',
                       style: TextStyle(
-                        color: Color.fromRGBO(56, 54, 53, .5),
+                        color: c.textoTenue,
                         fontSize: 15,
                       ),
                     ),
@@ -346,9 +353,9 @@ class BarraAcciones extends StatelessWidget {
 
           InkWell(
             onTap: () {},
-            child: Icon(
-              Icons.emoji_emotions_outlined,
-              color: Color.fromRGBO(56, 54, 53, .5),
+            child: Icono(
+              Iconos.smile,
+              color: c.textoTenue,
               size: 20,
             ),
           ),
