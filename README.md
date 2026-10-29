@@ -4,7 +4,7 @@
 
 # GUAUrdados
 
-Cuidamos juntos a los perros comunitarios de la USM, sede Viña del Mar.
+Amor y protección en la palma de tu mano.
 
 **[Descargar la app para Android](https://patitas-unidas.github.io/GUAUrdados-web/)**
 
@@ -12,9 +12,9 @@ Cuidamos juntos a los perros comunitarios de la USM, sede Viña del Mar.
 
 <br>
 
-En la sede viven perros en situación de calle que la comunidad cuida todos los días, pero sin coordinarse: a veces comen varias veces el mismo día, los cuidados médicos se repiten, no siempre se sabe quién es quién y su historial queda en papel.
+GUAUrdados es una iniciativa dedicada a la identificación, la coordinación de ayuda comunitaria y el cuidado de perritos en situación de calle.
 
-GUAUrdados reúne en una sola app la ficha de cada perrito, lo que necesita y a quién avisar si algo pasa.
+Muchos de ellos son cuidados por su comunidad, pero sin coordinarse: a veces comen varias veces el mismo día, los cuidados médicos se repiten y su historial queda en papel. GUAUrdados reúne en una sola app la ficha de cada perrito, lo que necesita y a quién avisar si algo pasa, para darle una patita a quienes más lo necesitan.
 
 <div align="center">
 <table>
@@ -42,7 +42,7 @@ GUAUrdados reúne en una sola app la ficha de cada perrito, lo que necesita y a 
 
 ## Qué se puede hacer
 
-- Ver a todos los perritos de la sede y seguir a tus favoritos.
+- Ver a todos los perritos de tu comunidad y seguir a tus favoritos.
 - Revisar el perfil de cada uno: carácter, peso, vacunas y estado médico.
 - Registrar cuándo y cuánto comió *(en desarrollo)*.
 - Reportar una emergencia y avisar a la comunidad.
