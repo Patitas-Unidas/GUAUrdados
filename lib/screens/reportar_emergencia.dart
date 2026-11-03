@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -12,13 +14,7 @@ import '../widgets/foto_perro.dart';
 import '../widgets/hoja.dart';
 import '../widgets/iconos.dart';
 import '../widgets/presionable.dart';
-
-const _tipos = <String, IconData>{
-  'Problema de salud': Iconos.heartPulse,
-  'Pelea': Iconos.zap,
-  'Peligro': Iconos.triangleAlert,
-  'Otro': Iconos.circleHelp,
-};
+import '../widgets/tarjeta_emergencia.dart';
 
 /// Hoja inferior para reportar una emergencia.
 ///
@@ -51,13 +47,12 @@ class _ReportarEmergenciaState extends State<ReportarEmergencia> {
   Stream<List<Perro>>? _perros;
 
   String? _tipo;
-  String? _idSeleccionado;
-  String? _nombreSeleccionado;
+  final _seleccionados = <String, String>{};
   bool _desconocido = false;
   bool _enviando = false;
 
   bool get _fijo => widget.idPerro != null;
-  bool get _puedeEnviar => !_enviando && _tipo != null && (_fijo || _idSeleccionado != null || _desconocido);
+  bool get _puedeEnviar => !_enviando && _tipo != null && (_fijo || _seleccionados.isNotEmpty || _desconocido);
 
   @override
   void initState() {
@@ -75,23 +70,29 @@ class _ReportarEmergenciaState extends State<ReportarEmergencia> {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(texto)));
 
   Future<void> _enviar() async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return _snack('Debes iniciar sesión para emitir una alerta.');
+    final usuario = FirebaseAuth.instance.currentUser;
+    if (usuario == null) return _snack('Debes iniciar sesión para emitir una alerta.');
+    final nombre = usuario.displayName?.trim() ?? '';
     setState(() => _enviando = true);
     try {
       await _repo
           .crear(
-            idPerro: _fijo ? widget.idPerro : _idSeleccionado,
-            nombrePerro: _fijo ? widget.nombrePerro : _nombreSeleccionado,
+            perros: _fijo ? {widget.idPerro!: widget.nombrePerro ?? 'Perrito'} : _desconocido ? const {} : _seleccionados,
             tipo: _tipo!,
             ubicacion: _ubicacion.text.trim(),
-            uid: uid,
+            uid: usuario.uid,
+            nombreUsuario: nombre.isNotEmpty ? nombre : usuario.email?.split('@').first ?? 'Usuario',
           )
           .timeout(const Duration(seconds: 15));
       if (!mounted) return;
       final messenger = ScaffoldMessenger.of(context);
       Navigator.pop(context);
       messenger.showSnackBar(const SnackBar(content: Text('Alerta emitida. Se está avisando a la comunidad.')));
+    } on TimeoutException {
+      if (!mounted) return;
+      final messenger = ScaffoldMessenger.of(context);
+      Navigator.pop(context);
+      messenger.showSnackBar(const SnackBar(content: Text('Hay poca señal. La alerta se enviará apenas vuelva la conexión.')));
     } catch (_) {
       if (!mounted) return;
       setState(() => _enviando = false);
@@ -123,20 +124,22 @@ class _ReportarEmergenciaState extends State<ReportarEmergencia> {
             const SizedBox(height: 18),
             if (!_fijo) ...[
               _Etiqueta('¿QUIÉN NECESITA AYUDA?', icono: Iconos.pawPrint, color: c.textoSecundario),
+              const SizedBox(height: 2),
+              Text('Puedes elegir más de uno', style: TextStyle(fontSize: 12, color: c.textoTenue)),
               const SizedBox(height: 10),
               _selectorPerros(),
               const SizedBox(height: 18),
             ],
-            _Etiqueta(_fijo ? 'AVISAR A LA SEDE' : '¿QUÉ OCURRE?', icono: _fijo ? null : Iconos.zap, color: c.advertencia),
+            _Etiqueta('¿QUÉ OCURRE?', icono: Iconos.zap, color: c.advertencia),
             const SizedBox(height: 10),
             Wrap(
               spacing: 8,
               runSpacing: 8,
               children: [
-                for (final e in _tipos.entries)
+                for (final e in tiposEmergencia.entries)
                   _Pill(
                     texto: e.key,
-                    icono: _fijo ? null : e.value,
+                    icono: e.value,
                     seleccionado: _tipo == e.key,
                     onTap: () => setState(() => _tipo = e.key),
                   ),
@@ -252,10 +255,9 @@ class _ReportarEmergenciaState extends State<ReportarEmergencia> {
                   _OpcionPerro(
                     nombre: p.nombre,
                     perro: p,
-                    seleccionado: _idSeleccionado == p.id,
+                    seleccionado: _seleccionados.containsKey(p.id),
                     onTap: () => setState(() {
-                      _idSeleccionado = p.id;
-                      _nombreSeleccionado = p.nombre;
+                      if (_seleccionados.remove(p.id) == null) _seleccionados[p.id] = p.nombre;
                       _desconocido = false;
                     }),
                   ),
@@ -263,9 +265,8 @@ class _ReportarEmergenciaState extends State<ReportarEmergencia> {
                   nombre: 'No lo conozco',
                   seleccionado: _desconocido,
                   onTap: () => setState(() {
-                    _desconocido = true;
-                    _idSeleccionado = null;
-                    _nombreSeleccionado = null;
+                    _desconocido = !_desconocido;
+                    _seleccionados.clear();
                   }),
                 ),
               ],

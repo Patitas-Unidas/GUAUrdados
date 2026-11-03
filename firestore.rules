@@ -22,6 +22,11 @@ service cloud.firestore {
             .hasOnly([request.auth.uid])
         ) || (
           request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['ultimaAguaEn', 'actualizadoEn']) &&
+          request.resource.data.ultimaAguaEn == request.time &&
+          request.resource.data.actualizadoEn == request.time
+        ) || (
+          request.resource.data.diff(resource.data).affectedKeys()
             .hasOnly(['ultimaComida', 'ultimaComidaEn', 'actualizadoEn']) &&
           request.resource.data.keys()
             .hasAll(['ultimaComida', 'ultimaComidaEn', 'actualizadoEn']) &&
@@ -53,17 +58,49 @@ service cloud.firestore {
     }
 
     match /emergencias/{emergenciaId} {
+      function datosComunes() {
+        let datos = request.resource.data;
+        return datos.creadoPor == request.auth.uid
+          && datos.tipo is string
+          && datos.tipo.size() > 0
+          && datos.tipo.size() <= 60
+          && datos.ubicacion is string
+          && datos.ubicacion.size() <= 200
+          && datos.creadoEn == request.time;
+      }
+
+      function formatoAnterior() {
+        let datos = request.resource.data;
+        return datos.keys().hasOnly(['idPerro', 'nombrePerro', 'tipo', 'ubicacion', 'creadoPor', 'creadoEn'])
+          && (datos.idPerro == null || datos.idPerro is string)
+          && (datos.nombrePerro == null || datos.nombrePerro is string);
+      }
+
+      function variosPerros() {
+        let datos = request.resource.data;
+        return datos.keys().hasOnly(['idsPerros', 'nombresPerros', 'tipo', 'ubicacion', 'creadoPor', 'nombreUsuario', 'estado', 'creadoEn'])
+          && datos.keys().hasAll(['idsPerros', 'nombresPerros', 'nombreUsuario', 'estado'])
+          && datos.idsPerros is list
+          && datos.idsPerros.size() <= 15
+          && datos.nombresPerros is list
+          && datos.nombresPerros.size() == datos.idsPerros.size()
+          && datos.nombreUsuario is string
+          && datos.nombreUsuario.size() <= 100
+          && datos.estado == 'en_curso';
+      }
+
+      allow read: if request.auth != null;
       allow create: if request.auth != null
-        && request.resource.data.keys().hasOnly(['idPerro', 'nombrePerro', 'tipo', 'ubicacion', 'creadoPor', 'creadoEn'])
-        && request.resource.data.creadoPor == request.auth.uid
-        && request.resource.data.tipo is string
-        && request.resource.data.tipo.size() > 0
-        && request.resource.data.tipo.size() <= 60
-        && request.resource.data.ubicacion is string
-        && request.resource.data.ubicacion.size() <= 200
-        && (request.resource.data.idPerro == null || request.resource.data.idPerro is string)
-        && (request.resource.data.nombrePerro == null || request.resource.data.nombrePerro is string)
-        && request.resource.data.creadoEn == request.time;
+        && datosComunes()
+        && (formatoAnterior() || variosPerros());
+      allow update: if request.auth != null
+        && (resource.data.creadoPor == request.auth.uid || request.auth.token.admin == true)
+        && resource.data.get('estado', 'en_curso') == 'en_curso'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['estado', 'nota', 'cerradaEn'])
+        && request.resource.data.estado in ['resuelta', 'veterinario', 'falsa_alarma']
+        && request.resource.data.cerradaEn == request.time
+        && request.resource.data.get('nota', '') is string
+        && request.resource.data.get('nota', '').size() <= 200;
     }
 
     match /usuarios/{uid} {

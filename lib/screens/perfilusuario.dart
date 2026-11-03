@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:guaurdados_oficial/widgets/iconos.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:guaurdados_oficial/models/emergencia.dart';
 import 'package:guaurdados_oficial/models/perro.dart';
 import 'package:guaurdados_oficial/models/publicacion_foro.dart';
 import 'package:guaurdados_oficial/screens/camara.dart';
+import 'package:guaurdados_oficial/services/emergencias_repository.dart';
 import 'package:guaurdados_oficial/services/notificaciones_service.dart';
 import 'package:guaurdados_oficial/services/foro_repository.dart';
 import 'package:guaurdados_oficial/services/perros_repository.dart';
 import 'package:guaurdados_oficial/theme/app_colors.dart';
+import 'package:guaurdados_oficial/theme/app_theme.dart';
 import 'package:guaurdados_oficial/theme/colores_app.dart';
 import 'package:guaurdados_oficial/theme/formas.dart';
 import 'package:guaurdados_oficial/theme/tipografia.dart';
@@ -17,8 +20,10 @@ import 'package:guaurdados_oficial/widgets/imagen_remota.dart';
 import 'package:guaurdados_oficial/widgets/avatar_usuario.dart';
 import 'package:guaurdados_oficial/widgets/presionable.dart';
 import 'package:guaurdados_oficial/widgets/selector_avatar.dart';
+import 'package:guaurdados_oficial/widgets/tarjeta_emergencia.dart';
 
 import 'configuracion.dart';
+import 'foro.dart';
 import 'iniciar_sesion.dart';
 import 'perfilperro.dart';
 
@@ -39,7 +44,7 @@ class _PerfilUsuarioState extends State<PerfilUsuario> {
   @override
   Widget build(BuildContext context){
     final c = context.colores;
-    return Scaffold(
+    return AppTheme.conBotonCamara(context, Scaffold(
       backgroundColor: c.fondo,
       bottomNavigationBar: const _BarraPerfilUsuario(),
       body: SafeArea(
@@ -87,7 +92,7 @@ class _PerfilUsuarioState extends State<PerfilUsuario> {
           ),
         ),
       ),
-    );
+    ));
   }
 
   Future<void> _cerrarSesion(BuildContext context) async {
@@ -170,18 +175,21 @@ class _Estadistica extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.colores;
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
-      decoration: Formas.fondo(c.superficie, 18),
-      child: Column(children: [
-        Container(
-          width: 36,
-          height: 36,
-          decoration: Formas.fondo(color.withValues(alpha: .12), 11),
-          child: Icono(icono, color: color, size: 20),
-        ),
-        const SizedBox(height: 8),
-        FittedBox(fit: BoxFit.scaleDown, child: Text(valor, maxLines: 1, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800).display)),
+    return Semantics(
+      label: '$etiqueta: $valor',
+      excludeSemantics: true,
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Row(mainAxisSize: MainAxisSize.min, children: [
+          Icono(icono, color: color, size: 18),
+          const SizedBox(width: 6),
+          Flexible(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(valor, maxLines: 1, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800).display),
+            ),
+          ),
+        ]),
+        const SizedBox(height: 2),
         FittedBox(fit: BoxFit.scaleDown, child: Text(etiqueta, maxLines: 1, style: TextStyle(fontSize: 12, color: c.textoTenue))),
       ]),
     );
@@ -281,35 +289,50 @@ class _FotoCircular extends StatelessWidget {
 }
 
 class _Actividad extends StatelessWidget {
-  const _Actividad({required this.icono, required this.color, required this.titulo, required this.cuando});
+  const _Actividad({required this.icono, required this.color, required this.titulo, required this.cuando, required this.alTocar});
   final IconData icono;
   final Color color;
   final String titulo;
   final String cuando;
+  final VoidCallback alTocar;
 
   @override
   Widget build(BuildContext context) {
     final c = context.colores;
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(12),
-      decoration: Formas.fondo(c.superficie, 16),
-      child: Row(children: [
-        Container(
-          width: 40,
-          height: 40,
-          decoration: Formas.fondo(color.withValues(alpha: .12), 12),
-          child: Icono(icono, color: color, size: 22),
+    final forma = Formas.squircle(16);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Presionable(
+        escala: .97,
+        child: Material(
+          color: c.superficie,
+          shape: forma,
+          child: InkWell(
+            customBorder: forma,
+            onTap: alTocar,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(12, 12, 8, 12),
+              child: Row(children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: Formas.fondo(color.withValues(alpha: .12), 12),
+                  child: Icono(icono, color: color, size: 22),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(titulo, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 2),
+                    Text(cuando, style: TextStyle(fontSize: 12, color: c.textoTenue)),
+                  ]),
+                ),
+                Icono(Iconos.chevronRight, color: c.textoTenue, size: 20),
+              ]),
+            ),
+          ),
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(titulo, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-            const SizedBox(height: 2),
-            Text(cuando, style: TextStyle(fontSize: 12, color: c.textoTenue)),
-          ]),
-        ),
-      ]),
+      ),
     );
   }
 }
@@ -328,7 +351,8 @@ class _ResumenUsuario extends StatelessWidget {
       final recientes = resumen?.actividadReciente ?? const <PublicacionForo>[];
       final racha = resumen?.rachaDias;
       return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        Row(children: [
+        IntrinsicHeight(
+          child: Row(children: [
           Expanded(
             child: _Estadistica(
               icono: Iconos.pawPrint,
@@ -337,7 +361,7 @@ class _ResumenUsuario extends StatelessWidget {
               etiqueta: 'Perros ayudados',
             ),
           ),
-          const SizedBox(width: 10),
+          VerticalDivider(width: 1, thickness: 1, color: c.divisor),
           Expanded(
             child: _Estadistica(
               icono: Iconos.notebookPen,
@@ -346,7 +370,7 @@ class _ResumenUsuario extends StatelessWidget {
               etiqueta: 'Registros',
             ),
           ),
-          const SizedBox(width: 10),
+          VerticalDivider(width: 1, thickness: 1, color: c.divisor),
           Expanded(
             child: _Estadistica(
               icono: Iconos.flame,
@@ -355,7 +379,9 @@ class _ResumenUsuario extends StatelessWidget {
               etiqueta: 'Racha activa',
             ),
           ),
-        ]),
+          ]),
+        ),
+        _MisEmergencias(uid: uid),
         const _TituloSeccion('Patitas que sigues'),
         _PerrosSeguidos(uid: uid),
         const _TituloSeccion('Actividad reciente'),
@@ -394,6 +420,10 @@ class _ResumenUsuario extends StatelessWidget {
               color: color,
               titulo: titulo,
               cuando: _fechaActividad(publicacion.creadoEn),
+              alTocar: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => Foro(idPerro: publicacion.idPerro, nombrePerro: publicacion.nombrePerro)),
+              ),
             );
           }),
       ]);
@@ -501,4 +531,40 @@ class _BarraPerfilUsuario extends StatelessWidget {
     ),
   );
   }
+}
+
+class _MisEmergencias extends StatefulWidget {
+  const _MisEmergencias({required this.uid});
+  final String uid;
+
+  @override
+  State<_MisEmergencias> createState() => _MisEmergenciasState();
+}
+
+class _MisEmergenciasState extends State<_MisEmergencias> {
+  late final Stream<List<Emergencia>> _emergencias = EmergenciasRepository().observarDeUsuario(widget.uid);
+
+  @override
+  Widget build(BuildContext context) => StreamBuilder<List<Emergencia>>(
+    stream: _emergencias,
+    builder: (context, snapshot) {
+      final todas = snapshot.data ?? const <Emergencia>[];
+      final visibles = [...todas.where((e) => e.enCurso), ...todas.where((e) => !e.enCurso).take(3)];
+      return AnimatedSize(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+        alignment: Alignment.topCenter,
+        child: visibles.isEmpty
+            ? const SizedBox(width: double.infinity)
+            : Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                const _TituloSeccion('Tus emergencias'),
+                for (final e in visibles)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: TarjetaEmergencia(key: ValueKey(e.id), emergencia: e, propia: true),
+                  ),
+              ]),
+      );
+    },
+  );
 }
