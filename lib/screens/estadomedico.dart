@@ -15,14 +15,14 @@ const _sinRegistrar = 'Sin registrar';
 class EstadoMedico extends StatelessWidget {
   const EstadoMedico({super.key, required this.perro, required this.actualizado});
   final Perro perro;
-  final String actualizado;
+  final String? actualizado;
 
   @override
   Widget build(BuildContext context) {
     final c = context.colores;
     final sano = perro.estado.toLowerCase() == 'saludable';
     final vacunado = perro.vacunacion.toLowerCase().startsWith('vacunado');
-    final sinDatoVacuna = perro.vacunacion == 'Sin información';
+    final sinDatoVacuna = !tieneDato(perro.vacunacion);
     final esterilizado = perro.esterilizado;
     final alto = MediaQuery.sizeOf(context).height;
     final cuidados = Cuidados(perro);
@@ -48,7 +48,7 @@ class EstadoMedico extends StatelessWidget {
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text('Estado médico', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800).display),
-                Text('${perro.nombre} · Actualizado $actualizado', style: TextStyle(fontSize: 13, color: c.textoSecundario)),
+                Text('${perro.nombre} · ${actualizado == null ? 'Sin actualizaciones aún' : 'Actualizado $actualizado'}', style: TextStyle(fontSize: 13, color: c.textoSecundario)),
               ]),
             ),
             Presionable(
@@ -204,7 +204,7 @@ class _Resumen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final sinDato = valor == _sinRegistrar || valor == 'Sin información';
+    final sinDato = valor == _sinRegistrar || !tieneDato(valor);
     return Container(
       height: 104,
       padding: const EdgeInsets.all(12),

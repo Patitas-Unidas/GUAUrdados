@@ -23,6 +23,7 @@ avisos del perfil (reglas en `lib/services/cuidados.dart`).
 | Campo | Tipo | Ejemplo |
 | --- | --- | --- |
 | `ultimaComidaEn` | timestamp | Hora en que se registró la última comida |
+| `ultimaAguaEn` | timestamp | Hora en que se registró la última vez que tomó agua |
 | `ultimaVacunaEn` | timestamp | Fecha de la última vacuna |
 | `ultimaDesparasitacionEn` | timestamp | Fecha de la última desparasitación |
 | `esterilizado` | boolean o string | `true`, `"Sí"`, `"No"` |
@@ -110,3 +111,28 @@ carnet en el arreglo `carnetUrls`. También se admiten los campos antiguos
 Consulta [imagenes-storage.md](imagenes-storage.md) para subir nuevas imágenes y
 publicar las reglas de acceso. La app prioriza `fotoUrl`; `imagenAsset` queda como
 respaldo local opcional.
+
+## Emergencias
+
+Cada reporte es un documento de `emergencias`:
+
+| Campo | Tipo | Detalle |
+| --- | --- | --- |
+| `idsPerros`, `nombresPerros` | array de strings | Perros involucrados, en el mismo orden. Vacíos si no se conoce al perro |
+| `tipo` | string | `Problema de salud`, `Pelea`, `Peligro` u `Otro` |
+| `ubicacion` | string | Opcional, hasta 200 caracteres |
+| `creadoPor`, `nombreUsuario` | string | Quien reportó |
+| `estado` | string | `en_curso`, `resuelta`, `veterinario` o `falsa_alarma` |
+| `nota` | string | Comentario opcional al cerrarla |
+| `creadoEn`, `cerradaEn` | timestamp | Hora asignada por Firestore |
+
+Solo quien la reportó (o un admin) puede cerrarla, una sola vez, desde **Mi
+perfil**. Mientras está en curso aparece fijada arriba del foro general y del
+foro de cada perro involucrado; al cerrarse se sigue viendo 24 horas con su
+resultado. Las emergencias en curso dejan de mostrarse en los foros a los 3
+días, pero siguen en el perfil de quien la reportó hasta que la cierre.
+
+Las funciones de `functions/index.js` avisan por push a los seguidores al crear
+y al cerrar una emergencia, y cada hora revisan `ultimaComidaEn` y
+`ultimaAguaEn` para avisar si un perro lleva más de 24 horas sin registros
+(una vez por registro; lo avisado queda en `avisos_cuidado/{idPerro}`).

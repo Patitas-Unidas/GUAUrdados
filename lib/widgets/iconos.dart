@@ -17,12 +17,14 @@ class Iconos {
   static const circleUser = IconData(0xe461, fontFamily: _lucide);
   static const circleX = IconData(0xe084, fontFamily: _lucide);
   static const clock = IconData(0xe087, fontFamily: _lucide);
+  static const droplet = IconData(0xe0b4, fontFamily: _lucide);
   static const ellipsis = IconData(0xe0b6, fontFamily: _lucide);
   static const fileText = IconData(0xe0cc, fontFamily: _lucide);
   static const flame = IconData(0xe0d2, fontFamily: _lucide);
   static const handHeart = IconData(0xe5b9, fontFamily: _lucide);
   static const heartPulse = IconData(0xe36e, fontFamily: _lucide);
   static const heart = IconData(0xe0f2, fontFamily: _lucide);
+  static const hourglass = IconData(0xe296, fontFamily: _lucide);
   static const house = IconData(0xe0f5, fontFamily: _lucide);
   static const idCard = IconData(0xe617, fontFamily: _lucide);
   static const imageOff = IconData(0xe1c0, fontFamily: _lucide);
@@ -39,8 +41,11 @@ class Iconos {
   static const pencil = IconData(0xe1f9, fontFamily: _lucide);
   static const pill = IconData(0xe3bd, fontFamily: _lucide);
   static const plus = IconData(0xe13d, fontFamily: _lucide);
+  static const rotateCw = IconData(0xe149, fontFamily: _lucide);
+  static const scanFace = IconData(0xe371, fontFamily: _lucide);
   static const scissors = IconData(0xe14e, fontFamily: _lucide);
   static const search = IconData(0xe151, fontFamily: _lucide);
+  static const searchX = IconData(0xe4ad, fontFamily: _lucide);
   static const send = IconData(0xe152, fontFamily: _lucide);
   static const settings = IconData(0xe154, fontFamily: _lucide);
   static const shieldCheck = IconData(0xe1ff, fontFamily: _lucide);
@@ -56,6 +61,7 @@ class Iconos {
   static const users = IconData(0xe1a4, fontFamily: _lucide);
   static const utensils = IconData(0xe2f6, fontFamily: _lucide);
   static const weight = IconData(0xe530, fontFamily: _lucide);
+  static const wifiOff = IconData(0xe1af, fontFamily: _lucide);
   static const x = IconData(0xe1b2, fontFamily: _lucide);
   static const zap = IconData(0xe1b4, fontFamily: _lucide);
 

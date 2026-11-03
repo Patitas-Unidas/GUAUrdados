@@ -11,8 +11,13 @@ import 'package:guaurdados_oficial/screens/camara.dart';
 import 'package:guaurdados_oficial/screens/perfilperro.dart';
 import 'package:guaurdados_oficial/screens/reportar_emergencia.dart';
 import 'package:guaurdados_oficial/services/novedades_descartadas.dart';
+import 'package:guaurdados_oficial/services/alimentaciones.dart';
+import 'package:guaurdados_oficial/services/emergencias.dart';
+import 'package:guaurdados_oficial/services/cuidados.dart';
+import 'package:guaurdados_oficial/widgets/estado_perro.dart';
 import 'package:guaurdados_oficial/services/perros_repository.dart';
 import 'package:guaurdados_oficial/theme/app_colors.dart';
+import 'package:guaurdados_oficial/theme/app_theme.dart';
 import 'package:guaurdados_oficial/theme/colores_app.dart';
 import 'package:guaurdados_oficial/theme/formas.dart';
 import 'package:guaurdados_oficial/theme/tipografia.dart';
@@ -21,6 +26,7 @@ import 'package:guaurdados_oficial/widgets/esqueleto.dart';
 import 'package:guaurdados_oficial/widgets/hoja.dart';
 import 'package:guaurdados_oficial/widgets/logo.dart';
 import 'package:guaurdados_oficial/widgets/presionable.dart';
+import 'package:guaurdados_oficial/widgets/tarjeta_emergencia.dart';
 import 'foro.dart';
 import 'package:guaurdados_oficial/screens/perfilusuario.dart';
 
@@ -45,16 +51,29 @@ class _HomepageState extends State<Homepage> {
   @override
   void initState() {
     super.initState();
+    Alimentaciones.escuchar();
+    Emergencias.escuchar();
+    _vigilados.addListener(_refrescar);
     _descartadas.cargar().then((_) {
       if (mounted) setState(() {});
     });
   }
 
   @override
+  void dispose() {
+    _vigilados.removeListener(_refrescar);
+    super.dispose();
+  }
+
+  void _refrescar() {
+    if (mounted) setState(() {});
+  }
+
+  @override
   Widget build(BuildContext context) {
     final c = context.colores;
 
-    return Scaffold(
+    return AppTheme.conBotonCamara(context, Scaffold(
       backgroundColor: c.fondoCalido,
       appBar: AppBar(
         toolbarHeight: 76,
@@ -70,7 +89,7 @@ class _HomepageState extends State<Homepage> {
               builder: (context, snapshotPerros) => StreamBuilder<List<Map<String, dynamic>>>(
                 stream: _novedadesForo,
                 builder: (context, snapshotForo) {
-                  final totalNovedades = _armarNovedades(c, snapshotForo.data, _descartadas, uid).length;
+                  final totalNovedades = _armarNovedades(c, snapshotForo.data, snapshotPerros.data, _descartadas, uid).length;
                   return _Campana(
                     total: totalNovedades,
                     alTocar: () => mostrarHoja(
@@ -142,7 +161,7 @@ class _HomepageState extends State<Homepage> {
         },
       ),
       bottomNavigationBar: const _NavegacionInferior(),
-    );
+    ));
   }
 }
 
@@ -263,9 +282,14 @@ class _TarjetaPerroState extends State<_TarjetaPerro> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => ValueListenableBuilder(
+        valueListenable: Alimentaciones.recientes,
+        builder: (context, _, _) => _tarjeta(context, Cuidados(perro, alimentaciones: Alimentaciones.de(perro.id)).estado),
+      );
+
+  Widget _tarjeta(BuildContext context, EstadoPerro estado) {
     final c = context.colores;
-    final contenido = compacta ? _contenidoCompacto() : _contenidoLista(c);
+    final contenido = compacta ? _contenidoCompacto(estado) : _contenidoLista(c, estado);
     final forma = Formas.squircle(compacta ? 16 : 18);
     return Material(
       color: c.superficieSuave,
@@ -285,16 +309,9 @@ class _TarjetaPerroState extends State<_TarjetaPerro> {
     );
   }
 
-  Widget _contenidoCompacto() {
+  Widget _contenidoCompacto(EstadoPerro estado) {
     final c = context.colores;
-    final estado = perro.estadoResumen;
-    final sinEstado = estado.toLowerCase() == 'sin estado';
-    final saludable = estado.toLowerCase() == 'saludable';
-    final color = sinEstado
-        ? c.neutroTexto
-        : saludable
-            ? c.exitoTexto
-            : c.advertenciaTexto;
+    final (_, color) = c.tono(estado.gravedad);
     return Row(children: [
       _FotoPerro(key: _claveFoto, perro: perro, size: 40, circular: true),
       const SizedBox(width: 10),
@@ -312,7 +329,7 @@ class _TarjetaPerroState extends State<_TarjetaPerro> {
               Container(width: 6, height: 6, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
               const SizedBox(width: 4),
               Expanded(
-                child: Text(estado,
+                child: Text(estado.texto,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.w600)),
@@ -324,7 +341,7 @@ class _TarjetaPerroState extends State<_TarjetaPerro> {
     ]);
   }
 
-  Widget _contenidoLista(ColoresApp c) => Row(
+  Widget _contenidoLista(ColoresApp c, EstadoPerro estado) => Row(
         children: [
           _FotoPerro(key: _claveFoto, perro: perro, size: 52),
           const SizedBox(width: 12),
@@ -352,7 +369,7 @@ class _TarjetaPerroState extends State<_TarjetaPerro> {
             ),
           ),
           const SizedBox(width: 8),
-          _EtiquetaEstado(estado: perro.estadoResumen),
+          PildoraEstado(estado),
           Icono(Iconos.chevronRight, color: c.divisor),
         ],
       );
@@ -385,34 +402,6 @@ class _FotoPerro extends StatelessWidget {
         color: c.contenedor,
         child: Icono(Iconos.pawPrint, color: c.textoTenue),
       );
-}
-
-class _EtiquetaEstado extends StatelessWidget {
-  const _EtiquetaEstado({required this.estado});
-  final String estado;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.colores;
-    final saludable = estado.toLowerCase() == 'saludable';
-    final sinEstado = estado.toLowerCase() == 'sin estado';
-    final color = sinEstado
-        ? c.neutroTexto
-        : saludable
-            ? c.exitoTexto
-            : c.advertenciaTexto;
-    final fondo = sinEstado
-        ? c.divisor
-        : saludable
-            ? c.exitoSuave
-            : c.advertenciaSuave;
-    final texto = saludable ? estado : estado == 'Sin estado' ? estado : 'Revisar';
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
-      decoration: Formas.fondo(fondo, 18),
-      child: Text(texto, maxLines: 1, style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w600)),
-    );
-  }
 }
 
 class _SeguidosEsqueleto extends StatelessWidget {
@@ -667,9 +656,20 @@ class _HojaNovedadesState extends State<_HojaNovedades> with SingleTickerProvide
   bool _vaciando = false;
 
   @override
+  void initState() {
+    super.initState();
+    _vigilados.addListener(_refrescar);
+  }
+
+  @override
   void dispose() {
+    _vigilados.removeListener(_refrescar);
     _vaciado.dispose();
     super.dispose();
+  }
+
+  void _refrescar() {
+    if (mounted) setState(() {});
   }
 
   void _descartar(_Novedad novedad) {
@@ -702,7 +702,7 @@ class _HojaNovedadesState extends State<_HojaNovedades> with SingleTickerProvide
           stream: _foro,
           builder: (context, snapshotForo) {
             final cargando = !snapshotForo.hasData;
-            final novedades = _armarNovedades(c, snapshotForo.data, widget.descartadas, widget.uid);
+            final novedades = _armarNovedades(c, snapshotForo.data, snapshotPerros.data, widget.descartadas, widget.uid);
             final hay = !cargando && novedades.isNotEmpty;
 
             final Widget contenido;
@@ -845,9 +845,62 @@ class _HojaNovedadesState extends State<_HojaNovedades> with SingleTickerProvide
 
 const _antiguedadMaxima = Duration(days: 7);
 
-List<_Novedad> _armarNovedades(ColoresApp c, List<Map<String, dynamic>>? foro, NovedadesDescartadas descartadas, String? uid) {
-  final limite = DateTime.now().subtract(_antiguedadMaxima);
+final _vigilados = Listenable.merge([Emergencias.recientes, Alimentaciones.recientes]);
+
+List<_Novedad> _armarNovedades(ColoresApp c, List<Map<String, dynamic>>? foro, List<Perro>? seguidos, NovedadesDescartadas descartadas, String? uid) {
+  final ahora = DateTime.now();
+  final limite = ahora.subtract(_antiguedadMaxima);
   final novedades = <_Novedad>[];
+  final idsSeguidos = {for (final p in seguidos ?? const <Perro>[]) p.id};
+
+  for (final e in Emergencias.recientes.value) {
+    if (e.creadoPor == uid || !e.visibleEnForo(ahora)) continue;
+    if (e.idsPerros.isNotEmpty && !e.idsPerros.any(idsSeguidos.contains)) continue;
+    final fecha = e.ultimaNovedad;
+    final clave = 'emergencia_${e.id}';
+    final version = fecha?.millisecondsSinceEpoch ?? 0;
+    if (descartadas.estaDescartada(clave, version)) continue;
+    novedades.add(_Novedad(
+      clave: clave,
+      version: version,
+      fecha: fecha,
+      fijada: e.enCurso,
+      icono: e.enCurso ? iconoEmergencia(e.tipo) : iconoCierre(e.estado),
+      color: c.colorEmergencia(e.estado),
+      titulo: e.enCurso ? 'Emergencia: ${e.tipo} · ${e.nombres}' : 'Terminó la emergencia de ${e.nombres}',
+      detalle: e.enCurso
+          ? [if (e.ubicacion.isNotEmpty) e.ubicacion, haceCuanto(e.creadoEn)].join(' · ')
+          : [e.estado.texto, if (e.nota.isNotEmpty) '"${e.nota}"', haceCuanto(e.cerradaEn)].join(' · '),
+    ));
+  }
+
+  for (final p in seguidos ?? const <Perro>[]) {
+    final cuidados = Cuidados(p, alimentaciones: Alimentaciones.de(p.id), ahora: ahora);
+    void alerta(String tipo, DateTime ultima, Duration limiteAlerta, IconData icono, String titulo) {
+      final clave = '${tipo}_${p.id}';
+      final version = ultima.millisecondsSinceEpoch;
+      if (descartadas.estaDescartada(clave, version)) return;
+      novedades.add(_Novedad(
+        clave: clave,
+        version: version,
+        fecha: ultima.add(limiteAlerta),
+        icono: icono,
+        color: c.advertenciaTexto,
+        titulo: titulo,
+        detalle: 'Último registro el ${fechaLarga(ultima)} a las ${hora(ultima)}',
+      ));
+    }
+
+    if (cuidados.sinComerHaceMucho) {
+      alerta('sin_comer', cuidados.ultimaComidaEn!, ReglasCuidado.ventana, Iconos.utensils,
+          '${p.nombre} no ha comido en ${duracion(cuidados.desdeUltimaComida!)}');
+    }
+    if (cuidados.sinAguaHaceMucho) {
+      alerta('sin_agua', cuidados.ultimaAguaEn!, ReglasCuidado.sinAgua, Iconos.droplet,
+          '${p.nombre} no ha tomado agua en ${duracion(cuidados.desdeUltimaAgua!)}');
+    }
+  }
+
   for (final f in foro ?? <Map<String, dynamic>>[]) {
     if (uid != null && f['idUsuario'] == uid) continue;
     final crudo = f['fecha'];
@@ -875,15 +928,19 @@ List<_Novedad> _armarNovedades(ColoresApp c, List<Map<String, dynamic>>? foro, N
       detalle: comentario.isEmpty || tipo == 'alimentacion' ? cuando : '"$comentario" · $cuando',
     ));
   }
-  novedades.sort((a, b) => b.version.compareTo(a.version));
+  novedades.sort((a, b) {
+    if (a.fijada != b.fijada) return a.fijada ? -1 : 1;
+    return (b.fecha?.millisecondsSinceEpoch ?? b.version).compareTo(a.fecha?.millisecondsSinceEpoch ?? a.version);
+  });
   return novedades;
 }
 
 class _Novedad {
-  const _Novedad({required this.clave, required this.version, this.fecha, required this.icono, required this.color, required this.titulo, required this.detalle});
+  const _Novedad({required this.clave, required this.version, this.fecha, this.fijada = false, required this.icono, required this.color, required this.titulo, required this.detalle});
   final String clave;
   final int version;
   final DateTime? fecha;
+  final bool fijada;
   final IconData icono;
   final Color color;
   final String titulo;

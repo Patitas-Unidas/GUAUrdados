@@ -4,8 +4,11 @@ import 'package:guaurdados_oficial/widgets/presionable.dart';
 import 'package:guaurdados_oficial/widgets/esqueleto.dart';
 import 'package:guaurdados_oficial/widgets/aparicion.dart';
 import 'package:guaurdados_oficial/theme/formas.dart';
+import 'package:guaurdados_oficial/models/emergencia.dart';
 import 'package:guaurdados_oficial/models/perro.dart';
 import 'package:guaurdados_oficial/models/publicacion_foro.dart';
+import 'package:guaurdados_oficial/services/cuidados.dart';
+import 'package:guaurdados_oficial/services/emergencias.dart';
 import 'package:guaurdados_oficial/services/foro_repository.dart';
 import 'package:guaurdados_oficial/services/perfiles_usuario_repository.dart';
 import 'package:guaurdados_oficial/services/perros_repository.dart';
@@ -13,6 +16,8 @@ import 'package:guaurdados_oficial/theme/colores_app.dart';
 import 'package:guaurdados_oficial/theme/tipografia.dart';
 import 'package:guaurdados_oficial/widgets/iconos.dart';
 import 'package:guaurdados_oficial/widgets/avatar_usuario.dart';
+import 'package:guaurdados_oficial/widgets/foto_perro.dart';
+import 'package:guaurdados_oficial/widgets/tarjeta_emergencia.dart';
 
 import 'nuevapublicacion.dart';
 import 'package:guaurdados_oficial/screens/reportar_emergencia.dart';
@@ -28,6 +33,7 @@ class Foro extends StatelessWidget {
     final c = context.colores;
     final usuario = FirebaseAuth.instance.currentUser;
     final publicaciones = ForoRepository().observarPublicaciones(idPerro: idPerro);
+    Emergencias.escuchar();
 
     return Scaffold(
       backgroundColor: c.fondo,
@@ -63,7 +69,7 @@ class Foro extends StatelessWidget {
                           StreamBuilder<List<PublicacionForo>>(
                             stream: publicaciones,
                             builder: (context, snapshot) => Text(
-                              '${snapshot.data?.length ?? 0} actualizaciones',
+                              '${snapshot.data?.length ?? 0} ${snapshot.data?.length == 1 ? 'actualización' : 'actualizaciones'}',
                               style: TextStyle(color: c.textoTenue, fontSize: 12),
                             ),
                           ),
@@ -160,22 +166,29 @@ class Foro extends StatelessWidget {
 
                   final items = snapshot.data!;
                   if (items.isEmpty) {
-                    return _EstadoForo(
-                      icono: Iconos.messageCircle,
-                      mensaje: 'Aún no hay publicaciones.',
-                      detalle: 'Sé la primera persona en compartir una novedad.',
-                    );
+                    return Column(children: [
+                      _EmergenciasForo(idPerro: idPerro, padding: const EdgeInsets.fromLTRB(12, 4, 12, 0)),
+                      Expanded(
+                        child: _EstadoForo(
+                          icono: Iconos.messageCircle,
+                          mensaje: 'Aún no hay publicaciones.',
+                          detalle: 'Sé la primera persona en compartir una novedad.',
+                        ),
+                      ),
+                    ]);
                   }
 
                   return ListView.separated(
                     padding: const EdgeInsets.fromLTRB(12, 4, 12, 24),
                     physics: const BouncingScrollPhysics(),
-                    itemCount: items.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 4),
-                    itemBuilder: (context, index) => Aparicion(
-                      indice: index,
-                      child: _TarjetaPublicacion(publicacion: items[index]),
-                    ),
+                    itemCount: items.length + 1,
+                    separatorBuilder: (_, index) => SizedBox(height: index == 0 ? 0 : 4),
+                    itemBuilder: (context, index) => index == 0
+                        ? _EmergenciasForo(idPerro: idPerro)
+                        : Aparicion(
+                            indice: index - 1,
+                            child: _TarjetaPublicacion(publicacion: items[index - 1], mostrarPerro: idPerro == null),
+                          ),
                   );
                 },
               ),
@@ -260,9 +273,10 @@ class _ChipSeguidor extends StatelessWidget {
 }
 
 class _TarjetaPublicacion extends StatelessWidget {
-  const _TarjetaPublicacion({required this.publicacion});
+  const _TarjetaPublicacion({required this.publicacion, required this.mostrarPerro});
 
   final PublicacionForo publicacion;
+  final bool mostrarPerro;
 
   @override
   Widget build(BuildContext context) {
@@ -270,7 +284,7 @@ class _TarjetaPublicacion extends StatelessWidget {
     final esAlimentacion = publicacion.tipoPublicacion == 'alimentacion';
     final esMedico = publicacion.tipoPublicacion == 'estado_medico';
     if (esAlimentacion || esMedico) {
-      return _TarjetaActualizacion(publicacion: publicacion, esMedico: esMedico);
+      return _TarjetaActualizacion(publicacion: publicacion, esMedico: esMedico, mostrarPerro: mostrarPerro);
     }
     final foto = publicacion.fotoUsuario;
 
@@ -285,6 +299,10 @@ class _TarjetaPublicacion extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (mostrarPerro) ...[
+              _PerroDeLaPublicacion(publicacion: publicacion),
+              const SizedBox(height: 12),
+            ],
             Row(
               children: [
                 AvatarUsuario(uid: publicacion.idUsuario, fotoUrl: foto, nombre: publicacion.nombreUsuario, radio: 21),
@@ -343,10 +361,11 @@ class _TarjetaPublicacion extends StatelessWidget {
 }
 
 class _TarjetaActualizacion extends StatelessWidget {
-  const _TarjetaActualizacion({required this.publicacion, required this.esMedico});
+  const _TarjetaActualizacion({required this.publicacion, required this.esMedico, required this.mostrarPerro});
 
   final PublicacionForo publicacion;
   final bool esMedico;
+  final bool mostrarPerro;
 
   @override
   Widget build(BuildContext context) {
@@ -358,7 +377,7 @@ class _TarjetaActualizacion extends StatelessWidget {
         : '¡${publicacion.nombreUsuario} registró una nueva alimentación!';
     final detalle = esMedico
         ? publicacion.procedimiento ?? publicacion.descripcion
-        : 'Se registró que ${publicacion.nombrePerro} recibió ${publicacion.cantidadComida ?? ''} de ${publicacion.tipoComida ?? 'alimento'} hoy a las ${_hora(publicacion.creadoEn)}.';
+        : 'Se registró que ${publicacion.nombrePerro} recibió ${publicacion.cantidadComida ?? ''} de ${publicacion.tipoComida ?? 'alimento'} ${_cuando(publicacion.creadoEn)}.';
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 3, vertical: 5),
@@ -375,6 +394,10 @@ class _TarjetaActualizacion extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                if (mostrarPerro) ...[
+                  _PerroDeLaPublicacion(publicacion: publicacion, sobreColor: true),
+                  const SizedBox(height: 10),
+                ],
                 Text(titulo, style: TextStyle(color: c.sobreAcento, fontWeight: FontWeight.w700, fontSize: 15)),
                 const SizedBox(height: 4),
                 Text(detalle, style: TextStyle(color: c.sobreAcento, height: 1.35)),
@@ -403,9 +426,12 @@ class _TarjetaActualizacion extends StatelessWidget {
     return 'Hace ${diferencia.inDays} días';
   }
 
-  String _hora(DateTime? fecha) {
-    if (fecha == null) return 'ahora';
-    return '${fecha.hour.toString().padLeft(2, '0')}:${fecha.minute.toString().padLeft(2, '0')}';
+  String _cuando(DateTime? fecha) {
+    if (fecha == null) return 'recién';
+    final hoy = DateUtils.dateOnly(DateTime.now());
+    final dias = hoy.difference(DateUtils.dateOnly(fecha)).inDays;
+    final dia = switch (dias) { 0 => 'hoy', 1 => 'ayer', _ => 'el ${fechaLarga(fecha)}' };
+    return '$dia a las ${hora(fecha)}';
   }
 }
 
@@ -435,4 +461,113 @@ class _EstadoForo extends StatelessWidget {
       ),
     );
   }
+}
+
+class _PerroDeLaPublicacion extends StatelessWidget {
+  const _PerroDeLaPublicacion({required this.publicacion, this.sobreColor = false});
+
+  final PublicacionForo publicacion;
+  final bool sobreColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colores;
+    final texto = sobreColor ? c.sobreAcento : c.textoSecundario;
+    final forma = Formas.squircle(14);
+    return Presionable(
+      escala: .95,
+      child: Material(
+        color: sobreColor ? c.sobreAcento.withValues(alpha: .18) : c.fondo,
+        shape: forma,
+        child: InkWell(
+          customBorder: forma,
+          onTap: publicacion.idPerro.isEmpty
+              ? null
+              : () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => Foro(idPerro: publicacion.idPerro, nombrePerro: publicacion.nombrePerro)),
+                  ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(4, 4, 8, 4),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              StreamBuilder<Perro?>(
+                stream: publicacion.idPerro.isEmpty ? const Stream.empty() : PerrosRepository().observarPerro(publicacion.idPerro),
+                builder: (context, snapshot) => FotoPerroRedonda(perro: snapshot.data, tamano: 24),
+              ),
+              const SizedBox(width: 7),
+              Flexible(
+                child: Text(
+                  'Foro de ${publicacion.nombrePerro}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: texto),
+                ),
+              ),
+              const SizedBox(width: 2),
+              Icono(Iconos.chevronRight, size: 15, color: texto),
+            ]),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _EmergenciasForo extends StatelessWidget {
+  const _EmergenciasForo({required this.idPerro, this.padding = EdgeInsets.zero});
+
+  final String? idPerro;
+  final EdgeInsets padding;
+
+  @override
+  Widget build(BuildContext context) => ValueListenableBuilder<List<Emergencia>>(
+    valueListenable: Emergencias.recientes,
+    builder: (context, _, _) {
+      final c = context.colores;
+      final lista = Emergencias.enForo(idPerro: idPerro);
+      final activas = lista.where((e) => e.enCurso).length;
+      return AnimatedSize(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+        alignment: Alignment.topCenter,
+        child: lista.isEmpty
+            ? const SizedBox(width: double.infinity)
+            : Padding(
+                padding: padding,
+                child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(4, 2, 4, 8),
+                    child: Row(children: [
+                      Icono(Iconos.siren, size: 16, color: c.emergencia),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          lista.length == 1 ? 'Emergencia' : 'Emergencias',
+                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
+                        ),
+                      ),
+                      if (activas > 0)
+                        Text(
+                          '$activas en curso',
+                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: c.emergenciaTexto),
+                        ),
+                    ]),
+                  ),
+                  for (final (i, e) in lista.indexed)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Aparicion(
+                        indice: i,
+                        child: TarjetaEmergencia(key: ValueKey(e.id), emergencia: e, idPerroForo: idPerro),
+                      ),
+                    ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(4, 2, 4, 10),
+                    child: Divider(height: 1, color: c.divisor),
+                  ),
+                ]),
+              ),
+      );
+    },
+  );
 }

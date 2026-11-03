@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 class Formas {
@@ -36,6 +38,17 @@ class BordeSquircle extends InputBorder {
   Path getOuterPath(Rect rect, {TextDirection? textDirection}) => _forma.getOuterPath(rect, textDirection: textDirection);
 
   @override
-  void paint(Canvas canvas, Rect rect, {double? gapStart, double gapExtent = 0, double gapPercentage = 0, TextDirection? textDirection}) =>
+  void paint(Canvas canvas, Rect rect, {double? gapStart, double gapExtent = 0, double gapPercentage = 0, TextDirection? textDirection}) {
+    final ancho = (gapExtent + 8) * gapPercentage;
+    if (gapStart == null || ancho <= 0 || borderSide.style == BorderStyle.none) {
       _forma.paint(canvas, rect, textDirection: textDirection);
+      return;
+    }
+    final inicio = textDirection == TextDirection.rtl ? rect.left + math.max(0.0, gapStart + 4 - ancho) : rect.left + math.max(0.0, gapStart - 4);
+    final hueco = Rect.fromLTWH(inicio, rect.top - borderSide.width * 2, ancho, borderSide.width * 4);
+    canvas.save();
+    canvas.clipPath(Path.combine(PathOperation.difference, Path()..addRect(rect.inflate(borderSide.width * 2)), Path()..addRect(hueco)));
+    _forma.paint(canvas, rect, textDirection: textDirection);
+    canvas.restore();
+  }
 }
