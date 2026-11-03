@@ -5,6 +5,7 @@ import 'package:camera/camera.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 
+import 'package:guaurdados_oficial/services/gamificacion_service.dart';
 import 'package:guaurdados_oficial/theme/colores_app.dart';
 import 'package:guaurdados_oficial/theme/formas.dart';
 import 'package:guaurdados_oficial/widgets/iconos.dart';
@@ -107,20 +108,20 @@ class _CamaraState extends State<Camara> {
             children: [
               Container(
                 width: MediaQuery.of(context).size.width,
-                height: MediaQuery.of(context).size.height * .10,
+                height: MediaQuery.of(context).size.height * 0.10,
                 color: Colors.black,
               ),
               FittedBox(
                 fit: BoxFit.fitWidth,
                 child: SizedBox(
                   width: MediaQuery.of(context).size.width,
-                  height: MediaQuery.of(context).size.height * .70,
+                  height: MediaQuery.of(context).size.height * 0.70,
                   child: CameraPreview(_controller),
                 ),
               ),
               Container(
                 width: MediaQuery.of(context).size.width,
-                height: MediaQuery.of(context).size.height * .20,
+                height: MediaQuery.of(context).size.height * 0.20,
                 color: Colors.black,
               ),
             ],
@@ -225,11 +226,18 @@ class _DisplayPictureScreenState extends State<DisplayPictureScreen> {
 
     if (status == 'MATCH') {
       final perro = data['perro'];
+      final String dogId = perro['id'] ?? '';
+
+      // Registro en gamificación
+      if (dogId.isNotEmpty) {
+        GamificacionService.registrarEscaneo(dogId, context);
+      }
+
       _mostrarModalMatch(
         perro['nombre'] ?? '',
         perro['sexo'] ?? '',
         perro['coincidencia'] ?? '',
-        perro['id'] ?? '',
+        dogId,
       );
     } else if (status == 'AMBIGUOUS') {
       final c1 = data['candidato_1'];
@@ -366,6 +374,9 @@ class _DisplayPictureScreenState extends State<DisplayPictureScreen> {
             ),
             onPressed: () {
               Navigator.pop(context);
+              if (id.isNotEmpty) {
+                GamificacionService.registrarEscaneo(id, context);
+              }
               _irAlPerfil(id);
             },
             child: Text("Ver perfil", style: TextStyle(color: c.sobreAcento, fontSize: 12)),
@@ -386,8 +397,8 @@ class _DisplayPictureScreenState extends State<DisplayPictureScreen> {
         actions: [
           TextButton(
             onPressed: () {
-              Navigator.pop(context); // Cierra el modal
-              if (mounted) Navigator.pop(context); // Vuelve a la cámara
+              Navigator.pop(context);
+              if (mounted) Navigator.pop(context);
             },
             child: const Text("Prueba con otra foto"),
           ),

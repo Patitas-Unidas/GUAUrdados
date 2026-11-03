@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:guaurdados_oficial/widgets/iconos.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:guaurdados_oficial/models/perro.dart';
 import 'package:guaurdados_oficial/models/publicacion_foro.dart';
 import 'package:guaurdados_oficial/screens/camara.dart';
+import 'package:guaurdados_oficial/services/gamificacion_service.dart';
 import 'package:guaurdados_oficial/services/notificaciones_service.dart';
 import 'package:guaurdados_oficial/services/foro_repository.dart';
 import 'package:guaurdados_oficial/services/perros_repository.dart';
@@ -13,6 +14,7 @@ import 'package:guaurdados_oficial/theme/formas.dart';
 import 'package:guaurdados_oficial/theme/tipografia.dart';
 import 'package:guaurdados_oficial/widgets/aparicion.dart';
 import 'package:guaurdados_oficial/widgets/esqueleto.dart';
+import 'package:guaurdados_oficial/widgets/iconos.dart';
 import 'package:guaurdados_oficial/widgets/imagen_remota.dart';
 import 'package:guaurdados_oficial/widgets/avatar_usuario.dart';
 import 'package:guaurdados_oficial/widgets/presionable.dart';
@@ -34,10 +36,13 @@ class _PerfilUsuarioState extends State<PerfilUsuario> {
   void initState() {
     super.initState();
     FirebaseAuth.instance.currentUser?.reload().catchError((_) {});
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      GamificacionService.evaluarSeguimientoYRacha(context);
+    });
   }
 
   @override
-  Widget build(BuildContext context){
+  Widget build(BuildContext context) {
     final c = context.colores;
     return Scaffold(
       backgroundColor: c.fondo,
@@ -67,7 +72,10 @@ class _PerfilUsuarioState extends State<PerfilUsuario> {
                     Text(usuario!.email!, textAlign: TextAlign.center, style: TextStyle(fontSize: 13, color: c.textoTenue)),
                   const SizedBox(height: 22),
 
-                  if (usuario != null) _ResumenUsuario(uid: usuario.uid),
+                  if (usuario != null) ...[
+                    _ResumenUsuario(uid: usuario.uid),
+                    _SeccionGamificacion(uid: usuario.uid),
+                  ],
 
                   Padding(padding: const EdgeInsets.symmetric(vertical: 12), child: Divider(height: 1, color: c.divisor)),
                   _Opcion(
@@ -99,7 +107,7 @@ class _PerfilUsuarioState extends State<PerfilUsuario> {
       if (!context.mounted) return;
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (_) => const IniciarSesion()),
-        (route) => false,
+            (route) => false,
       );
     } catch (_) {
       if (context.mounted) {
@@ -268,8 +276,8 @@ class _FotoCircular extends StatelessWidget {
     final imagen = perro.fotoUrl.isNotEmpty
         ? ImagenRemota(url: perro.fotoUrl, fit: BoxFit.cover, alignment: perro.encuadre, cargando: const BloqueEsqueleto(circular: true), error: vacio)
         : perro.imagenAsset.isNotEmpty
-            ? Image.asset('fotos/${perro.imagenAsset}', fit: BoxFit.cover, alignment: perro.encuadre, errorBuilder: (_, _, _) => vacio)
-            : vacio;
+        ? Image.asset('fotos/${perro.imagenAsset}', fit: BoxFit.cover, alignment: perro.encuadre, errorBuilder: (_, _, _) => vacio)
+        : vacio;
     return Container(
       width: 64,
       height: 64,
@@ -368,34 +376,34 @@ class _ResumenUsuario extends StatelessWidget {
               child: BloqueEsqueleto(alto: 64, radio: 16),
             )
         else if (recientes.isEmpty)
-          const _ActividadVacia(texto: 'Todavía no tienes actividad registrada.')
-        else
-          ...recientes.map((publicacion) {
-            final tipo = publicacion.tipoPublicacion;
-            final esAlimentacion = tipo == 'alimentacion';
-            final esMedico = tipo == 'estado_medico';
-            final icono = esAlimentacion
-                ? Iconos.utensils
-                : esMedico
-                    ? Iconos.stethoscope
-                    : Iconos.messageCircle;
-            final color = esAlimentacion
-                ? c.acento
-                : esMedico
-                    ? c.medico
-                    : AppColors.azulAgua;
-            final titulo = esAlimentacion
-                ? 'Registraste alimentación para ${publicacion.nombrePerro}'
-                : esMedico
-                    ? 'Actualizaste el estado médico de ${publicacion.nombrePerro}'
-                    : 'Publicaste en el foro de ${publicacion.nombrePerro}';
-            return _Actividad(
-              icono: icono,
-              color: color,
-              titulo: titulo,
-              cuando: _fechaActividad(publicacion.creadoEn),
-            );
-          }),
+            const _ActividadVacia(texto: 'Todavía no tienes actividad registrada.')
+          else
+            ...recientes.map((publicacion) {
+              final tipo = publicacion.tipoPublicacion;
+              final esAlimentacion = tipo == 'alimentacion';
+              final esMedico = tipo == 'estado_medico';
+              final icono = esAlimentacion
+                  ? Iconos.utensils
+                  : esMedico
+                  ? Iconos.stethoscope
+                  : Iconos.messageCircle;
+              final color = esAlimentacion
+                  ? c.acento
+                  : esMedico
+                  ? c.medico
+                  : AppColors.azulAgua;
+              final titulo = esAlimentacion
+                  ? 'Registraste alimentación para ${publicacion.nombrePerro}'
+                  : esMedico
+                  ? 'Actualizaste el estado médico de ${publicacion.nombrePerro}'
+                  : 'Publicaste en el foro de ${publicacion.nombrePerro}';
+              return _Actividad(
+                icono: icono,
+                color: color,
+                titulo: titulo,
+                cuando: _fechaActividad(publicacion.creadoEn),
+              );
+            }),
       ]);
     },
   );
@@ -412,6 +420,133 @@ class _ResumenUsuario extends StatelessWidget {
     final hora = '${fecha.hour.toString().padLeft(2, '0')}:${fecha.minute.toString().padLeft(2, '0')}';
     if (diferencia.inDays == 1) return 'Ayer, $hora';
     return '${fecha.day.toString().padLeft(2, '0')}/${fecha.month.toString().padLeft(2, '0')} · $hora';
+  }
+}
+
+class _SeccionGamificacion extends StatelessWidget {
+  const _SeccionGamificacion({required this.uid});
+  final String uid;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colores;
+
+    return StreamBuilder<DocumentSnapshot>(
+      stream: GamificacionService.streamUsuario(uid),
+      builder: (context, snapshot) {
+        final rawData = snapshot.data?.data();
+        final Map<String, dynamic> data =
+        rawData is Map<String, dynamic> ? rawData : <String, dynamic>{};
+
+        final List<dynamic> logros =
+            (data['logros'] as List<dynamic>?) ?? <dynamic>[];
+        final List<dynamic> escaneados =
+            (data['perros_escaneados'] as List<dynamic>?) ?? <dynamic>[];
+
+        final bool bronce = logros.contains('bronce');
+        final bool plata = logros.contains('plata') || escaneados.length >= 3;
+        final bool oro = logros.contains('oro');
+
+        return Container(
+          padding: const EdgeInsets.all(16),
+          margin: const EdgeInsets.only(top: 8, bottom: 16),
+          decoration: Formas.fondo(c.superficie, 18),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text("Insignias y Logros", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold).display),
+                  Text("${logros.length}/3 completadas", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: c.acento)),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _MedallaItem(
+                    icono: Icons.pets,
+                    titulo: "Bronce",
+                    subtitulo: "Seguir 3 perros",
+                    desbloqueada: bronce,
+                    color: const Color(0xffcd7f32),
+                  ),
+                  _MedallaItem(
+                    icono: Icons.auto_awesome,
+                    titulo: "Plata",
+                    subtitulo: "Escanear 3 perros",
+                    desbloqueada: plata,
+                    color: const Color(0xff9e9e9e),
+                  ),
+                  _MedallaItem(
+                    icono: Icons.military_tech,
+                    titulo: "Oro",
+                    subtitulo: "7 días de racha",
+                    desbloqueada: oro,
+                    color: const Color(0xfff5a623),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _MedallaItem extends StatelessWidget {
+  const _MedallaItem({
+    required this.icono,
+    required this.titulo,
+    required this.subtitulo,
+    required this.desbloqueada,
+    required this.color,
+  });
+
+  final IconData icono;
+  final String titulo;
+  final String subtitulo;
+  final bool desbloqueada;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colores;
+    return Column(
+      children: [
+        Container(
+          width: 52,
+          height: 52,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: desbloqueada ? color.withOpacity(0.18) : c.contenedor,
+          ),
+          child: Icon(
+            icono,
+            size: 26,
+            color: desbloqueada ? color : c.textoTenue,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          titulo,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: desbloqueada ? FontWeight.bold : FontWeight.normal,
+            color: desbloqueada ? c.texto : c.textoTenue,
+          ),
+        ),
+        Text(
+          subtitulo,
+          style: TextStyle(
+            fontSize: 10,
+            color: c.textoTenue,
+          ),
+        ),
+      ],
+    );
   }
 }
 
@@ -459,46 +594,46 @@ class _BarraPerfilUsuario extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.colores;
     return SizedBox(
-    height: (62 + MediaQuery.paddingOf(context).bottom).clamp(86.0, double.infinity),
-    child: Stack(
-      clipBehavior: Clip.none,
-      alignment: Alignment.topCenter,
-      children: [
-        Container(color: c.navegacion),
-        Positioned(
-          top: 10,
-          left: 0,
-          right: 0,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              IconButton(
-                tooltip: 'Inicio',
-                onPressed: () => Navigator.pop(context),
-                icon: Icono(Iconos.house, color: c.textoSecundario, size: 31),
-              ),
-              const SizedBox(width: 48),
-              Icono(Iconos.user, color: c.acento, size: 31),
-            ],
-          ),
-        ),
-        Positioned(
-          top: -20,
-          child: InkWell(
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const Camara()),
-              ),
-            child: Container(
-              width: 78,
-              height: 78,
-              decoration: BoxDecoration(color: c.acento, shape: BoxShape.circle),
-              child: Icono(Iconos.camera, color: c.sobreAcento, size: 31),
+      height: (62 + MediaQuery.paddingOf(context).bottom).clamp(86.0, double.infinity),
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.topCenter,
+        children: [
+          Container(color: c.navegacion),
+          Positioned(
+            top: 10,
+            left: 0,
+            right: 0,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                IconButton(
+                  tooltip: 'Inicio',
+                  onPressed: () => Navigator.pop(context),
+                  icon: Icono(Iconos.house, color: c.textoSecundario, size: 31),
+                ),
+                const SizedBox(width: 48),
+                Icono(Iconos.user, color: c.acento, size: 31),
+              ],
             ),
           ),
-        ),
-      ],
-    ),
-  );
+          Positioned(
+            top: -20,
+            child: InkWell(
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const Camara()),
+              ),
+              child: Container(
+                width: 78,
+                height: 78,
+                decoration: BoxDecoration(color: c.acento, shape: BoxShape.circle),
+                child: Icono(Iconos.camera, color: c.sobreAcento, size: 31),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
