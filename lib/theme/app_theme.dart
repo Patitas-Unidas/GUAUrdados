@@ -30,6 +30,14 @@ class AppTheme {
   static ThemeData get claro => _construir(ColoresApp.claro, Brightness.light);
   static ThemeData get oscuro => _construir(ColoresApp.oscuro, Brightness.dark);
 
+  static Widget conBotonCamara(BuildContext context, Widget child) {
+    final tema = Theme.of(context);
+    return Theme(
+      data: tema.copyWith(snackBarTheme: tema.snackBarTheme.copyWith(insetPadding: const EdgeInsets.fromLTRB(16, 0, 16, 40))),
+      child: child,
+    );
+  }
+
   static ThemeData _construir(ColoresApp c, Brightness brillo) {
     final esquema = ColorScheme(
       brightness: brillo,
@@ -88,6 +96,15 @@ class AppTheme {
       navigationBarTheme: NavigationBarThemeData(indicatorShape: Formas.squircle(16)),
       dialogTheme: DialogThemeData(shape: Formas.squircle(28)),
       popupMenuTheme: PopupMenuThemeData(shape: Formas.squircle(12)),
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: c.texto,
+        contentTextStyle: TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w500, height: 1.35, color: c.fondo),
+        actionTextColor: c.acento,
+        elevation: 6,
+        shape: Formas.squircle(16),
+        insetPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      ),
       checkboxTheme: CheckboxThemeData(shape: Formas.squircle(4)),
       actionIconTheme: ActionIconThemeData(backButtonIconBuilder: (_) => const Icono(Iconos.chevronLeft)),
       pageTransitionsTheme: const PageTransitionsTheme(builders: {
