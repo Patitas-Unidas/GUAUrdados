@@ -4,7 +4,9 @@ import 'package:guaurdados_oficial/services/notificaciones_service.dart';
 import 'package:guaurdados_oficial/theme/colores_app.dart';
 import 'package:guaurdados_oficial/theme/formas.dart';
 import 'package:guaurdados_oficial/theme/tipografia.dart';
+import 'package:guaurdados_oficial/widgets/hoja.dart';
 import 'package:guaurdados_oficial/widgets/logo.dart';
+import 'package:guaurdados_oficial/widgets/presionable.dart';
 import 'homepage.dart';
 import 'registro_usuario.dart';
 
@@ -38,10 +40,7 @@ class _IniciarSesionState extends State<IniciarSesion> {
 
       // Mensaje de éxito agregado
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('¡Inicio de sesión exitoso!'),
-          backgroundColor: context.colores.exito,
-        ),
+        const SnackBar(content: Text('¡Inicio de sesión exitoso!')),
       );
 
       // Navegación a la página principal
@@ -65,14 +64,14 @@ class _IniciarSesionState extends State<IniciarSesion> {
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(mensajeError), backgroundColor: context.colores.emergencia),
+        SnackBar(content: Text(mensajeError), backgroundColor: context.colores.emergenciaTexto),
       );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Error inesperado de conexión.'),
-          backgroundColor: context.colores.emergencia,
+          backgroundColor: context.colores.emergenciaTexto,
         ),
       );
     } finally {
@@ -133,17 +132,22 @@ class _IniciarSesionState extends State<IniciarSesion> {
 
               Align(
                 alignment: Alignment.centerRight,
-                child: Text(
-                  "¿Olvidaste tu contraseña?",
-                  style: TextStyle(
-                    color: c.acento,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
+                child: TextButton(
+                  onPressed: _isLoading
+                      ? null
+                      : () => mostrarHoja<void>(
+                            context,
+                            builder: (_) => _HojaRestablecer(correo: _emailController.text.trim()),
+                          ),
+                  style: TextButton.styleFrom(foregroundColor: c.acento, shape: Formas.squircle(12)),
+                  child: const Text(
+                    "¿Olvidaste tu contraseña?",
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                   ),
                 ),
               ),
 
-              const SizedBox(height: 32),
+              const SizedBox(height: 20),
 
               SizedBox(
                 width: double.infinity,
@@ -242,6 +246,117 @@ class _IniciarSesionState extends State<IniciarSesion> {
         focusedErrorBorder: BordeSquircle(borderSide: BorderSide(color: c.emergencia, width: 1.5)),
         errorStyle: TextStyle(color: c.emergencia),
       ),
+    );
+  }
+}
+
+class _HojaRestablecer extends StatefulWidget {
+  const _HojaRestablecer({required this.correo});
+  final String correo;
+
+  @override
+  State<_HojaRestablecer> createState() => _HojaRestablecerState();
+}
+
+class _HojaRestablecerState extends State<_HojaRestablecer> {
+  late final _correo = TextEditingController(text: widget.correo);
+  bool _enviando = false;
+  bool _enviado = false;
+
+  @override
+  void dispose() {
+    _correo.dispose();
+    super.dispose();
+  }
+
+  Future<void> _enviar() async {
+    final correo = _correo.text.trim();
+    if (correo.isEmpty) return _avisar('Escribe el correo de tu cuenta.');
+    FocusScope.of(context).unfocus();
+    setState(() => _enviando = true);
+    try {
+      await FirebaseAuth.instance.setLanguageCode('es');
+      await FirebaseAuth.instance.sendPasswordResetEmail(email: correo);
+      if (mounted) setState(() => _enviado = true);
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'user-not-found') {
+        if (mounted) setState(() => _enviado = true);
+      } else {
+        _avisar(e.code == 'invalid-email' ? 'El formato del correo es inválido.' : 'No se pudo enviar el correo. Inténtalo de nuevo.');
+      }
+    } catch (_) {
+      _avisar('No se pudo enviar el correo. Revisa tu conexión.');
+    } finally {
+      if (mounted) setState(() => _enviando = false);
+    }
+  }
+
+  void _avisar(String texto) {
+    if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(texto)));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colores;
+    return Container(
+      decoration: ShapeDecoration(color: c.fondo, shape: Formas.squircleArriba(28)),
+      padding: EdgeInsets.fromLTRB(20, 10, 20, 20 + MediaQuery.paddingOf(context).bottom + MediaQuery.viewInsetsOf(context).bottom),
+      child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Center(
+          child: Container(width: 36, height: 4, margin: const EdgeInsets.only(bottom: 16), decoration: Formas.fondo(c.divisor, 2)),
+        ),
+        Text('Restablecer contraseña', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800).display),
+        const SizedBox(height: 6),
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 300),
+          child: Text(
+            _enviado
+                ? 'Si ${_correo.text.trim()} tiene una cuenta, te llegará un correo con un enlace para crear una contraseña nueva. Revisa también la carpeta de spam.'
+                : 'Te enviaremos un enlace a tu correo para que crees una contraseña nueva.',
+            key: ValueKey(_enviado),
+            style: TextStyle(fontSize: 14, height: 1.4, color: c.textoSecundario),
+          ),
+        ),
+        const SizedBox(height: 18),
+        if (!_enviado)
+          TextField(
+            controller: _correo,
+            enabled: !_enviando,
+            autofocus: widget.correo.isEmpty,
+            keyboardType: TextInputType.emailAddress,
+            textInputAction: TextInputAction.send,
+            onSubmitted: (_) => _enviar(),
+            decoration: InputDecoration(
+              hintText: 'Correo electrónico',
+              hintStyle: TextStyle(color: c.textoTenue),
+              filled: true,
+              fillColor: c.superficie,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+              border: const BordeSquircle(),
+              enabledBorder: const BordeSquircle(),
+              focusedBorder: BordeSquircle(borderSide: BorderSide(color: c.acento, width: 1.5)),
+            ),
+          ),
+        const SizedBox(height: 16),
+        Presionable(
+          child: SizedBox(
+            height: 52,
+            child: FilledButton(
+              onPressed: _enviando ? null : _enviado ? () => Navigator.pop(context) : _enviar,
+              style: FilledButton.styleFrom(
+                backgroundColor: c.acento,
+                foregroundColor: c.sobreAcento,
+                disabledBackgroundColor: c.acento.withValues(alpha: .5),
+                disabledForegroundColor: c.sobreAcento,
+                shape: Formas.squircle(16),
+              ),
+              child: _enviando
+                  ? SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2, color: c.sobreAcento))
+                  : Text(_enviado ? 'Entendido' : 'Enviar enlace', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+            ),
+          ),
+        ),
+      ]),
     );
   }
 }
