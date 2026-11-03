@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../models/publicacion_foro.dart';
+import 'cuidados.dart';
 
 class ForoRepository {
   ForoRepository({FirebaseFirestore? firestore})
@@ -38,6 +39,21 @@ class ForoRepository {
               .toList(),
         );
   }
+
+  Stream<Map<String, List<Alimentacion>>> observarAlimentacionesRecientes() => _publicaciones
+      .where('creadoEn', isGreaterThanOrEqualTo: Timestamp.fromDate(DateTime.now().subtract(ReglasCuidado.historial)))
+      .orderBy('creadoEn', descending: true)
+      .limit(300)
+      .snapshots()
+      .map((snapshot) {
+        final porPerro = <String, List<Alimentacion>>{};
+        for (final documento in snapshot.docs) {
+          final publicacion = PublicacionForo.fromFirestore(documento);
+          final alimentacion = Alimentacion.desde(publicacion);
+          if (alimentacion != null) porPerro.putIfAbsent(publicacion.idPerro, () => []).add(alimentacion);
+        }
+        return porPerro;
+      });
 
   Stream<ResumenActividadForo> observarResumenUsuario(String uid) =>
       _publicaciones.where('idUsuario', isEqualTo: uid).snapshots().map((snapshot) {
@@ -183,11 +199,12 @@ class ForoRepository {
     if (foto != null && foto.isNotEmpty) publicacion['fotoUsuario'] = foto;
 
     final lote = _firestore.batch();
-    lote.update(_firestore.collection('perros').doc(idPerro), {
-      'ultimaComida': '$comida · $cantidad',
-      'ultimaComidaEn': ahoraServidor,
-      'actualizadoEn': ahoraServidor,
-    });
+    lote.update(
+      _firestore.collection('perros').doc(idPerro),
+      tipoAlimento(comida) == TipoAlimento.agua
+          ? {'ultimaAguaEn': ahoraServidor, 'actualizadoEn': ahoraServidor}
+          : {'ultimaComida': '$comida · $cantidad', 'ultimaComidaEn': ahoraServidor, 'actualizadoEn': ahoraServidor},
+    );
     lote.set(foro.collection('publicaciones').doc(), publicacion);
     await lote.commit();
   }

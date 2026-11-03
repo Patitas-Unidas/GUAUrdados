@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/painting.dart' show Alignment;
 
+bool tieneDato(String valor) => valor.trim().isNotEmpty && valor != 'Sin información';
+
 /// Representa un documento de la colección `perros` en Cloud Firestore.
 class Perro {
   const Perro({
@@ -10,7 +12,7 @@ class Perro {
     required this.descripcion, required this.caracter, required this.imagenAsset,
     required this.fotoUrl,
     this.actualizadoEn, this.seguidores = const [], this.carnetUrls = const [],
-    this.esterilizado, this.ultimaComidaEn, this.ultimaVacunaEn,
+    this.esterilizado, this.ultimaComidaEn, this.ultimaAguaEn, this.ultimaVacunaEn,
     this.ultimaDesparasitacionEn, this.condiciones = const [],
     this.restricciones = const [], this.fotoCentroX, this.fotoCentroY,
   });
@@ -21,31 +23,13 @@ class Perro {
   final List<String> carnetUrls;
 
   final bool? esterilizado;
-  final DateTime? ultimaComidaEn, ultimaVacunaEn, ultimaDesparasitacionEn;
+  final DateTime? ultimaComidaEn, ultimaAguaEn, ultimaVacunaEn, ultimaDesparasitacionEn;
 
   final List<String> condiciones;
 
   final List<String> restricciones;
 
   final double? fotoCentroX, fotoCentroY;
-
-  /// En la lista, un estado saludable solo se considera vigente si también
-  /// hay un registro de alimentación dentro de las últimas 24 horas.
-  bool get alimentadoEnUltimas24Horas {
-    final fecha = ultimaComidaEn;
-    if (fecha == null) return false;
-    final transcurrido = DateTime.now().difference(fecha);
-    return !transcurrido.isNegative && transcurrido <= const Duration(hours: 24);
-  }
-
-  String get estadoResumen {
-    final estadoNormalizado = estado.trim().toLowerCase();
-    if (estadoNormalizado == 'sin estado') return 'Sin estado';
-    if (estadoNormalizado == 'saludable' && alimentadoEnUltimas24Horas) {
-      return estado;
-    }
-    return 'Revisar';
-  }
 
   Alignment get encuadre => fotoCentroX == null || fotoCentroY == null
       ? const Alignment(0, -.2)
@@ -149,6 +133,7 @@ class Perro {
       carnetUrls: carnetUrls.toSet().toList(),
       esterilizado: siNo(['esterilizado', 'esterilizada', 'castrado', 'castrada']),
       ultimaComidaEn: fechaOpcional(['ultimaComidaEn', 'ultima_comida_en']),
+      ultimaAguaEn: fechaOpcional(['ultimaAguaEn', 'ultima_agua_en']),
       ultimaVacunaEn: fechaOpcional(['ultimaVacunaEn', 'ultima_vacuna_en']),
       ultimaDesparasitacionEn: fechaOpcional(['ultimaDesparasitacionEn', 'ultima_desparasitacion_en']),
       condiciones: lista(['condiciones', 'condicionesMedicas', 'condiciones_medicas']),

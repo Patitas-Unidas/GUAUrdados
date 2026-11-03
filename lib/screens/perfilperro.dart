@@ -5,12 +5,14 @@ import 'package:guaurdados_oficial/widgets/iconos.dart';
 import 'package:flutter/physics.dart';
 import 'package:flutter/services.dart';
 import 'package:guaurdados_oficial/models/perro.dart';
+import 'package:guaurdados_oficial/services/alimentaciones.dart';
 import 'package:guaurdados_oficial/services/cuidados.dart';
 import 'package:guaurdados_oficial/services/perros_repository.dart';
 import 'package:guaurdados_oficial/theme/colores_app.dart';
 import 'package:guaurdados_oficial/theme/formas.dart';
 import 'package:guaurdados_oficial/theme/tipografia.dart';
 import 'package:guaurdados_oficial/widgets/esqueleto.dart';
+import 'package:guaurdados_oficial/widgets/estado_perro.dart';
 import 'package:guaurdados_oficial/widgets/hoja.dart';
 import 'package:guaurdados_oficial/widgets/presionable.dart';
 
@@ -121,6 +123,15 @@ class _PlantillaPerfilState extends State<_PlantillaPerfil> with SingleTickerPro
     return a;
   }
 
+  void _alActualizar() => setState(() {});
+
+  @override
+  void initState() {
+    super.initState();
+    Alimentaciones.escuchar();
+    Alimentaciones.recientes.addListener(_alActualizar);
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -136,6 +147,7 @@ class _PlantillaPerfilState extends State<_PlantillaPerfil> with SingleTickerPro
 
   @override
   void dispose() {
+    Alimentaciones.recientes.removeListener(_alActualizar);
     for (final a in _animaciones) {
       a.dispose();
     }
@@ -146,11 +158,11 @@ class _PlantillaPerfilState extends State<_PlantillaPerfil> with SingleTickerPro
   @override
   Widget build(BuildContext context) {
     final perro = widget.perro;
-    final sano = perro.estado.toLowerCase() == 'saludable';
     final vacunado = perro.vacunacion.toLowerCase().startsWith('vacunado');
+    final sinVacunas = perro.vacunacion.trim().toLowerCase().startsWith('no');
     final uid = FirebaseAuth.instance.currentUser?.uid;
     final seguido = perro.esSeguidoPor(uid);
-    final cuidados = Cuidados(perro);
+    final cuidados = Cuidados(perro, alimentaciones: Alimentaciones.de(perro.id));
     final avisos = cuidados.avisos;
     final c = context.colores;
     final oscuro = Theme.of(context).brightness == Brightness.dark;
@@ -217,7 +229,7 @@ class _PlantillaPerfilState extends State<_PlantillaPerfil> with SingleTickerPro
                     bottom: _radioHoja + 50,
                     left: 0,
                     right: 0,
-                    child: Center(child: _EtiquetaEstado(estado: perro.estado, sano: sano)),
+                    child: Center(child: PildoraEstado(cuidados.estado, ancha: true)),
                   ),
                 ]),
               ),
@@ -254,11 +266,11 @@ class _PlantillaPerfilState extends State<_PlantillaPerfil> with SingleTickerPro
                   Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Text(perro.nombre, style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w800).display),
-                      Text('${perro.raza} · ${perro.edad}', style: const TextStyle(fontSize: 16)),
+                      Text(_razaYEdad(perro), style: const TextStyle(fontSize: 16)),
                       Row(children: [
                         Icono(Iconos.clock, size: 15, color: c.textoTenue),
                         const SizedBox(width: 3),
-                        Text('Última actualización: ${_fechaRelativa(perro.actualizadoEn)}.', style: TextStyle(fontSize: 11, color: c.textoTenue)),
+                        Text(perro.actualizadoEn == null ? 'Sin actualizaciones aún' : 'Última actualización: ${_fechaRelativa(perro.actualizadoEn)}', style: TextStyle(fontSize: 11, color: c.textoTenue)),
                       ]),
                     ])),
                     _Seguir(
@@ -269,26 +281,33 @@ class _PlantillaPerfilState extends State<_PlantillaPerfil> with SingleTickerPro
                   ]),
                   if (avisos.isNotEmpty) ...[
                     const SizedBox(height: 10),
-                    Wrap(spacing: 6, runSpacing: 6, children: [for (final aviso in avisos) _ChipAviso(aviso: aviso)]),
+                    Wrap(spacing: 6, runSpacing: 6, children: [for (final aviso in avisos) ChipAviso(aviso)]),
                   ],
                   const SizedBox(height: 15),
                   Row(children: [
                     Expanded(child: _TarjetaDato(
                       icono: Iconos.utensils,
                       titulo: 'Última comida',
-                      valor: perro.ultimaComidaEn == null ? perro.ultimaComida : hora(perro.ultimaComidaEn!),
-                      subtitulo: perro.ultimaComidaEn == null ? 'sin registro de hora' : 'hace ${duracion(cuidados.desdeUltimaComida!)}',
+                      valor: cuidados.ultimaComidaEn != null ? hora(cuidados.ultimaComidaEn!) : tieneDato(perro.ultimaComida) ? perro.ultimaComida : '—',
+                      subtitulo: cuidados.ultimaComidaEn != null ? 'hace ${duracion(cuidados.desdeUltimaComida!)}' : tieneDato(perro.ultimaComida) ? 'sin fecha' : 'sin registro',
                     )),
                     const SizedBox(width: 7),
-                    Expanded(child: _TarjetaDato(icono: Iconos.weight, titulo: 'Peso', valor: perro.peso, subtitulo: perro.tamano)),
+                    Expanded(child: _TarjetaDato(icono: Iconos.weight, titulo: 'Peso', valor: tieneDato(perro.peso) ? perro.peso : '—', subtitulo: tieneDato(perro.tamano) ? perro.tamano : 'sin registro')),
                     const SizedBox(width: 7),
                     Expanded(child: _TarjetaCaracter(caracter: perro.caracter)),
                   ]),
                   const SizedBox(height: 8),
                   Row(children: [
-                    Icono(vacunado ? Iconos.circleCheck : Iconos.circleX, color: vacunado ? c.exitoTexto : c.emergenciaTexto),
-                    const SizedBox(width: 6),
-                    Expanded(child: Text(perro.vacunacion, style: TextStyle(color: vacunado ? c.exitoTexto : c.emergenciaTexto, fontSize: 20))),
+                    Builder(builder: (context) {
+                      final (_, tono) = c.tono(vacunado ? Gravedad.bien : sinVacunas && cuidados.evaluado ? Gravedad.revisar : Gravedad.neutro);
+                      return Expanded(
+                        child: Row(children: [
+                          Icono(vacunado ? Iconos.circleCheck : sinVacunas ? Iconos.circleAlert : Iconos.circleHelp, color: tono),
+                          const SizedBox(width: 6),
+                          Expanded(child: Text(tieneDato(perro.vacunacion) ? perro.vacunacion : 'Vacunas sin registrar', style: TextStyle(color: tono, fontSize: 20))),
+                        ]),
+                      );
+                    }),
                   ]),
                   const SizedBox(height: 8),
                   Text(perro.descripcion, style: const TextStyle(fontSize: 16, height: 1.35)),
@@ -306,16 +325,16 @@ class _PlantillaPerfilState extends State<_PlantillaPerfil> with SingleTickerPro
             child: SlideTransition(position: _subida, child: KeyedSubtree(key: _acciones, child: _AccionesPerfil(perro: perro))),
           ),
           Positioned(
-            top: margen.top + 4,
-            left: 4,
+            top: margen.top + 14,
+            left: 6,
             child: FadeTransition(
               opacity: _detalles,
               child: _IconoFlotante(icono: Iconos.chevronLeft, onTap: () => Navigator.pop(context)),
             ),
           ),
           Positioned(
-            top: margen.top + 4,
-            right: 4,
+            top: margen.top + 14,
+            right: 6,
             child: FadeTransition(
               opacity: _detalles,
               child: _IconoFlotante(icono: Iconos.pencil, onTap: () => _mensaje(context, 'Editar perfil')),
@@ -342,8 +361,8 @@ class _PerfilEsqueleto extends StatelessWidget {
         child: BloqueEsqueleto(radio: 0),
       ),
       Positioned(
-        top: MediaQuery.paddingOf(context).top + 4,
-        left: 4,
+        top: MediaQuery.paddingOf(context).top + 14,
+        left: 6,
         child: _IconoFlotante(icono: Iconos.chevronLeft, onTap: () => Navigator.pop(context)),
       ),
     ]),
@@ -387,34 +406,6 @@ class _IconoFlotante extends StatelessWidget {
   Widget build(BuildContext context) => Material(color: context.colores.superficie, elevation: 2, shape: const CircleBorder(), child: IconButton(iconSize: 20, onPressed: onTap, icon: Icono(icono, color: context.colores.textoTenue)));
 }
 
-class _EtiquetaEstado extends StatelessWidget {
-  const _EtiquetaEstado({required this.estado, required this.sano});
-  final String estado;
-  final bool sano;
-  @override
-  Widget build(BuildContext context) => Container(padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 7), decoration: Formas.fondo(context.colores.superficie, 18), child: Text(estado, style: TextStyle(fontSize: 11, color: sano ? context.colores.exitoTexto : context.colores.advertenciaTexto)));
-}
-
-class _ChipAviso extends StatelessWidget {
-  const _ChipAviso({required this.aviso});
-  final Aviso aviso;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.colores;
-    final urgente = aviso.gravedad == Gravedad.urgente;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: Formas.fondo(urgente ? c.emergenciaSuave : c.advertenciaSuave, 10),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [
-        Icono(urgente ? Iconos.circleAlert : Iconos.clock, size: 15, color: urgente ? c.emergenciaTexto : c.advertenciaTexto),
-        const SizedBox(width: 5),
-        Text(aviso.texto, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: urgente ? c.emergenciaTexto : c.advertenciaTexto)),
-      ]),
-    );
-  }
-}
-
 /// Acciones fuera del área desplazable: siempre quedan ancladas abajo.
 class _AccionesPerfil extends StatelessWidget {
   const _AccionesPerfil({required this.perro});
@@ -423,10 +414,12 @@ class _AccionesPerfil extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.colores;
+    final cuidados = Cuidados(perro, alimentaciones: Alimentaciones.de(perro.id));
     return Container(
     color: c.fondo,
     padding: EdgeInsets.fromLTRB(12, 8, 12, 16 + MediaQuery.paddingOf(context).bottom),
     child: Column(children: [
+      if (cuidados.ultimaComidaEn != null)
       Padding(
         padding: const EdgeInsets.only(bottom: 8),
         child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -436,7 +429,7 @@ class _AccionesPerfil extends StatelessWidget {
             child: Text.rich(
               TextSpan(children: [
                 const TextSpan(text: 'Próxima alimentación sugerida: '),
-                TextSpan(text: Cuidados(perro).textoProximaComida, style: TextStyle(fontWeight: FontWeight.w700, color: c.texto)),
+                TextSpan(text: cuidados.textoProximaComida, style: TextStyle(fontWeight: FontWeight.w700, color: c.texto)),
               ]),
               style: TextStyle(fontSize: 13, color: c.textoSecundario),
             ),
@@ -468,7 +461,7 @@ class _AccionesPerfil extends StatelessWidget {
                 style: _estilo(c.medico),
                 onPressed: () => mostrarHoja<void>(
                   context,
-                  builder: (_) => EstadoMedico(perro: perro, actualizado: _fechaRelativa(perro.actualizadoEn)),
+                  builder: (_) => EstadoMedico(perro: perro, actualizado: perro.actualizadoEn == null ? null : _fechaRelativa(perro.actualizadoEn)),
                 ),
                 icon: Icono(Iconos.stethoscope, color: c.sobreAcento, size: 26),
                 label: FittedBox(fit: BoxFit.scaleDown, child: Text('Estado médico', style: TextStyle(color: c.sobreAcento, fontSize: 17))),
@@ -659,10 +652,16 @@ class _TarjetaCaracter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final amable = caracter.toLowerCase().contains('cariñ') || caracter.toLowerCase().contains('amigable');
+    final sinDato = !tieneDato(caracter);
     final c = context.colores;
-    final color = amable ? c.exitoTexto : c.advertenciaTexto;
-    return Card(color: amable ? c.exitoSuave : c.advertenciaSuave, elevation: 0, child: SizedBox(height: 110, child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icono(amable ? Iconos.heart : Iconos.triangleAlert, size: 50, color: color), Text(caracter, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: color))])));
+    final (fondo, color) = c.tono(amable ? Gravedad.bien : sinDato ? Gravedad.neutro : Gravedad.revisar);
+    return Card(color: fondo, elevation: 0, child: SizedBox(height: 110, child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icono(amable ? Iconos.heart : sinDato ? Iconos.circleHelp : Iconos.triangleAlert, size: 50, color: color), Text(sinDato ? 'Carácter\nsin registrar' : caracter, maxLines: sinDato ? 2 : 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center, style: TextStyle(fontSize: sinDato ? 13 : 16, height: 1.2, fontWeight: FontWeight.w500, color: color))])));
   }
+}
+
+String _razaYEdad(Perro perro) {
+  final datos = [perro.raza, perro.edad].where(tieneDato);
+  return datos.isEmpty ? 'Raza y edad sin registrar' : datos.join(' · ');
 }
 
 String _fechaRelativa(dynamic timestamp) {

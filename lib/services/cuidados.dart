@@ -1,16 +1,29 @@
 import 'dart:math' as math;
 
 import 'package:guaurdados_oficial/models/perro.dart';
+import 'package:guaurdados_oficial/models/publicacion_foro.dart';
 
 class ReglasCuidado {
-  static const intervaloComida = Duration(hours: 12);
-  static const comidaReciente = Duration(hours: 4);
+  static const ventana = Duration(hours: 24);
+  static const sinAgua = Duration(hours: 24);
+  static const historial = Duration(hours: 48);
+  static const pesoSupuestoKg = 15.0;
+  static const gramosPorPunado = {TipoAlimento.seca: 40, TipoAlimento.humeda: 60};
+  static const excesoDiario = 1.25;
   static const intervaloDesparasitacion = Duration(days: 91);
   static const intervaloVacunas = Duration(days: 365);
   static const anticipacionAviso = Duration(days: 14);
 }
 
 enum TipoAlimento { seca, humeda, agua }
+
+TipoAlimento? tipoAlimento(String? texto) {
+  final t = (texto ?? '').trim().toLowerCase();
+  if (t.contains('seca')) return TipoAlimento.seca;
+  if (t.contains('húmeda') || t.contains('humeda')) return TipoAlimento.humeda;
+  if (t == 'agua') return TipoAlimento.agua;
+  return null;
+}
 
 double? pesoEnKg(String peso) {
   final numero = RegExp(r'\d+([.,]\d+)?').firstMatch(peso)?.group(0);
@@ -26,10 +39,47 @@ double? pesoEnKg(String peso) {
   return (redondear(reposo * 1.4 / kcalPorGramo), redondear(reposo * 1.8 / kcalPorGramo));
 }
 
-enum Gravedad { atencion, urgente }
+enum Unidad { punados, gramos, ml }
+
+class Alimentacion {
+  const Alimentacion({required this.fecha, required this.tipo, required this.cantidad, required this.unidad});
+  final DateTime fecha;
+  final TipoAlimento? tipo;
+  final double cantidad;
+  final Unidad unidad;
+
+  bool get esAgua => tipo == TipoAlimento.agua;
+
+  static Alimentacion? desde(PublicacionForo publicacion) {
+    final fecha = publicacion.creadoEn;
+    if (publicacion.tipoPublicacion != 'alimentacion' || fecha == null) return null;
+    final partes = RegExp(r'(\d+(?:[.,]\d+)?)\s*(\S*)').firstMatch(publicacion.cantidadComida ?? '');
+    final cantidad = double.tryParse(partes?.group(1)?.replaceAll(',', '.') ?? '');
+    if (cantidad == null || cantidad <= 0) return null;
+    final unidad = partes!.group(2)!.toLowerCase();
+    return Alimentacion(
+      fecha: fecha,
+      tipo: tipoAlimento(publicacion.tipoComida),
+      cantidad: cantidad,
+      unidad: unidad.startsWith('pu') ? Unidad.punados : unidad.startsWith('ml') ? Unidad.ml : Unidad.gramos,
+    );
+  }
+}
+
+enum Gravedad { bien, neutro, revisar }
 
 class Aviso {
   const Aviso(this.texto, this.gravedad);
+  final String texto;
+  final Gravedad gravedad;
+}
+
+enum EstadoPerro {
+  saludable('Saludable', Gravedad.bien),
+  revisar('Revisar', Gravedad.revisar),
+  sinEstado('Sin estado', Gravedad.neutro);
+
+  const EstadoPerro(this.texto, this.gravedad);
   final String texto;
   final Gravedad gravedad;
 }
@@ -60,21 +110,70 @@ class Vencido extends Plazo {
 }
 
 class Cuidados {
-  Cuidados(this.perro, {DateTime? ahora}) : ahora = ahora ?? DateTime.now();
+  Cuidados(this.perro, {List<Alimentacion> alimentaciones = const [], DateTime? ahora}) : ahora = ahora ?? DateTime.now() {
+    for (final a in alimentaciones) {
+      if (this.ahora.difference(a.fecha) > ReglasCuidado.historial) continue;
+      (a.esAgua ? _agua : _comidas).add(a);
+    }
+    _comidas.sort((a, b) => a.fecha.compareTo(b.fecha));
+    _agua.sort((a, b) => a.fecha.compareTo(b.fecha));
+  }
+
   final Perro perro;
   final DateTime ahora;
+  final _comidas = <Alimentacion>[];
+  final _agua = <Alimentacion>[];
 
-  Duration? get desdeUltimaComida => perro.ultimaComidaEn == null ? null : ahora.difference(perro.ultimaComidaEn!);
+  bool get pesoSupuesto => pesoEnKg(perro.peso) == null;
+  double get pesoKg => pesoEnKg(perro.peso) ?? ReglasCuidado.pesoSupuestoKg;
 
-  DateTime? get proximaComida => perro.ultimaComidaEn?.add(ReglasCuidado.intervaloComida);
+  double _fraccion(Alimentacion a) {
+    final tipo = a.tipo ?? TipoAlimento.humeda;
+    final gramos = a.unidad == Unidad.punados ? a.cantidad * ReglasCuidado.gramosPorPunado[tipo]! : a.cantidad;
+    final (minimo, maximo) = racionDiaria(pesoKg, tipo)!;
+    return gramos / ((minimo + maximo) / 2);
+  }
+
+  bool _hoy(Alimentacion a) => ahora.difference(a.fecha) <= ReglasCuidado.ventana;
+
+  DateTime? get ultimaComidaEn => _comidas.isNotEmpty ? _comidas.last.fecha : perro.ultimaComidaEn;
+
+  Duration? get desdeUltimaComida => ultimaComidaEn == null ? null : ahora.difference(ultimaComidaEn!);
+
+  DateTime? get ultimaAguaEn => _agua.isNotEmpty ? _agua.last.fecha : perro.ultimaAguaEn;
+
+  Duration? get desdeUltimaAgua => ultimaAguaEn == null ? null : ahora.difference(ultimaAguaEn!);
+
+  bool get sinComerHaceMucho => (desdeUltimaComida ?? Duration.zero) > ReglasCuidado.ventana;
+
+  bool get sinAguaHaceMucho => (desdeUltimaAgua ?? Duration.zero) > ReglasCuidado.sinAgua;
+
+  double get racionHoy => _comidas.where(_hoy).fold(0.0, (suma, a) => suma + _fraccion(a));
+
+  int get aguaHoyMl => _agua.where(_hoy).fold(0, (suma, a) => suma + a.cantidad.round());
+
+  int get aguaDiariaMl {
+    final (minimo, maximo) = racionDiaria(pesoKg, TipoAlimento.agua)!;
+    return (minimo + maximo) ~/ 2;
+  }
+
+  DateTime? get alimentadoHasta {
+    DateTime? hasta;
+    for (final a in _comidas) {
+      final desde = hasta != null && hasta.isAfter(a.fecha) ? hasta : a.fecha;
+      hasta = desde.add(ReglasCuidado.ventana * _fraccion(a));
+    }
+    return hasta;
+  }
 
   String get textoProximaComida {
-    final proxima = proximaComida;
-    if (proxima == null) return 'sin comidas registradas';
-    if (!proxima.isAfter(ahora)) return 'ahora';
-    final manana = proxima.day != ahora.day;
-    return '${manana ? 'mañana, ' : ''}${hora(proxima)}';
+    final hasta = alimentadoHasta;
+    if (hasta == null) return ultimaComidaEn == null ? 'sin comidas registradas' : 'ahora';
+    if (!hasta.isAfter(ahora)) return 'ahora';
+    return _cuando(hasta);
   }
+
+  String _cuando(DateTime f) => '${f.day != ahora.day ? 'mañana, ' : ''}${hora(f)}';
 
   Plazo get vacunas => _plazo(perro.ultimaVacunaEn, ReglasCuidado.intervaloVacunas);
   Plazo get desparasitacion => _plazo(perro.ultimaDesparasitacionEn, ReglasCuidado.intervaloDesparasitacion);
@@ -88,21 +187,43 @@ class Cuidados {
     return AlDia(vence);
   }
 
+  bool get evaluado => !const {'sin estado', 'sin información', ''}.contains(perro.estado.trim().toLowerCase());
+
   List<Aviso> get avisos {
     final lista = <Aviso>[];
     final desde = desdeUltimaComida;
-    if (desde != null && desde < ReglasCuidado.comidaReciente) {
-      lista.add(Aviso('Comió hace ${duracion(desde)} · evita darle más', Gravedad.atencion));
-    } else if (desde != null && desde >= ReglasCuidado.intervaloComida) {
-      lista.add(Aviso('Sin comer hace ${duracion(desde)}', Gravedad.atencion));
+    final hasta = alimentadoHasta;
+    if (desde == null) {
+      lista.add(const Aviso('Sin comidas registradas', Gravedad.revisar));
+    } else if (sinComerHaceMucho) {
+      lista.add(Aviso('Sin comer hace ${duracion(desde)}', Gravedad.revisar));
+    } else if (racionHoy > ReglasCuidado.excesoDiario) {
+      lista.add(const Aviso('Comió más de su ración diaria', Gravedad.revisar));
+    } else if (hasta != null && hasta.isAfter(ahora)) {
+      lista.add(Aviso('Alimentado hasta ${_cuando(hasta)} · evita darle más', Gravedad.bien));
+    } else {
+      lista.add(const Aviso('Le toca comer', Gravedad.neutro));
+    }
+    if (sinAguaHaceMucho) lista.add(Aviso('Sin agua hace ${duracion(desdeUltimaAgua!)}', Gravedad.revisar));
+
+    if (evaluado && perro.estado.trim().toLowerCase() != 'saludable') {
+      lista.add(Aviso(perro.estado.trim(), Gravedad.revisar));
+    }
+    if (perro.vacunacion.trim().toLowerCase().startsWith('no')) {
+      lista.add(const Aviso('Vacunas pendientes', Gravedad.revisar));
     }
     void plazo(String nombre, Plazo p) {
-      if (p is PorVencer) lista.add(Aviso('$nombre vence ${p.dias == 0 ? 'hoy' : 'en ${p.dias} ${p.dias == 1 ? 'día' : 'días'}'}', Gravedad.atencion));
-      if (p is Vencido) lista.add(Aviso('$nombre vencida', Gravedad.urgente));
+      if (p is PorVencer) lista.add(Aviso('$nombre vence ${p.dias == 0 ? 'hoy' : 'en ${p.dias} ${p.dias == 1 ? 'día' : 'días'}'}', Gravedad.revisar));
+      if (p is Vencido) lista.add(Aviso('$nombre vencida', Gravedad.revisar));
     }
     plazo('Vacuna', vacunas);
     plazo('Desparasitación', desparasitacion);
-    return lista;
+    return evaluado ? lista : [for (final a in lista) a.gravedad == Gravedad.revisar ? Aviso(a.texto, Gravedad.neutro) : a];
+  }
+
+  EstadoPerro get estado {
+    if (!evaluado) return EstadoPerro.sinEstado;
+    return avisos.any((a) => a.gravedad == Gravedad.revisar) ? EstadoPerro.revisar : EstadoPerro.saludable;
   }
 }
 

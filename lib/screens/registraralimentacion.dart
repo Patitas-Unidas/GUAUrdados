@@ -130,7 +130,7 @@ class _RegistrarAlimentacionState extends State<RegistrarAlimentacion> {
     } catch (error) {
       if (!mounted) return;
       final mensaje = error is FirebaseException && error.code == 'permission-denied'
-          ? 'Firestore rechazó el registro. Revisa las reglas de alimentación.'
+          ? 'Tu cuenta no tiene permiso para registrar alimentación.'
           : 'No se pudo guardar la alimentación. Inténtalo de nuevo.';
       _avisar(mensaje);
     } finally {
