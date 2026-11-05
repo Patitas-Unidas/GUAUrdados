@@ -14,6 +14,38 @@ Cada documento puede usar un ID automático o uno legible, por ejemplo `scooby`.
 | `actualizadoEn` | timestamp | Timestamp actual de Firestore |
 | `seguidores` | array de strings | UIDs de Firebase Auth que siguen al perro |
 
+### Adopción
+
+Solo los administradores pueden editar la colección `perros`. Al marcar un
+perrito como adoptado, la app lo pasa al final de la lista con la etiqueta
+"Adoptado", muestra su perfil desenfocado con un mensaje y deja de pedir
+registros de cuidado, alertas y emergencias para él. Sus datos y su foro se
+conservan como historial.
+
+| Campo | Tipo | Ejemplo |
+| --- | --- | --- |
+| `adoptado` | boolean | `true` |
+| `adoptadoEn` | timestamp (opcional) | Fecha en que encontró una familia |
+
+### Avisos de perritos sin registrar
+
+Si la cámara no reconoce a un perrito, cualquier usuario puede avisar a GUAU
+desde ahí. El aviso se guarda en `foro/sin_registrar/publicaciones` con
+`tipoPublicacion: "perrito_nuevo"`, sin `idPerro` ni `nombrePerro` (no está asociado a ningún perrito),
+una descripción y, opcionalmente, `ubicacion` y `fotoUrl` (la foto se sube a
+Storage en `avisos/{uid}/`). Aparece en el foro general.
+
+Cuando GUAU revisa el aviso, un administrador lo cierra agregando estos campos
+a la publicación (no se borra, así la comunidad ve cómo terminó):
+
+| Campo | Tipo | Uso |
+|---|---|---|
+| `resultadoAviso` | string | `registrado` (se agregó el perrito) o `ya_registrado` (era uno conocido) |
+| `idPerroAviso` | string (opcional) | ID del perrito en `perros`; la publicación muestra su nombre y foto y abre su perfil |
+| `notaGuau` | string (opcional) | Comentario de GUAU, hasta 500 caracteres |
+| `revisadoEn` | timestamp (opcional) | Cuándo se revisó |
+| `revisadoPor` | string (opcional) | UID del administrador que lo revisó |
+
 ### Campos opcionales de cuidado
 
 Si no existen, la app muestra "Sin registrar". Con las fechas calcula sola la
@@ -100,6 +132,21 @@ colecciones `publicaciones`. Sus índices de grupo están definidos en
 ```powershell
 firebase deploy --only firestore:indexes
 ```
+
+### Reacciones y comentarios
+
+Solo las publicaciones normales y los avisos de perrito nuevo tienen reacciones y
+comentarios (las de alimentación, estado médico y las emergencias no).
+
+| Campo en la publicación | Tipo | Uso |
+|---|---|---|
+| `reacciones` | map | `{uid: {e, n, f}}`: emoji (`❤️ 🥰 🐶 😂 😮 😢 💪`), nombre y foto de quien reaccionó. Una reacción por persona; cada uno solo cambia la suya |
+| `numComentarios` | number | Cantidad de comentarios (sube y baja de a uno) |
+| `ultimoComentario` | map | `{idUsuario, nombre, en}` del último comentario; con esto la campana del autor muestra "X comentó tu publicación" |
+
+Los comentarios van en `foro/{idForo}/publicaciones/{idPublicacion}/comentarios/{id}`
+con `idUsuario`, `nombreUsuario`, `fotoUsuario` (opcional), `texto` (hasta 500
+caracteres) y `creadoEn`. No se editan; los borra su autor o un admin.
 
 ## Fotos y carnets en Firebase Storage
 

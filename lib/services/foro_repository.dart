@@ -1,6 +1,10 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 
+import '../models/comentario.dart';
 import '../models/publicacion_foro.dart';
 import 'cuidados.dart';
 
@@ -55,6 +59,9 @@ class ForoRepository {
         return porPerro;
       });
 
+  Stream<List<PublicacionForo>> observarPublicacionesDe(String uid) =>
+      _publicaciones.where('idUsuario', isEqualTo: uid).snapshots().map((snapshot) => snapshot.docs.map(PublicacionForo.fromFirestore).toList());
+
   Stream<ResumenActividadForo> observarResumenUsuario(String uid) =>
       _publicaciones.where('idUsuario', isEqualTo: uid).snapshots().map((snapshot) {
         final actividad = snapshot.docs.map(PublicacionForo.fromFirestore).toList()
@@ -67,7 +74,7 @@ class ForoRepository {
           perrosAyudados: perros.length,
           registros: registros.length,
           rachaDias: _rachaActual(registros),
-          actividadReciente: registros.take(8).toList(),
+          actividadReciente: actividad.where((publicacion) => registros.contains(publicacion) || publicacion.esPerritoNuevo).take(8).toList(),
         );
       });
 
@@ -207,6 +214,79 @@ class ForoRepository {
     );
     lote.set(foro.collection('publicaciones').doc(), publicacion);
     await lote.commit();
+  }
+
+  Future<void> avisarPerritoNuevo({required User usuario, required String descripcion, String ubicacion = '', File? foto}) async {
+    final datos = <String, dynamic>{
+      'idUsuario': usuario.uid,
+      'nombreUsuario': _nombreUsuario(usuario),
+      'tipoPublicacion': 'perrito_nuevo',
+      'descripcion': descripcion.trim(),
+      'creadoEn': FieldValue.serverTimestamp(),
+    };
+    final fotoUsuario = usuario.photoURL?.trim();
+    if (fotoUsuario != null && fotoUsuario.isNotEmpty) datos['fotoUsuario'] = fotoUsuario;
+    if (ubicacion.trim().isNotEmpty) datos['ubicacion'] = ubicacion.trim();
+    if (foto != null) {
+      final archivo = FirebaseStorage.instance.ref('avisos/${usuario.uid}/${DateTime.now().millisecondsSinceEpoch}.jpg');
+      await archivo.putFile(foto, SettableMetadata(contentType: 'image/jpeg'));
+      datos['fotoUrl'] = await archivo.getDownloadURL();
+    }
+    await _firestore.collection('foro').doc('sin_registrar').collection('publicaciones').add(datos);
+  }
+
+  Future<void> reaccionar(PublicacionForo publicacion, User usuario, String? emoji) {
+    final datos = emoji == null
+        ? FieldValue.delete()
+        : <String, dynamic>{
+            'e': emoji,
+            'n': _nombreUsuario(usuario),
+            if ((usuario.photoURL ?? '').trim().isNotEmpty) 'f': usuario.photoURL!.trim(),
+          };
+    return _firestore.doc(publicacion.ruta).update({'reacciones.${usuario.uid}': datos});
+  }
+
+  Stream<List<Comentario>> observarComentarios(PublicacionForo publicacion) =>
+      _firestore.doc(publicacion.ruta).collection('comentarios').limit(300).snapshots().map((snapshot) {
+        final comentarios = snapshot.docs.map(Comentario.fromFirestore).toList()
+          ..sort((a, b) => (a.creadoEn ?? DateTime(9999)).compareTo(b.creadoEn ?? DateTime(9999)));
+        return comentarios;
+      });
+
+  Future<void> comentar(PublicacionForo publicacion, User usuario, String texto) {
+    final limpio = texto.trim();
+    if (limpio.isEmpty || limpio.length > 500) throw ArgumentError.value(texto, 'texto');
+    final nombre = _nombreUsuario(usuario);
+    final foto = usuario.photoURL?.trim() ?? '';
+    final ahora = FieldValue.serverTimestamp();
+    final publicacionRef = _firestore.doc(publicacion.ruta);
+    final lote = _firestore.batch()
+      ..set(publicacionRef.collection('comentarios').doc(), {
+        'idUsuario': usuario.uid,
+        'nombreUsuario': nombre,
+        if (foto.isNotEmpty) 'fotoUsuario': foto,
+        'texto': limpio,
+        'creadoEn': ahora,
+      })
+      ..update(publicacionRef, {
+        'numComentarios': FieldValue.increment(1),
+        'ultimoComentario': {'idUsuario': usuario.uid, 'nombre': nombre, 'en': ahora},
+      });
+    return lote.commit();
+  }
+
+  Future<void> eliminarComentario(PublicacionForo publicacion, Comentario comentario) {
+    final publicacionRef = _firestore.doc(publicacion.ruta);
+    final lote = _firestore.batch()
+      ..delete(publicacionRef.collection('comentarios').doc(comentario.id))
+      ..update(publicacionRef, {'numComentarios': FieldValue.increment(-1)});
+    return lote.commit();
+  }
+
+  Future<void> eliminarPublicacion(PublicacionForo publicacion) async {
+    await _firestore.doc(publicacion.ruta).delete();
+    final foto = publicacion.fotoUrl ?? '';
+    if (foto.isNotEmpty) await FirebaseStorage.instance.refFromURL(foto).delete().catchError((_) {});
   }
 
   Future<DocumentReference<Map<String, dynamic>>> _obtenerOCrearForo(String idPerro) async {
