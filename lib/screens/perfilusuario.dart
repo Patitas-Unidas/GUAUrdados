@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:guaurdados_oficial/widgets/iconos.dart';
+import 'package:guaurdados_oficial/widgets/aviso.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:guaurdados_oficial/models/emergencia.dart';
 import 'package:guaurdados_oficial/models/perro.dart';
@@ -8,6 +9,7 @@ import 'package:guaurdados_oficial/screens/camara.dart';
 import 'package:guaurdados_oficial/services/emergencias_repository.dart';
 import 'package:guaurdados_oficial/services/notificaciones_service.dart';
 import 'package:guaurdados_oficial/services/foro_repository.dart';
+import 'package:guaurdados_oficial/services/gamificacion_service.dart';
 import 'package:guaurdados_oficial/services/perros_repository.dart';
 import 'package:guaurdados_oficial/theme/app_colors.dart';
 import 'package:guaurdados_oficial/theme/app_theme.dart';
@@ -26,6 +28,7 @@ import 'configuracion.dart';
 import 'foro.dart';
 import 'iniciar_sesion.dart';
 import 'perfilperro.dart';
+import 'package:guaurdados_oficial/services/rutas.dart';
 
 class PerfilUsuario extends StatefulWidget {
   const PerfilUsuario({super.key});
@@ -39,6 +42,7 @@ class _PerfilUsuarioState extends State<PerfilUsuario> {
   void initState() {
     super.initState();
     FirebaseAuth.instance.currentUser?.reload().catchError((_) {});
+    WidgetsBinding.instance.addPostFrameCallback((_) => GamificacionService.evaluarSeguimientoYRacha(context));
   }
 
   @override
@@ -108,7 +112,7 @@ class _PerfilUsuarioState extends State<PerfilUsuario> {
       );
     } catch (_) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No se pudo cerrar la sesión.')));
+        avisar(context, 'No se pudo cerrar la sesión. Revisa tu conexión.', tipo: TipoAviso.error);
       }
     }
   }
@@ -178,7 +182,9 @@ class _Estadistica extends StatelessWidget {
     return Semantics(
       label: '$etiqueta: $valor',
       excludeSemantics: true,
-      child: Column(mainAxisSize: MainAxisSize.min, children: [
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 6),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
         Row(mainAxisSize: MainAxisSize.min, children: [
           Icono(icono, color: color, size: 18),
           const SizedBox(width: 6),
@@ -192,6 +198,7 @@ class _Estadistica extends StatelessWidget {
         const SizedBox(height: 2),
         FittedBox(fit: BoxFit.scaleDown, child: Text(etiqueta, maxLines: 1, style: TextStyle(fontSize: 12, color: c.textoTenue))),
       ]),
+      ),
     );
   }
 }
@@ -247,7 +254,7 @@ class _PerrosSeguidos extends StatelessWidget {
             separatorBuilder: (_, _) => const SizedBox(width: 14),
             itemBuilder: (context, i) => Presionable(
               child: GestureDetector(
-                onTap: () => Navigator.push(context, PerfilPerro.ruta(perros[i])),
+                onTap: () => abrir(context, PerfilPerro.ruta(perros[i])),
                 child: SizedBox(
                   width: 68,
                   child: Column(children: [
@@ -381,6 +388,7 @@ class _ResumenUsuario extends StatelessWidget {
           ),
           ]),
         ),
+        _SeccionGamificacion(uid: uid),
         _MisEmergencias(uid: uid),
         const _TituloSeccion('Patitas que sigues'),
         _PerrosSeguidos(uid: uid),
@@ -404,7 +412,9 @@ class _ResumenUsuario extends StatelessWidget {
                 ? Iconos.utensils
                 : esMedico
                     ? Iconos.stethoscope
-                    : Iconos.messageCircle;
+                    : publicacion.esPerritoNuevo
+                        ? Iconos.pawPrint
+                        : Iconos.messageCircle;
             final color = esAlimentacion
                 ? c.acento
                 : esMedico
@@ -414,15 +424,17 @@ class _ResumenUsuario extends StatelessWidget {
                 ? 'Registraste alimentación para ${publicacion.nombrePerro}'
                 : esMedico
                     ? 'Actualizaste el estado médico de ${publicacion.nombrePerro}'
-                    : 'Publicaste en el foro de ${publicacion.nombrePerro}';
+                    : publicacion.esPerritoNuevo
+                        ? 'Avisaste a GUAU de un perrito nuevo'
+                        : 'Publicaste en el foro de ${publicacion.nombrePerro}';
             return _Actividad(
               icono: icono,
               color: color,
               titulo: titulo,
               cuando: _fechaActividad(publicacion.creadoEn),
-              alTocar: () => Navigator.push(
+              alTocar: () => abrir(
                 context,
-                MaterialPageRoute(builder: (_) => Foro(idPerro: publicacion.idPerro, nombrePerro: publicacion.nombrePerro)),
+                publicacion.esPerritoNuevo ? Foro.ruta() : Foro.ruta(idPerro: publicacion.idPerro, nombrePerro: publicacion.nombrePerro),
               ),
             );
           }),
@@ -442,6 +454,124 @@ class _ResumenUsuario extends StatelessWidget {
     final hora = '${fecha.hour.toString().padLeft(2, '0')}:${fecha.minute.toString().padLeft(2, '0')}';
     if (diferencia.inDays == 1) return 'Ayer, $hora';
     return '${fecha.day.toString().padLeft(2, '0')}/${fecha.month.toString().padLeft(2, '0')} · $hora';
+  }
+}
+
+class _SeccionGamificacion extends StatefulWidget {
+  const _SeccionGamificacion({required this.uid});
+  final String uid;
+
+  @override
+  State<_SeccionGamificacion> createState() => _SeccionGamificacionState();
+}
+
+class _SeccionGamificacionState extends State<_SeccionGamificacion> {
+  late final _usuario = GamificacionService.streamUsuario(widget.uid);
+  late final _seguidos = PerrosRepository().observarPerrosSeguidos(widget.uid);
+  late final _resumen = ForoRepository().observarResumenUsuario(widget.uid);
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colores;
+    return StreamBuilder(
+      stream: _usuario,
+      builder: (context, usuario) => StreamBuilder<List<Perro>>(
+        stream: _seguidos,
+        builder: (context, seguidos) => StreamBuilder<ResumenActividadForo>(
+          stream: _resumen,
+          builder: (context, resumen) {
+            final datos = usuario.data?.data() ?? const <String, dynamic>{};
+            final logros = (datos['logros'] as List<dynamic>?) ?? const [];
+            final escaneados = (datos['perros_escaneados'] as List<dynamic>?) ?? const [];
+            final avance = {
+              GamificacionService.bronce.id: seguidos.data?.length ?? 0,
+              GamificacionService.plata.id: escaneados.length,
+              GamificacionService.oro.id: resumen.data?.rachaDias ?? 0,
+            };
+            final ganadas = GamificacionService.insignias.where((i) => logros.contains(i.id)).length;
+            return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                const Expanded(child: _TituloSeccion('Insignias')),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12, right: 2),
+                  child: Text('$ganadas de ${GamificacionService.insignias.length}', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: c.textoSecundario)),
+                ),
+              ]),
+              Container(
+                padding: const EdgeInsets.fromLTRB(8, 16, 8, 14),
+                decoration: Formas.fondo(c.superficie, 20),
+                child: IntrinsicHeight(child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                  for (final insignia in GamificacionService.insignias)
+                    Expanded(
+                      child: _MedallaItem(
+                        insignia: insignia,
+                        ganada: logros.contains(insignia.id),
+                        avance: avance[insignia.id]!.clamp(0, insignia.objetivo),
+                      ),
+                    ),
+                ])),
+              ),
+            ]);
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _MedallaItem extends StatelessWidget {
+  const _MedallaItem({required this.insignia, required this.ganada, required this.avance});
+  final Insignia insignia;
+  final bool ganada;
+  final int avance;
+
+  static const _apagada = ColorFilter.matrix([
+    .53, .43, .04, 0, 0,
+    .13, .83, .04, 0, 0,
+    .13, .43, .44, 0, 0,
+    0, 0, 0, .55, 0,
+  ]);
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colores;
+    final medalla = Image.asset(insignia.imagen, width: 64, height: 64);
+    return Column(children: [
+      ganada ? medalla : ColorFiltered(colorFilter: _apagada, child: medalla),
+      const SizedBox(height: 8),
+      Text(insignia.nombre, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: ganada ? c.texto : c.textoSecundario)),
+      const SizedBox(height: 2),
+      Text(insignia.meta, textAlign: TextAlign.center, style: TextStyle(fontSize: 11.5, height: 1.25, color: c.textoTenue)),
+      const Spacer(),
+      const SizedBox(height: 8),
+      if (ganada)
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: Formas.fondo(c.exitoSuave, 10),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            Icono(Iconos.check, size: 13, color: c.exitoTexto),
+            const SizedBox(width: 4),
+            Text('Lograda', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: c.exitoTexto)),
+          ]),
+        )
+      else
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          child: Column(children: [
+            ClipRSuperellipse(
+              borderRadius: BorderRadius.circular(4),
+              child: TweenAnimationBuilder<double>(
+                tween: Tween(end: avance / insignia.objetivo),
+                duration: const Duration(milliseconds: 600),
+                curve: Curves.easeOutCubic,
+                builder: (context, valor, _) => LinearProgressIndicator(value: valor, minHeight: 6, color: c.acento, backgroundColor: c.contenedor),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text('$avance de ${insignia.objetivo}', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: c.textoSecundario)),
+          ]),
+        ),
+    ]);
   }
 }
 

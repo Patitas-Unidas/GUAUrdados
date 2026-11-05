@@ -9,6 +9,8 @@ extension TonosEstado on ColoresApp {
         Gravedad.bien => (exitoSuave, exitoTexto),
         Gravedad.neutro => (divisor, neutroTexto),
         Gravedad.revisar => (advertenciaSuave, advertenciaTexto),
+        Gravedad.urgente => (emergenciaSuave, emergenciaTexto),
+        Gravedad.adoptado => (adoptadoSuave, adoptadoTexto),
       };
 }
 
@@ -24,9 +26,10 @@ class PildoraEstado extends StatelessWidget {
     return DecoratedBox(
       decoration: Formas.fondo(c.superficie, 18),
       child: Container(
-        padding: EdgeInsets.symmetric(horizontal: ancha ? 15 : 9, vertical: 7),
+        width: ancha ? null : 86,
+        padding: EdgeInsets.symmetric(horizontal: ancha ? 15 : 6, vertical: 7),
         decoration: Formas.fondo(fondo, 18),
-        child: Text(estado.texto, maxLines: 1, style: TextStyle(color: texto, fontSize: 11, fontWeight: FontWeight.w600)),
+        child: Text(estado.texto, maxLines: 1, textAlign: TextAlign.center, style: TextStyle(color: texto, fontSize: 11, fontWeight: FontWeight.w600)),
       ),
     );
   }
@@ -44,6 +47,8 @@ class ChipAviso extends StatelessWidget {
       Gravedad.bien => Iconos.circleCheck,
       Gravedad.neutro => Iconos.clock,
       Gravedad.revisar => Iconos.circleAlert,
+      Gravedad.urgente => Iconos.triangleAlert,
+      Gravedad.adoptado => Iconos.heart,
     };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),

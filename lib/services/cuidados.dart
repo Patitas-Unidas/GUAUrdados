@@ -6,6 +6,7 @@ import 'package:guaurdados_oficial/models/publicacion_foro.dart';
 class ReglasCuidado {
   static const ventana = Duration(hours: 24);
   static const sinAgua = Duration(hours: 24);
+  static const urgente = Duration(hours: 48);
   static const historial = Duration(hours: 48);
   static const pesoSupuestoKg = 15.0;
   static const gramosPorPunado = {TipoAlimento.seca: 40, TipoAlimento.humeda: 60};
@@ -66,7 +67,7 @@ class Alimentacion {
   }
 }
 
-enum Gravedad { bien, neutro, revisar }
+enum Gravedad { bien, neutro, revisar, urgente, adoptado }
 
 class Aviso {
   const Aviso(this.texto, this.gravedad);
@@ -77,6 +78,8 @@ class Aviso {
 enum EstadoPerro {
   saludable('Saludable', Gravedad.bien),
   revisar('Revisar', Gravedad.revisar),
+  urgente('Urgente', Gravedad.urgente),
+  adoptado('Adoptado', Gravedad.adoptado),
   sinEstado('Sin estado', Gravedad.neutro);
 
   const EstadoPerro(this.texto, this.gravedad);
@@ -144,9 +147,13 @@ class Cuidados {
 
   Duration? get desdeUltimaAgua => ultimaAguaEn == null ? null : ahora.difference(ultimaAguaEn!);
 
-  bool get sinComerHaceMucho => (desdeUltimaComida ?? Duration.zero) > ReglasCuidado.ventana;
+  bool get sinComerHaceMucho => !perro.adoptado && (desdeUltimaComida ?? Duration.zero) > ReglasCuidado.ventana;
 
-  bool get sinAguaHaceMucho => (desdeUltimaAgua ?? Duration.zero) > ReglasCuidado.sinAgua;
+  bool get sinAguaHaceMucho => !perro.adoptado && (desdeUltimaAgua ?? Duration.zero) > ReglasCuidado.sinAgua;
+
+  bool get sinComerUrgente => (desdeUltimaComida ?? Duration.zero) > ReglasCuidado.urgente;
+
+  bool get sinAguaUrgente => (desdeUltimaAgua ?? Duration.zero) > ReglasCuidado.urgente;
 
   double get racionHoy => _comidas.where(_hoy).fold(0.0, (suma, a) => suma + _fraccion(a));
 
@@ -190,13 +197,15 @@ class Cuidados {
   bool get evaluado => !const {'sin estado', 'sin información', ''}.contains(perro.estado.trim().toLowerCase());
 
   List<Aviso> get avisos {
+    if (perro.adoptado) return const [];
     final lista = <Aviso>[];
     final desde = desdeUltimaComida;
     final hasta = alimentadoHasta;
     if (desde == null) {
-      lista.add(const Aviso('Sin comidas registradas', Gravedad.revisar));
+      final fichaNueva = perro.actualizadoEn != null && ahora.difference(perro.actualizadoEn!.toDate()) <= ReglasCuidado.urgente;
+      lista.add(Aviso('Sin comidas registradas', fichaNueva ? Gravedad.revisar : Gravedad.urgente));
     } else if (sinComerHaceMucho) {
-      lista.add(Aviso('Sin comer hace ${duracion(desde)}', Gravedad.revisar));
+      lista.add(Aviso('Sin comer hace ${duracion(desde)}', sinComerUrgente ? Gravedad.urgente : Gravedad.revisar));
     } else if (racionHoy > ReglasCuidado.excesoDiario) {
       lista.add(const Aviso('Comió más de su ración diaria', Gravedad.revisar));
     } else if (hasta != null && hasta.isAfter(ahora)) {
@@ -204,7 +213,9 @@ class Cuidados {
     } else {
       lista.add(const Aviso('Le toca comer', Gravedad.neutro));
     }
-    if (sinAguaHaceMucho) lista.add(Aviso('Sin agua hace ${duracion(desdeUltimaAgua!)}', Gravedad.revisar));
+    if (sinAguaHaceMucho) {
+      lista.add(Aviso('Sin agua hace ${duracion(desdeUltimaAgua!)}', sinAguaUrgente ? Gravedad.urgente : Gravedad.revisar));
+    }
 
     if (evaluado && perro.estado.trim().toLowerCase() != 'saludable') {
       lista.add(Aviso(perro.estado.trim(), Gravedad.revisar));
@@ -221,9 +232,22 @@ class Cuidados {
     return evaluado ? lista : [for (final a in lista) a.gravedad == Gravedad.revisar ? Aviso(a.texto, Gravedad.neutro) : a];
   }
 
+  Aviso? get principal {
+    final lista = avisos;
+    for (final gravedad in const [Gravedad.urgente, Gravedad.revisar]) {
+      for (final aviso in lista) {
+        if (aviso.gravedad == gravedad) return aviso;
+      }
+    }
+    return null;
+  }
+
   EstadoPerro get estado {
+    if (perro.adoptado) return EstadoPerro.adoptado;
+    final lista = avisos;
+    if (lista.any((a) => a.gravedad == Gravedad.urgente)) return EstadoPerro.urgente;
     if (!evaluado) return EstadoPerro.sinEstado;
-    return avisos.any((a) => a.gravedad == Gravedad.revisar) ? EstadoPerro.revisar : EstadoPerro.saludable;
+    return lista.any((a) => a.gravedad == Gravedad.revisar) ? EstadoPerro.revisar : EstadoPerro.saludable;
   }
 }
 

@@ -9,6 +9,7 @@ initializeApp();
 const REGION = "southamerica-west1";
 const HORAS_SIN_COMER = 24;
 const HORAS_SIN_AGUA = 24;
+const HORAS_URGENTE = 48;
 
 const TOKENS_INVALIDOS = [
   "messaging/registration-token-not-registered",
@@ -27,13 +28,13 @@ function listar(nombres) {
   return `${nombres.slice(0, -1).join(", ")} y ${nombres[nombres.length - 1]}`;
 }
 
-async function tokensDeSeguidores(idsPerros, excluir) {
+async function tokensDeSeguidores(idsPerros, excluir, tipo) {
   const db = getFirestore();
   const perros = await db.getAll(...idsPerros.map((id) => db.doc(`perros/${id}`)));
   const seguidores = [...new Set(perros.flatMap((p) => p.get("seguidores") || []))].filter((uid) => uid !== excluir);
   if (seguidores.length === 0) return [];
   const usuarios = await db.getAll(...seguidores.map((uid) => db.doc(`usuarios/${uid}`)));
-  return [...new Set(usuarios.flatMap((u) => u.get("tokens") || []))];
+  return [...new Set(usuarios.filter((u) => u.get(`notificaciones.${tipo}`) !== false).flatMap((u) => u.get("tokens") || []))];
 }
 
 async function enviar(tokens, notification, data) {
@@ -79,7 +80,7 @@ exports.notificarEmergencia = onDocumentCreated({ document: "emergencias/{emerge
     return;
   }
 
-  const tokens = await tokensDeSeguidores(ids, e.creadoPor);
+  const tokens = await tokensDeSeguidores(ids, e.creadoPor, "emergencias");
   const enviados = await enviar(tokens, { title: titulo, body }, data);
   await snap.ref.update({ notificados: enviados, notificadoEn: FieldValue.serverTimestamp() });
 });
@@ -105,7 +106,7 @@ exports.notificarCierreEmergencia = onDocumentUpdated({ document: "emergencias/{
     await getMessaging().send({ topic: "emergencias", notification: { title: titulo, body }, data });
     return;
   }
-  const tokens = await tokensDeSeguidores(ids, despues.creadoPor);
+  const tokens = await tokensDeSeguidores(ids, despues.creadoPor, "emergencias");
   await enviar(tokens, { title: titulo, body }, data);
 });
 
@@ -116,6 +117,7 @@ exports.alertarSinComerNiAgua = onSchedule({ schedule: "every 60 minutes", regio
 
   for (const perro of perros.docs) {
     const p = perro.data();
+    if (p.adoptado === true) continue;
     const avisosRef = db.doc(`avisos_cuidado/${perro.id}`);
     const avisados = (await avisosRef.get()).data() || {};
     const cambios = {};
@@ -125,16 +127,23 @@ exports.alertarSinComerNiAgua = onSchedule({ schedule: "every 60 minutes", regio
       ["ultimaAguaEn", HORAS_SIN_AGUA, "no ha tomado agua"],
     ]) {
       const ultima = p[campo]?.toMillis?.();
-      if (!ultima || ahora - ultima < horas * 3600000 || avisados[campo] === ultima) continue;
+      if (!ultima || ahora - ultima < horas * 3600000) continue;
+      const urgente = ahora - ultima >= HORAS_URGENTE * 3600000;
+      const clave = urgente ? `${campo}Urgente` : campo;
+      if (avisados[clave] === ultima) continue;
 
       const transcurridas = Math.floor((ahora - ultima) / 3600000);
-      const tokens = await tokensDeSeguidores([perro.id]);
+      const tiempo = transcurridas >= 48 ? `${Math.floor(transcurridas / 24)} días` : `${transcurridas} h`;
+      const tokens = await tokensDeSeguidores([perro.id], null, "seguidos");
       await enviar(
         tokens,
-        { title: `${p.nombre || "Un perrito"} ${texto} en ${transcurridas} h`, body: "¿Alguien puede revisarlo y registrarlo en la app?" },
-        { idPerro: perro.id, tipo: campo === "ultimaAguaEn" ? "sin_agua" : "sin_comer" },
+        {
+          title: `${urgente ? "🚨 " : ""}${p.nombre || "Un perrito"} ${texto} en ${tiempo}`,
+          body: urgente ? "Es urgente: ¿alguien puede revisarlo y registrarlo en la app?" : "¿Alguien puede revisarlo y registrarlo en la app?",
+        },
+        { idPerro: perro.id, tipo: campo === "ultimaAguaEn" ? "sin_agua" : "sin_comer", urgente: String(urgente) },
       );
-      cambios[campo] = ultima;
+      cambios[clave] = ultima;
     }
 
     if (Object.keys(cambios).length) await avisosRef.set(cambios, { merge: true });

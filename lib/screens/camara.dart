@@ -6,6 +6,8 @@ import 'package:camera/camera.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 
+import 'package:guaurdados_oficial/services/gamificacion_service.dart';
+import 'package:guaurdados_oficial/services/permisos_usuario.dart';
 import 'package:guaurdados_oficial/theme/colores_app.dart';
 import 'package:guaurdados_oficial/theme/formas.dart';
 import 'package:guaurdados_oficial/widgets/iconos.dart';
@@ -14,7 +16,11 @@ import 'package:guaurdados_oficial/services/perros_repository.dart';
 import 'package:guaurdados_oficial/widgets/foto_perro.dart';
 import 'package:guaurdados_oficial/widgets/presionable.dart';
 
+import 'foro.dart';
+import 'nuevapublicacion.dart';
 import 'perfilperro.dart';
+import 'package:guaurdados_oficial/widgets/aviso.dart';
+import 'package:guaurdados_oficial/services/rutas.dart';
 
 class Camara extends StatefulWidget {
   const Camara({super.key});
@@ -26,7 +32,8 @@ class Camara extends StatefulWidget {
 class _CamaraState extends State<Camara> {
   bool isReady = false;
   late List<CameraDescription> camaras;
-  late CameraController _controller;
+  CameraController? _camara;
+  CameraController get _controller => _camara!;
   final ImagePicker _picker = ImagePicker();
 
   @override
@@ -38,9 +45,12 @@ class _CamaraState extends State<Camara> {
   Future<void> _setupCamera() async {
     try {
       camaras = await availableCameras();
-      if (camaras.isEmpty) return;
+      if (camaras.isEmpty) {
+        if (mounted) setState(() => isReady = true);
+        return;
+      }
 
-      _controller = CameraController(
+      _camara = CameraController(
         camaras[0],
         ResolutionPreset.high,
         enableAudio: false,
@@ -59,7 +69,7 @@ class _CamaraState extends State<Camara> {
 
   @override
   void dispose() {
-    _controller.dispose();
+    _camara?.dispose();
     super.dispose();
   }
 
@@ -96,12 +106,13 @@ class _CamaraState extends State<Camara> {
 
   @override
   Widget build(BuildContext context) {
-    if (!isReady || !_controller.value.isInitialized) {
+    if (!isReady) {
       return const Scaffold(
         backgroundColor: Colors.black,
         body: Center(child: CircularProgressIndicator()),
       );
     }
+    if (!(_camara?.value.isInitialized ?? false)) return _SinCamara(alElegirFoto: _seleccionarDeGaleria);
 
     return Scaffold(
       body: Stack(
@@ -169,6 +180,54 @@ class _CamaraState extends State<Camara> {
   }
 }
 
+class _SinCamara extends StatelessWidget {
+  const _SinCamara({required this.alElegirFoto});
+  final VoidCallback alElegirFoto;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colores;
+    return Scaffold(
+      backgroundColor: c.fondo,
+      appBar: AppBar(leading: IconButton(tooltip: 'Volver', icon: const Icono(Iconos.chevronLeft), onPressed: () => Navigator.pop(context))),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+            Container(
+              width: 72,
+              height: 72,
+              decoration: ShapeDecoration(color: c.contenedor, shape: Formas.squircle(22)),
+              child: Center(child: Icono(Iconos.camera, size: 34, color: c.secundario)),
+            ),
+            const SizedBox(height: 18),
+            const Text('No pudimos abrir la cámara', textAlign: TextAlign.center, style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 8),
+            Text(
+              'Revisa que GUAUrdados tenga permiso para usar la cámara en los Ajustes del teléfono. Mientras tanto, puedes elegir una foto de tu galería.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 14, height: 1.4, color: c.textoSecundario),
+            ),
+            const SizedBox(height: 22),
+            Presionable(
+              child: SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: FilledButton.icon(
+                  onPressed: alElegirFoto,
+                  style: FilledButton.styleFrom(backgroundColor: c.acento, foregroundColor: c.sobreAcento, shape: Formas.squircle(16)),
+                  icon: Icono(Iconos.imagePlus, color: c.sobreAcento),
+                  label: const Text('Elegir de la galería', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                ),
+              ),
+            ),
+          ]),
+        ),
+      ),
+    );
+  }
+}
+
 class DisplayPictureScreen extends StatefulWidget {
   const DisplayPictureScreen({super.key, required this.imagePath});
   final String imagePath;
@@ -217,12 +276,15 @@ class _DisplayPictureScreenState extends State<DisplayPictureScreen> {
   Future<void> _identificarPerro() async {
     setState(() => _resultado = const _Escaneando());
     try {
-      final request = http.MultipartRequest('POST', Uri.parse(_apiUrl));
+      final request = http.MultipartRequest('POST', Uri.parse(_apiUrl))
+        ..headers['ngrok-skip-browser-warning'] = 'true';
       request.files.add(await http.MultipartFile.fromPath('file', widget.imagePath));
-      final response = await http.Response.fromStream(await request.send());
+      final response = await http.Response.fromStream(await request.send().timeout(const Duration(seconds: 40)));
       final data = jsonDecode(response.body) as Map<String, dynamic>;
       if (!mounted) return;
-      setState(() => _resultado = _interpretar(data));
+      final resultado = _interpretar(data);
+      setState(() => _resultado = resultado);
+      if (resultado is _Encontrado) GamificacionService.registrarEscaneo(resultado.perro['id'] as String? ?? '', context);
     } catch (_) {
       if (mounted) setState(() => _resultado = const _SinConexion());
     }
@@ -237,8 +299,26 @@ class _DisplayPictureScreenState extends State<DisplayPictureScreen> {
         _ => _SinCoincidencia(data['mensaje'] as String? ?? 'No se encontró ningún registro que coincida.'),
       };
 
-  void _irAlPerfil(String idPerro) =>
-      Navigator.of(context).push(MaterialPageRoute(builder: (context) => PerfilPerro(idPerro: idPerro)));
+  void _irAlPerfil(String idPerro) {
+    GamificacionService.registrarEscaneo(idPerro, context);
+    abrirDesdeInicio(context, PerfilPerro.rutaPorId(idPerro));
+  }
+
+  Future<void> _avisarPerritoNuevo() async {
+    final permiso = await PermisosUsuario.puedePublicar();
+    if (!mounted) return;
+    if (!permiso.puede) {
+      await mostrarEsperaParaPublicar(context, permiso.desde);
+      return;
+    }
+    final publicado = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(builder: (_) => NuevaPublicacion(perritoNuevo: true, fotoInicial: widget.imagePath)),
+    );
+    if (publicado != true || !mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    abrirDesdeInicio(context, Foro.ruta());
+    messenger.avisar('Aviso publicado en el foro. GUAU lo revisará para ver si lo registra.', tipo: TipoAviso.exito, icono: Iconos.pawPrint);
+  }
 
   void _irABuscarManualmente() => Navigator.of(context).popUntil((ruta) => ruta.isFirst);
 
@@ -383,9 +463,19 @@ class _DisplayPictureScreenState extends State<DisplayPictureScreen> {
               inicio: Icono(Iconos.searchX, color: c.emergenciaTexto, size: 22),
             ),
             const SizedBox(height: 10),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(4, 0, 4, 10),
+              child: Text(
+                '¿Es un perrito que no está en la app? Solo los administradores de GUAU pueden agregarlo, pero puedes avisarles por el foro.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 13, height: 1.35, color: c.textoSecundario),
+              ),
+            ),
+            _BotonEscaneo(texto: 'Avisar de un perrito nuevo', icono: Iconos.messageCircle, alTocar: _avisarPerritoNuevo),
+            const SizedBox(height: 10),
             _BotonEscaneo(texto: 'Reintentar con otra foto', icono: Iconos.camera, tonal: true, alTocar: () => Navigator.pop(context)),
             const SizedBox(height: 10),
-            _BotonEscaneo(texto: 'Buscar manualmente', icono: Iconos.search, alTocar: _irABuscarManualmente),
+            _BotonTexto(texto: 'Buscar en la lista de perritos', alTocar: _irABuscarManualmente),
           ]),
         _SinConexion() => Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
             _TarjetaResultado(

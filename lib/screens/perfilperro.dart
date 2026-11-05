@@ -1,16 +1,22 @@
+import 'dart:ui' as ui;
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../widgets/imagen_remota.dart';
 import 'package:guaurdados_oficial/widgets/iconos.dart';
+import 'package:guaurdados_oficial/widgets/aviso.dart';
 import 'package:flutter/physics.dart';
 import 'package:flutter/services.dart';
 import 'package:guaurdados_oficial/models/perro.dart';
+import 'package:guaurdados_oficial/services/permisos_usuario.dart';
 import 'package:guaurdados_oficial/services/alimentaciones.dart';
 import 'package:guaurdados_oficial/services/cuidados.dart';
 import 'package:guaurdados_oficial/services/perros_repository.dart';
 import 'package:guaurdados_oficial/theme/colores_app.dart';
 import 'package:guaurdados_oficial/theme/formas.dart';
 import 'package:guaurdados_oficial/theme/tipografia.dart';
+import 'package:guaurdados_oficial/widgets/aparicion.dart';
+import 'package:guaurdados_oficial/widgets/apoyo_guau.dart';
 import 'package:guaurdados_oficial/widgets/esqueleto.dart';
 import 'package:guaurdados_oficial/widgets/estado_perro.dart';
 import 'package:guaurdados_oficial/widgets/hoja.dart';
@@ -19,6 +25,7 @@ import 'package:guaurdados_oficial/widgets/presionable.dart';
 import 'estadomedico.dart';
 import 'foro.dart';
 import 'registraralimentacion.dart';
+import 'package:guaurdados_oficial/services/rutas.dart';
 
 /// Conserva el diseño de la plantilla, pero todos sus valores vienen desde
 /// el documento correspondiente de Firestore.
@@ -34,7 +41,13 @@ class PerfilPerro extends StatelessWidget {
   final double radioOrigen;
   final PerrosRepository? _repository;
 
+  static Route<void> rutaPorId(String idPerro) => MaterialPageRoute(
+        settings: RouteSettings(name: 'perro/$idPerro'),
+        builder: (_) => PerfilPerro(idPerro: idPerro),
+      );
+
   static Route<void> ruta(Perro perro, {Rect? origenFoto, double radioOrigen = 0}) => PageRouteBuilder<void>(
+    settings: RouteSettings(name: 'perro/${perro.id}'),
     transitionDuration: const Duration(milliseconds: 600),
     reverseTransitionDuration: const Duration(milliseconds: 450),
     pageBuilder: (_, _, _) => PerfilPerro(idPerro: perro.id, perroInicial: perro, origenFoto: origenFoto, radioOrigen: radioOrigen),
@@ -183,7 +196,7 @@ class _PlantillaPerfilState extends State<_PlantillaPerfil> with SingleTickerPro
           systemNavigationBarIconBrightness: oscuro ? Brightness.light : Brightness.dark,
           systemNavigationBarContrastEnforced: false,
         ),
-        child: Stack(children: [
+        child: _Adopcion(perro: perro, ficha: Stack(children: [
           Positioned.fill(child: FadeTransition(opacity: _fondo, child: ColoredBox(color: c.fondo))),
           Positioned.fill(
             child: AnimatedBuilder(
@@ -268,11 +281,17 @@ class _PlantillaPerfilState extends State<_PlantillaPerfil> with SingleTickerPro
                       Text(perro.nombre, style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w800).display),
                       Text(_razaYEdad(perro), style: const TextStyle(fontSize: 16)),
                       Row(children: [
-                        Icono(Iconos.clock, size: 15, color: c.textoTenue),
+                        Icono(perro.adoptado ? Iconos.heart : Iconos.clock, size: 15, color: perro.adoptado ? c.adoptadoTexto : c.textoTenue),
                         const SizedBox(width: 3),
-                        Text(perro.actualizadoEn == null ? 'Sin actualizaciones aún' : 'Última actualización: ${_fechaRelativa(perro.actualizadoEn)}', style: TextStyle(fontSize: 11, color: c.textoTenue)),
+                        Text(
+                          perro.adoptado
+                              ? perro.adoptadoEn == null ? 'Ya tiene un hogar' : 'Adoptado el ${fecha(perro.adoptadoEn!)}'
+                              : perro.actualizadoEn == null ? 'Sin actualizaciones aún' : 'Última actualización: ${_fechaRelativa(perro.actualizadoEn)}',
+                          style: TextStyle(fontSize: 11, color: perro.adoptado ? c.adoptadoTexto : c.textoTenue, fontWeight: perro.adoptado ? FontWeight.w600 : null),
+                        ),
                       ]),
                     ])),
+                    if (!perro.adoptado || seguido)
                     _Seguir(
                       seguido: seguido,
                       habilitado: uid != null,
@@ -284,7 +303,8 @@ class _PlantillaPerfilState extends State<_PlantillaPerfil> with SingleTickerPro
                     Wrap(spacing: 6, runSpacing: 6, children: [for (final aviso in avisos) ChipAviso(aviso)]),
                   ],
                   const SizedBox(height: 15),
-                  Row(children: [
+                  IntrinsicHeight(child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                    if (!perro.adoptado) ...[
                     Expanded(child: _TarjetaDato(
                       icono: Iconos.utensils,
                       titulo: 'Última comida',
@@ -292,10 +312,12 @@ class _PlantillaPerfilState extends State<_PlantillaPerfil> with SingleTickerPro
                       subtitulo: cuidados.ultimaComidaEn != null ? 'hace ${duracion(cuidados.desdeUltimaComida!)}' : tieneDato(perro.ultimaComida) ? 'sin fecha' : 'sin registro',
                     )),
                     const SizedBox(width: 7),
+                    ],
                     Expanded(child: _TarjetaDato(icono: Iconos.weight, titulo: 'Peso', valor: tieneDato(perro.peso) ? perro.peso : '—', subtitulo: tieneDato(perro.tamano) ? perro.tamano : 'sin registro')),
                     const SizedBox(width: 7),
                     Expanded(child: _TarjetaCaracter(caracter: perro.caracter)),
-                  ]),
+                  ])),
+                  if (!perro.adoptado) ...[
                   const SizedBox(height: 8),
                   Row(children: [
                     Builder(builder: (context) {
@@ -309,8 +331,9 @@ class _PlantillaPerfilState extends State<_PlantillaPerfil> with SingleTickerPro
                       );
                     }),
                   ]),
+                  ],
                   const SizedBox(height: 8),
-                  Text(perro.descripcion, style: const TextStyle(fontSize: 16, height: 1.35)),
+                  Text(perro.descripcion, style: TextStyle(fontSize: 15.5, height: 1.5, color: c.texto.withValues(alpha: .9))),
                   ]),
                 ),
                   ),
@@ -337,12 +360,116 @@ class _PlantillaPerfilState extends State<_PlantillaPerfil> with SingleTickerPro
             right: 6,
             child: FadeTransition(
               opacity: _detalles,
-              child: _IconoFlotante(icono: Iconos.pencil, onTap: () => _mensaje(context, 'Editar perfil')),
+              child: _BotonEsquina(perro: perro),
             ),
           ),
-        ]),
+        ])),
       ),
     );
+  }
+}
+
+class _Adopcion extends StatefulWidget {
+  const _Adopcion({required this.perro, required this.ficha});
+  final Perro perro;
+  final Widget ficha;
+
+  @override
+  State<_Adopcion> createState() => _AdopcionState();
+}
+
+class _AdopcionState extends State<_Adopcion> {
+  bool _verFicha = false;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!widget.perro.adoptado) return widget.ficha;
+    final c = context.colores;
+    final perro = widget.perro;
+    final cubierta = !_verFicha;
+    return Stack(children: [
+      TweenAnimationBuilder<double>(
+        tween: Tween(end: cubierta ? 14 : 0),
+        duration: const Duration(milliseconds: 450),
+        curve: Curves.easeOutCubic,
+        builder: (context, blur, ficha) => ImageFiltered(
+          enabled: blur > .1,
+          imageFilter: ui.ImageFilter.blur(sigmaX: blur, sigmaY: blur),
+          child: IgnorePointer(ignoring: cubierta, child: ficha),
+        ),
+        child: widget.ficha,
+      ),
+      IgnorePointer(
+        ignoring: !cubierta,
+        child: AnimatedOpacity(
+          opacity: cubierta ? 1 : 0,
+          duration: const Duration(milliseconds: 300),
+          child: ColoredBox(
+            color: c.velo.withValues(alpha: .35),
+            child: SafeArea(
+              child: Stack(children: [
+                Positioned(
+                  top: 14,
+                  left: 6,
+                  child: _IconoFlotante(icono: Iconos.chevronLeft, onTap: () => Navigator.pop(context)),
+                ),
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Aparicion(
+                      child: Container(
+                        padding: const EdgeInsets.fromLTRB(22, 24, 22, 18),
+                        decoration: ShapeDecoration(
+                          color: c.fondo,
+                          shape: Formas.squircle(28),
+                          shadows: const [BoxShadow(color: Color(0x40000000), blurRadius: 30, offset: Offset(0, 10))],
+                        ),
+                        child: Column(mainAxisSize: MainAxisSize.min, children: [
+                          Container(
+                            width: 64,
+                            height: 64,
+                            decoration: ShapeDecoration(color: c.adoptadoSuave, shape: Formas.squircle(20)),
+                            child: Center(child: Icono(Iconos.heart, size: 34, color: c.adoptadoTexto)),
+                          ),
+                          const SizedBox(height: 14),
+                          Text(
+                            '¡${perro.nombre} ya tiene un hogar!',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800).display,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            '${perro.adoptadoEn == null ? 'Encontró una familia' : 'Encontró una familia el ${fechaLarga(perro.adoptadoEn!)}'} y ya no vive en la sede. Su ficha queda guardada como recuerdo.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(fontSize: 14, height: 1.4, color: c.textoSecundario),
+                          ),
+                          const SizedBox(height: 18),
+                          Presionable(
+                            child: SizedBox(
+                              width: double.infinity,
+                              height: 50,
+                              child: FilledButton(
+                                onPressed: () => Navigator.pop(context),
+                                style: FilledButton.styleFrom(backgroundColor: c.acento, foregroundColor: c.sobreAcento, shape: Formas.squircle(16)),
+                                child: const Text('Volver', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                              ),
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () => setState(() => _verFicha = true),
+                            child: Text('Ver su ficha de todos modos', style: TextStyle(color: c.textoSecundario, fontWeight: FontWeight.w600)),
+                          ),
+                        ]),
+                      ),
+                    ),
+                  ),
+                ),
+              ]),
+            ),
+          ),
+        ),
+      ),
+    ]);
   }
 }
 
@@ -419,7 +546,7 @@ class _AccionesPerfil extends StatelessWidget {
     color: c.fondo,
     padding: EdgeInsets.fromLTRB(12, 8, 12, 16 + MediaQuery.paddingOf(context).bottom),
     child: Column(children: [
-      if (cuidados.ultimaComidaEn != null)
+      if (cuidados.ultimaComidaEn != null && !perro.adoptado)
       Padding(
         padding: const EdgeInsets.only(bottom: 8),
         child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -436,6 +563,23 @@ class _AccionesPerfil extends StatelessWidget {
           ),
         ]),
       ),
+      if (perro.adoptado)
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          decoration: Formas.fondo(c.adoptadoSuave, 16),
+          child: Row(children: [
+            Icono(Iconos.heart, color: c.adoptadoTexto, size: 22),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                '${perro.nombre} ya tiene un hogar. Esta ficha es solo un recuerdo.',
+                style: TextStyle(color: c.adoptadoTexto, fontSize: 14, fontWeight: FontWeight.w600),
+              ),
+            ),
+          ]),
+        )
+      else
       Presionable(
         child: SizedBox(
           width: double.infinity,
@@ -451,6 +595,7 @@ class _AccionesPerfil extends StatelessWidget {
           ),
         ),
       ),
+      if (!perro.adoptado) ...[
       const SizedBox(height: 12),
       Row(children: [
         Expanded(
@@ -476,10 +621,7 @@ class _AccionesPerfil extends StatelessWidget {
             height: 56,
             child: ElevatedButton.icon(
               style: _estilo(c.tonal),
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => Foro(idPerro: perro.id, nombrePerro: perro.nombre)),
-              ),
+              onPressed: () => abrir(context, Foro.ruta(idPerro: perro.id, nombrePerro: perro.nombre)),
               icon: Icono(Iconos.messageCircle, color: c.sobreTonal, size: 28),
               label: Text('Foro', style: TextStyle(color: c.sobreTonal, fontSize: 20)),
             ),
@@ -487,6 +629,7 @@ class _AccionesPerfil extends StatelessWidget {
           ),
         ),
       ]),
+      ],
     ]),
   );
   }
@@ -628,8 +771,8 @@ class _TarjetaDato extends StatelessWidget {
   Widget build(BuildContext context) => Card(
     elevation: 0,
     color: context.colores.superficie,
-    child: SizedBox(
-      height: 110,
+    child: ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: 110),
       child: Padding(
         padding: const EdgeInsets.all(6),
         child: Column(
@@ -655,7 +798,7 @@ class _TarjetaCaracter extends StatelessWidget {
     final sinDato = !tieneDato(caracter);
     final c = context.colores;
     final (fondo, color) = c.tono(amable ? Gravedad.bien : sinDato ? Gravedad.neutro : Gravedad.revisar);
-    return Card(color: fondo, elevation: 0, child: SizedBox(height: 110, child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icono(amable ? Iconos.heart : sinDato ? Iconos.circleHelp : Iconos.triangleAlert, size: 50, color: color), Text(sinDato ? 'Carácter\nsin registrar' : caracter, maxLines: sinDato ? 2 : 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center, style: TextStyle(fontSize: sinDato ? 13 : 16, height: 1.2, fontWeight: FontWeight.w500, color: color))])));
+    return Card(color: fondo, elevation: 0, child: ConstrainedBox(constraints: const BoxConstraints(minHeight: 110), child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icono(amable ? Iconos.heart : sinDato ? Iconos.circleHelp : Iconos.triangleAlert, size: 50, color: color), Text(sinDato ? 'Carácter\nsin registrar' : caracter, maxLines: sinDato ? 2 : 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center, style: TextStyle(fontSize: sinDato ? 13 : 16, height: 1.2, fontWeight: FontWeight.w500, color: color))])));
   }
 }
 
@@ -672,12 +815,58 @@ String _fechaRelativa(dynamic timestamp) {
   return 'hace ${diferencia.inDays} ${diferencia.inDays == 1 ? 'día' : 'días'}';
 }
 
-void _mensaje(BuildContext context, String texto) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$texto estará disponible próximamente.')));
+class _BotonEsquina extends StatelessWidget {
+  const _BotonEsquina({required this.perro});
+  final Perro perro;
+
+  @override
+  Widget build(BuildContext context) => FutureBuilder<bool>(
+        future: PermisosUsuario.esAdmin(),
+        builder: (context, admin) {
+          if (admin.data == true) {
+            return _IconoFlotante(
+              icono: Iconos.pencil,
+              onTap: () => avisar(context, 'Por ahora la ficha se edita desde la base de datos de Firebase.', icono: Iconos.pencil),
+            );
+          }
+          if (perro.adoptado || !admin.hasData) return const SizedBox.shrink();
+          final c = context.colores;
+          return Presionable(
+            child: Material(
+              color: Color.alphaBlend(c.adoptadoSuave, c.superficie),
+              elevation: 2,
+              shape: StadiumBorder(side: BorderSide(color: c.adoptadoTexto.withValues(alpha: .25))),
+              child: InkWell(
+                customBorder: const StadiumBorder(),
+                onTap: () => mostrarAdopcion(context, nombrePerro: perro.nombre),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 10, 14, 10),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    Icono(Iconos.heart, size: 18, color: c.adoptadoTexto),
+                    const SizedBox(width: 6),
+                    Text('Adoptar', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: c.adoptadoTexto)),
+                  ]),
+                ),
+              ),
+            ),
+          );
+        },
+      );
+}
 
 Future<void> _cambiarSeguimiento(BuildContext context, Perro perro, String uid, bool seguido) async {
   try {
     await PerrosRepository().actualizarSeguimiento(idPerro: perro.id, uid: uid, seguir: !seguido);
+    if (!context.mounted) return;
+    avisar(
+      context,
+      seguido
+          ? 'Dejaste de seguir a ${perro.nombre}. Ya no te llegarán sus novedades.'
+          : 'Ahora sigues a ${perro.nombre}. Te avisaremos en la campana si tiene una emergencia o si lleva mucho sin comer o sin agua.',
+      icono: Iconos.pawPrint,
+      color: seguido ? null : context.colores.acento,
+    );
   } catch (_) {
-    if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No se pudo actualizar el seguimiento.')));
+    if (context.mounted) avisar(context, 'No se pudo actualizar el seguimiento. Revisa tu conexión.', tipo: TipoAviso.error);
   }
 }

@@ -5,10 +5,12 @@ const _duotono = 'PhosphorDuotone';
 
 class Iconos {
   static const aLargeSmall = IconData(0xe587, fontFamily: _lucide);
+  static const banknote = IconData(0xe052, fontFamily: _lucide);
   static const bell = IconData(0xe059, fontFamily: _lucide);
   static const calendar = IconData(0xe063, fontFamily: _lucide);
   static const camera = IconData(0xe064, fontFamily: _lucide);
   static const check = IconData(0xe06c, fontFamily: _lucide);
+  static const copy = IconData(0xe09e, fontFamily: _lucide);
   static const chevronLeft = IconData(0xe06e, fontFamily: _lucide);
   static const chevronRight = IconData(0xe06f, fontFamily: _lucide);
   static const circleAlert = IconData(0xe077, fontFamily: _lucide);

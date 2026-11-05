@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:guaurdados_oficial/services/gamificacion_service.dart';
 import 'package:guaurdados_oficial/services/perfiles_usuario_repository.dart';
 import 'package:guaurdados_oficial/theme/colores_app.dart';
 import 'package:guaurdados_oficial/theme/formas.dart';
@@ -9,6 +10,7 @@ import 'package:guaurdados_oficial/widgets/aparicion.dart';
 import 'package:guaurdados_oficial/widgets/avatar_usuario.dart';
 import 'package:guaurdados_oficial/widgets/hoja.dart';
 import 'package:guaurdados_oficial/widgets/iconos.dart';
+import 'package:guaurdados_oficial/widgets/aviso.dart';
 import 'package:guaurdados_oficial/widgets/presionable.dart';
 
 Future<void> elegirFotoPerfil(BuildContext context) => mostrarHoja<void>(context, builder: (_) => const _HojaAvatares());
@@ -27,6 +29,7 @@ class _HojaAvatares extends StatefulWidget {
 
 class _HojaAvataresState extends State<_HojaAvatares> {
   late String _elegida = fotoPerfilActual(FirebaseAuth.instance.currentUser);
+  late final _usuario = GamificacionService.streamUsuario(FirebaseAuth.instance.currentUser?.uid ?? '-');
   bool _guardando = false;
 
   Future<void> _elegir(String foto) async {
@@ -51,7 +54,7 @@ class _HojaAvataresState extends State<_HojaAvatares> {
         _elegida = anterior;
         _guardando = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No se pudo cambiar la foto. Inténtalo de nuevo.')));
+      avisar(context, 'No se pudo cambiar la foto. Inténtalo de nuevo.', tipo: TipoAviso.error);
     }
   }
 
@@ -69,17 +72,29 @@ class _HojaAvataresState extends State<_HojaAvatares> {
         const SizedBox(height: 4),
         Text('Elige la carita que más te guste.', style: TextStyle(fontSize: 13, color: c.textoSecundario)),
         const SizedBox(height: 20),
-        Wrap(
-          alignment: WrapAlignment.center,
-          spacing: 16,
-          runSpacing: 16,
-          children: [
-            for (final (i, foto) in fotosPerfilPredeterminadas.indexed)
-              Aparicion(
-                indice: i,
-                child: _OpcionAvatar(foto: foto, elegida: foto == _elegida, alTocar: () => _elegir(foto)),
-              ),
-          ],
+        StreamBuilder(
+          stream: _usuario,
+          builder: (context, snapshot) {
+            final logros = (snapshot.data?.data()?['logros'] as List<dynamic>?) ?? const [];
+            final exclusiva = GamificacionService.fotoExclusiva;
+            return Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 16,
+              runSpacing: 16,
+              children: [
+                for (final (i, foto) in fotosPerfilPredeterminadas.indexed)
+                  Aparicion(
+                    indice: i,
+                    child: _OpcionAvatar(foto: foto, elegida: foto == _elegida, alTocar: () => _elegir(foto)),
+                  ),
+                if (logros.contains(GamificacionService.plata.id) || _elegida == exclusiva)
+                  Aparicion(
+                    indice: fotosPerfilPredeterminadas.length,
+                    child: _OpcionAvatar(foto: exclusiva, elegida: _elegida == exclusiva, alTocar: () => _elegir(exclusiva)),
+                  ),
+              ],
+            );
+          },
         ),
       ]),
     );

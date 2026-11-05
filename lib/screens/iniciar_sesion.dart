@@ -4,7 +4,10 @@ import 'package:guaurdados_oficial/services/notificaciones_service.dart';
 import 'package:guaurdados_oficial/theme/colores_app.dart';
 import 'package:guaurdados_oficial/theme/formas.dart';
 import 'package:guaurdados_oficial/theme/tipografia.dart';
+import 'package:guaurdados_oficial/widgets/aviso.dart';
+import 'package:guaurdados_oficial/widgets/campo.dart';
 import 'package:guaurdados_oficial/widgets/hoja.dart';
+import 'package:guaurdados_oficial/widgets/iconos.dart';
 import 'package:guaurdados_oficial/widgets/logo.dart';
 import 'package:guaurdados_oficial/widgets/presionable.dart';
 import 'homepage.dart';
@@ -20,9 +23,22 @@ class IniciarSesion extends StatefulWidget {
 class _IniciarSesionState extends State<IniciarSesion> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final _formulario = GlobalKey<FormState>();
+  final _errorCredenciales = ValueNotifier<String?>(null);
   bool _isLoading = false;
 
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    _errorCredenciales.dispose();
+    super.dispose();
+  }
+
   Future<void> _iniciarSesion() async {
+    _errorCredenciales.value = null;
+    if (!_formulario.currentState!.validate()) return;
+    FocusScope.of(context).unfocus();
     setState(() {
       _isLoading = true;
     });
@@ -39,9 +55,7 @@ class _IniciarSesionState extends State<IniciarSesion> {
       if (!mounted) return;
 
       // Mensaje de éxito agregado
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('¡Inicio de sesión exitoso!')),
-      );
+      avisar(context, '¡Hola de nuevo! Sesión iniciada.', tipo: TipoAviso.exito);
 
       // Navegación a la página principal
       Navigator.pushReplacement(
@@ -51,29 +65,22 @@ class _IniciarSesionState extends State<IniciarSesion> {
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
 
-      String mensajeError = 'Ocurrió un error al iniciar sesión';
-
       // Manejo de códigos clásicos y el nuevo código "invalid-credential" de Firebase
-      if (e.code == 'invalid-credential' ||
-          e.code == 'user-not-found' ||
-          e.code == 'wrong-password') {
-        mensajeError =
-            'Credenciales incorrectas. Revisa tu correo y contraseña.';
-      } else if (e.code == 'invalid-email') {
-        mensajeError = 'El formato del correo es inválido.';
+      switch (e.code) {
+        case 'invalid-credential' || 'user-not-found' || 'wrong-password' || 'invalid-email':
+          _errorCredenciales.value = 'El correo o la contraseña no coinciden. Revísalos e inténtalo de nuevo.';
+        case 'user-disabled':
+          _errorCredenciales.value = 'Esta cuenta está desactivada. Escríbele al equipo de GUAU.';
+        case 'too-many-requests':
+          avisar(context, 'Hubo muchos intentos seguidos desde esta red. Espera unos minutos y vuelve a intentarlo.', tipo: TipoAviso.error, icono: Iconos.clock);
+        case 'network-request-failed':
+          avisar(context, 'No hay conexión a internet. Revísala e inténtalo de nuevo.', tipo: TipoAviso.error, icono: Iconos.wifiOff);
+        default:
+          avisar(context, 'No se pudo iniciar sesión. Inténtalo de nuevo.', tipo: TipoAviso.error);
       }
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(mensajeError), backgroundColor: context.colores.emergenciaTexto),
-      );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Error inesperado de conexión.'),
-          backgroundColor: context.colores.emergenciaTexto,
-        ),
-      );
+      avisar(context, 'No se pudo conectar. Revisa tu internet e inténtalo de nuevo.', tipo: TipoAviso.error, icono: Iconos.wifiOff);
     } finally {
       if (mounted) {
         setState(() {
@@ -91,7 +98,9 @@ class _IniciarSesionState extends State<IniciarSesion> {
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 24.0),
-          child: Column(
+          child: Form(
+            key: _formulario,
+            child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               const SizedBox(height: 20),
@@ -116,16 +125,27 @@ class _IniciarSesionState extends State<IniciarSesion> {
                 false,
                 _emailController,
                 textInputAction: TextInputAction.next,
+                validator: (valor) {
+                  final correo = valor?.trim() ?? '';
+                  if (correo.isEmpty) return 'Escribe el correo con el que te registraste.';
+                  if (!correoValido.hasMatch(correo)) return 'Revisa el correo: debe verse como nombre@correo.cl';
+                  return null;
+                },
               ),
               const SizedBox(height: 16),
 
               // Input de Contraseña con botón "Listo" que ejecuta el inicio de sesión
-              _buildTextField(
-                "Contraseña",
-                true,
-                _passwordController,
-                textInputAction: TextInputAction.done,
-                onSubmitted: _isLoading ? null : _iniciarSesion,
+              ValueListenableBuilder<String?>(
+                valueListenable: _errorCredenciales,
+                builder: (context, error, _) => _buildTextField(
+                  "Contraseña",
+                  true,
+                  _passwordController,
+                  textInputAction: TextInputAction.done,
+                  onSubmitted: _isLoading ? null : _iniciarSesion,
+                  validator: (valor) => (valor ?? '').isEmpty ? 'Escribe tu contraseña.' : null,
+                  errorForzado: error,
+                ),
               ),
 
               const SizedBox(height: 12),
@@ -207,6 +227,7 @@ class _IniciarSesionState extends State<IniciarSesion> {
               ),
             ],
           ),
+          ),
         ),
       ),
     );
@@ -219,33 +240,25 @@ class _IniciarSesionState extends State<IniciarSesion> {
     TextEditingController controller, {
     TextInputAction textInputAction = TextInputAction.next,
     VoidCallback? onSubmitted,
+    FormFieldValidator<String>? validator,
+    String? errorForzado,
   }) {
-    final c = context.colores;
-    return TextField(
+    return TextFormField(
       controller: controller,
       obscureText: isObscure,
+      enabled: !_isLoading,
+      keyboardType: isObscure ? TextInputType.visiblePassword : TextInputType.emailAddress,
+      autocorrect: false,
       textInputAction: textInputAction,
-      onSubmitted: (_) {
+      validator: validator,
+      forceErrorText: errorForzado,
+      onChanged: (_) => _errorCredenciales.value = null,
+      onFieldSubmitted: (_) {
         if (onSubmitted != null) {
           onSubmitted();
         }
       },
-      decoration: InputDecoration(
-        hintText: hint,
-        hintStyle: TextStyle(color: c.textoTenue),
-        filled: true,
-        fillColor: c.superficie,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 20,
-          vertical: 18,
-        ),
-        border: const BordeSquircle(),
-        enabledBorder: const BordeSquircle(),
-        focusedBorder: BordeSquircle(borderSide: BorderSide(color: c.acento, width: 1.5)),
-        errorBorder: BordeSquircle(borderSide: BorderSide(color: c.emergencia)),
-        focusedErrorBorder: BordeSquircle(borderSide: BorderSide(color: c.emergencia, width: 1.5)),
-        errorStyle: TextStyle(color: c.emergencia),
-      ),
+      decoration: decoracionCampo(context, pista: hint),
     );
   }
 }
@@ -260,18 +273,21 @@ class _HojaRestablecer extends StatefulWidget {
 
 class _HojaRestablecerState extends State<_HojaRestablecer> {
   late final _correo = TextEditingController(text: widget.correo);
+  final _formulario = GlobalKey<FormState>();
+  final _errorCorreo = ValueNotifier<String?>(null);
   bool _enviando = false;
   bool _enviado = false;
 
   @override
   void dispose() {
     _correo.dispose();
+    _errorCorreo.dispose();
     super.dispose();
   }
 
   Future<void> _enviar() async {
+    if (!_formulario.currentState!.validate()) return;
     final correo = _correo.text.trim();
-    if (correo.isEmpty) return _avisar('Escribe el correo de tu cuenta.');
     FocusScope.of(context).unfocus();
     setState(() => _enviando = true);
     try {
@@ -282,17 +298,23 @@ class _HojaRestablecerState extends State<_HojaRestablecer> {
       if (e.code == 'user-not-found') {
         if (mounted) setState(() => _enviado = true);
       } else {
-        _avisar(e.code == 'invalid-email' ? 'El formato del correo es inválido.' : 'No se pudo enviar el correo. Inténtalo de nuevo.');
+        if (e.code == 'invalid-email') {
+          _errorCorreo.value = 'Revisa el correo: debe verse como nombre@correo.cl';
+        } else if (mounted) {
+          avisar(
+            context,
+            e.code == 'too-many-requests'
+                ? 'Hubo muchos intentos seguidos desde esta red. Espera unos minutos y vuelve a intentarlo.'
+                : 'No se pudo enviar el correo. Inténtalo de nuevo.',
+            tipo: TipoAviso.error,
+          );
+        }
       }
     } catch (_) {
-      _avisar('No se pudo enviar el correo. Revisa tu conexión.');
+      if (mounted) avisar(context, 'No se pudo enviar el correo. Revisa tu conexión.', tipo: TipoAviso.error, icono: Iconos.wifiOff);
     } finally {
       if (mounted) setState(() => _enviando = false);
     }
-  }
-
-  void _avisar(String texto) {
-    if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(texto)));
   }
 
   @override
@@ -319,22 +341,28 @@ class _HojaRestablecerState extends State<_HojaRestablecer> {
         ),
         const SizedBox(height: 18),
         if (!_enviado)
-          TextField(
-            controller: _correo,
-            enabled: !_enviando,
-            autofocus: widget.correo.isEmpty,
-            keyboardType: TextInputType.emailAddress,
-            textInputAction: TextInputAction.send,
-            onSubmitted: (_) => _enviar(),
-            decoration: InputDecoration(
-              hintText: 'Correo electrónico',
-              hintStyle: TextStyle(color: c.textoTenue),
-              filled: true,
-              fillColor: c.superficie,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-              border: const BordeSquircle(),
-              enabledBorder: const BordeSquircle(),
-              focusedBorder: BordeSquircle(borderSide: BorderSide(color: c.acento, width: 1.5)),
+          Form(
+            key: _formulario,
+            child: ValueListenableBuilder<String?>(
+              valueListenable: _errorCorreo,
+              builder: (context, error, _) => TextFormField(
+                controller: _correo,
+                enabled: !_enviando,
+                autofocus: widget.correo.isEmpty,
+                keyboardType: TextInputType.emailAddress,
+                autocorrect: false,
+                textInputAction: TextInputAction.send,
+                forceErrorText: error,
+                onChanged: (_) => _errorCorreo.value = null,
+                onFieldSubmitted: (_) => _enviar(),
+                validator: (valor) {
+                  final correo = valor?.trim() ?? '';
+                  if (correo.isEmpty) return 'Escribe el correo de tu cuenta.';
+                  if (!correoValido.hasMatch(correo)) return 'Revisa el correo: debe verse como nombre@correo.cl';
+                  return null;
+                },
+                decoration: decoracionCampo(context, pista: 'Correo electrónico'),
+              ),
             ),
           ),
         const SizedBox(height: 16),

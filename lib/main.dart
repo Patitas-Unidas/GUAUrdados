@@ -7,6 +7,8 @@ import 'screens/homepage.dart';
 import 'screens/iniciar_sesion.dart';
 import 'services/notificaciones_service.dart';
 import 'services/perfiles_usuario_repository.dart';
+import 'services/rutas.dart';
+import 'widgets/escala_pantalla.dart';
 import 'theme/app_theme.dart';
 import 'theme/preferencias.dart';
 
@@ -17,6 +19,7 @@ Future<void> main() async {
   );
   await Preferencias.cargar();
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   FirebaseAuth.instance.authStateChanges().listen((usuario) {
     if (usuario != null) {
       NotificacionesService.inicializar().catchError((_) {});
@@ -42,6 +45,7 @@ class MyApp extends StatelessWidget {
         darkTheme: AppTheme.oscuro,
         themeMode: Preferencias.tema.value,
         themeAnimationDuration: const Duration(milliseconds: 350),
+        navigatorObservers: [RegistroRutas.instancia],
         builder: (context, child) {
           final medidas = MediaQuery.of(context);
           final oscuro = Theme.of(context).brightness == Brightness.dark;
@@ -55,7 +59,7 @@ class MyApp extends StatelessWidget {
                 systemNavigationBarIconBrightness: oscuro ? Brightness.light : Brightness.dark,
                 systemNavigationBarContrastEnforced: false,
               ),
-              child: child!,
+              child: EscalaPantalla(child: child!),
             ),
           );
         },

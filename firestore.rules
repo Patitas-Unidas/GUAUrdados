@@ -175,14 +175,109 @@ service cloud.firestore {
             );
         }
 
+        function esPerritoNuevo() {
+          let datos = request.resource.data;
+          return datos.keys().hasAll(['idUsuario', 'nombreUsuario', 'tipoPublicacion', 'descripcion', 'creadoEn'])
+            && datos.keys().hasOnly(['idUsuario', 'nombreUsuario', 'tipoPublicacion', 'descripcion', 'creadoEn', 'fotoUsuario', 'ubicacion', 'fotoUrl'])
+            && datos.idUsuario == request.auth.uid
+            && datos.nombreUsuario is string
+            && datos.nombreUsuario.size() > 0
+            && datos.nombreUsuario.size() <= 100
+            && datos.tipoPublicacion == 'perrito_nuevo'
+            && datos.descripcion is string
+            && datos.descripcion.size() > 0
+            && datos.descripcion.size() <= 1000
+            && datos.creadoEn == request.time
+            && (!('fotoUsuario' in datos) || datos.fotoUsuario is string)
+            && (!('ubicacion' in datos) || (datos.ubicacion is string && datos.ubicacion.size() <= 200))
+            && (!('fotoUrl' in datos) || (datos.fotoUrl is string && datos.fotoUrl.matches('https://firebasestorage[.]googleapis[.]com/.*')));
+        }
+
         allow read: if request.auth != null;
         allow create: if request.auth != null
-          && exists(/databases/$(database)/documents/foro/$(foroId))
-          && exists(/databases/$(database)/documents/perros/$(request.resource.data.idPerro))
-          && esPublicacionValida();
-        allow update: if false;
+          && (
+            (foroId == 'sin_registrar' && esPerritoNuevo())
+            || (exists(/databases/$(database)/documents/foro/$(foroId))
+              && exists(/databases/$(database)/documents/perros/$(request.resource.data.idPerro))
+              && esPublicacionValida())
+          );
+        function admiteReacciones() {
+          return resource.data.tipoPublicacion in ['normal', 'perrito_nuevo'];
+        }
+
+        function cambia() {
+          return request.resource.data.diff(resource.data).affectedKeys();
+        }
+
+        function esReaccionPropia() {
+          let antes = resource.data.get('reacciones', {});
+          let despues = request.resource.data.get('reacciones', {});
+          let mia = despues.get(request.auth.uid, null);
+          return admiteReacciones()
+            && cambia().hasOnly(['reacciones'])
+            && despues is map
+            && despues.diff(antes).affectedKeys().hasOnly([request.auth.uid])
+            && (mia == null
+              || (mia is map
+                && mia.keys().hasAll(['e', 'n'])
+                && mia.keys().hasOnly(['e', 'n', 'f'])
+                && mia.e in ['❤️', '🥰', '🐶', '😂', '😮', '😢', '💪']
+                && mia.n is string && mia.n.size() > 0 && mia.n.size() <= 100
+                && (!('f' in mia) || mia.f is string)));
+        }
+
+        function sumaComentario() {
+          let ultimo = request.resource.data.ultimoComentario;
+          return admiteReacciones()
+            && cambia().hasOnly(['numComentarios', 'ultimoComentario'])
+            && request.resource.data.numComentarios == resource.data.get('numComentarios', 0) + 1
+            && ultimo is map
+            && ultimo.keys().hasOnly(['idUsuario', 'nombre', 'en'])
+            && ultimo.idUsuario == request.auth.uid
+            && ultimo.nombre is string && ultimo.nombre.size() <= 100
+            && ultimo.en == request.time;
+        }
+
+        function restaComentario() {
+          return cambia().hasOnly(['numComentarios'])
+            && request.resource.data.numComentarios == resource.data.get('numComentarios', 0) - 1
+            && request.resource.data.numComentarios >= 0;
+        }
+
+        allow update: if request.auth != null
+          && (esReaccionPropia() || sumaComentario() || restaComentario());
+
+        allow update: if request.auth != null
+          && request.auth.token.admin == true
+          && foroId == 'sin_registrar'
+          && resource.data.tipoPublicacion == 'perrito_nuevo'
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['resultadoAviso', 'idPerroAviso', 'notaGuau', 'revisadoEn', 'revisadoPor'])
+          && request.resource.data.resultadoAviso in ['registrado', 'ya_registrado']
+          && (!('idPerroAviso' in request.resource.data) || exists(/databases/$(database)/documents/perros/$(request.resource.data.idPerroAviso)))
+          && (!('notaGuau' in request.resource.data) || (request.resource.data.notaGuau is string && request.resource.data.notaGuau.size() <= 500))
+          && (!('revisadoPor' in request.resource.data) || request.resource.data.revisadoPor == request.auth.uid);
         allow delete: if request.auth != null
           && (request.auth.token.admin == true || resource.data.idUsuario == request.auth.uid);
+
+        match /comentarios/{comentarioId} {
+          allow read: if request.auth != null;
+          allow create: if request.auth != null
+            && get(/databases/$(database)/documents/foro/$(foroId)/publicaciones/$(publicacionId)).data.tipoPublicacion in ['normal', 'perrito_nuevo']
+            && request.resource.data.keys().hasAll(['idUsuario', 'nombreUsuario', 'texto', 'creadoEn'])
+            && request.resource.data.keys().hasOnly(['idUsuario', 'nombreUsuario', 'fotoUsuario', 'texto', 'creadoEn'])
+            && request.resource.data.idUsuario == request.auth.uid
+            && request.resource.data.nombreUsuario is string
+            && request.resource.data.nombreUsuario.size() > 0
+            && request.resource.data.nombreUsuario.size() <= 100
+            && request.resource.data.texto is string
+            && request.resource.data.texto.size() > 0
+            && request.resource.data.texto.size() <= 500
+            && request.resource.data.creadoEn == request.time
+            && (!('fotoUsuario' in request.resource.data) || request.resource.data.fotoUsuario is string);
+          allow update: if false;
+          allow delete: if request.auth != null
+            && (request.auth.token.admin == true || resource.data.idUsuario == request.auth.uid);
+        }
       }
     }
   }

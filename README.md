@@ -42,13 +42,15 @@ Muchos de ellos son cuidados por su comunidad, pero sin coordinarse: a veces com
 
 ## Qué se puede hacer
 
-- Ver a todos los perritos de tu comunidad y seguir a tus favoritos.
-- Revisar el perfil de cada uno: carácter, peso, vacunas y estado médico.
-- Registrar cuándo y cuánto comió *(en desarrollo)*.
-- Reportar una emergencia y avisar a la comunidad.
-- Recibir novedades de los perritos que sigues.
-- Identificar a un perrito con una foto *(en desarrollo)*.
-- Conversar en el foro de cada perrito *(en desarrollo)*.
+- Ver a todos los perritos de tu comunidad, con su estado (saludable, por revisar o urgente), y seguir a tus favoritos.
+- Revisar el perfil de cada uno: carácter, peso, vacunas, estado médico y carnet veterinario.
+- Registrar qué y cuánto comió o tomó agua; la app sugiere cuándo le toca comer para que no coma de más.
+- Reportar una emergencia de uno o varios perritos. Queda fijada en el foro hasta que quien la reportó cuenta cómo terminó.
+- Recibir en la campana las novedades de los perritos que sigues y una alerta si llevan mucho tiempo sin comer o sin agua.
+- Identificar a un perrito con una foto *(en desarrollo)* y avisar a GUAU si aparece uno que no está registrado.
+- Conversar en el foro de cada perrito: publicar, reaccionar y comentar.
+- Ganar insignias por ayudar.
+- Saber qué perritos ya encontraron un hogar, y contactar a GUAU para adoptar o donar.
 
 ## Equipo
 

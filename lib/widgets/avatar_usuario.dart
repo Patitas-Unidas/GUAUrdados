@@ -28,23 +28,45 @@ class AvatarUsuario extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.colores;
     final foto = fotoUrl?.trim();
+    final diametro = radio * 2;
+
+    Widget fallbackError() => Center(
+      child: Text(
+        _iniciales(nombre),
+        style: TextStyle(color: c.texto, fontWeight: FontWeight.w600),
+      ),
+    );
+
+    Widget contenido;
+
+    if (foto != null && foto.isNotEmpty && !foto.startsWith('http')) {
+      // Soporte para assets locales (ej. foto_godzilla.png de la recompensa de plata)
+      final assetPath = foto.startsWith('fotos/') ? foto : 'fotos/$foto';
+      contenido = Image.asset(
+        assetPath,
+        width: diametro,
+        height: diametro,
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => fallbackError(),
+      );
+    } else {
+      // Flujo habitual con imagen remota o foto por defecto de Firebase Storage
+      final urlFinal = (foto == null || foto.isEmpty) ? fotoPerfilPredeterminada(uid) : foto;
+      contenido = ImagenRemota(
+        url: urlFinal,
+        fit: BoxFit.cover,
+        cargando: const BloqueEsqueleto(circular: true),
+        error: fallbackError(),
+      );
+    }
+
     return CircleAvatar(
       radius: radio,
       backgroundColor: c.fondoAvatar,
       child: ClipOval(
         child: SizedBox.square(
-          dimension: radio * 2,
-          child: ImagenRemota(
-            url: foto == null || foto.isEmpty ? fotoPerfilPredeterminada(uid) : foto,
-            fit: BoxFit.cover,
-            cargando: const BloqueEsqueleto(circular: true),
-            error: Center(
-              child: Text(
-                _iniciales(nombre),
-                style: TextStyle(color: c.texto, fontWeight: FontWeight.w600),
-              ),
-            ),
-          ),
+          dimension: diametro,
+          child: contenido,
         ),
       ),
     );

@@ -19,7 +19,34 @@ class NotificacionesService {
       messaging.onTokenRefresh.listen(_guardar);
     }
     // Emergencias de perros "no identificados" llegan por este tema.
-    await messaging.subscribeToTopic('emergencias');
+    final preferencias = await _usuario?.get();
+    if ((preferencias?.data()?['notificaciones'] as Map?)?['emergencias'] != false) {
+      await messaging.subscribeToTopic('emergencias');
+    }
+  }
+
+  static DocumentReference<Map<String, dynamic>>? get _usuario {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    return uid == null ? null : FirebaseFirestore.instance.collection('usuarios').doc(uid);
+  }
+
+  static Stream<Map<String, bool>> observarPreferencias() {
+    final usuario = _usuario;
+    if (usuario == null) return Stream.value(const {});
+    return usuario.snapshots().map((s) {
+      final datos = s.data()?['notificaciones'];
+      return datos is Map ? {for (final e in datos.entries) '${e.key}': e.value != false} : const {};
+    });
+  }
+
+  static Future<void> cambiarPreferencia(String clave, bool activa) async {
+    await _usuario?.set({
+      'notificaciones': {clave: activa},
+    }, SetOptions(merge: true));
+    if (clave != 'emergencias') return;
+    activa
+        ? await FirebaseMessaging.instance.subscribeToTopic('emergencias')
+        : await FirebaseMessaging.instance.unsubscribeFromTopic('emergencias');
   }
 
   /// Llamar justo antes de cerrar sesión, para no seguir recibiendo
