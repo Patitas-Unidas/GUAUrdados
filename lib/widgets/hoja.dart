@@ -7,6 +7,8 @@ import 'package:guaurdados_oficial/theme/colores_app.dart';
 Future<T?> mostrarHoja<T>(BuildContext context, {required WidgetBuilder builder}) =>
     Navigator.of(context).push<T>(_RutaHoja<T>(builder));
 
+bool estaEnHoja(BuildContext context) => ModalRoute.of(context) is _RutaHoja;
+
 const _curvaEntrada = Cubic(.2, .9, .3, 1.06);
 const _margenRebote = 48.0;
 

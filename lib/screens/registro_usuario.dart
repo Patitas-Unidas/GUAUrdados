@@ -4,6 +4,9 @@ import 'package:guaurdados_oficial/services/perfiles_usuario_repository.dart';
 import 'package:guaurdados_oficial/theme/colores_app.dart';
 import 'package:guaurdados_oficial/theme/formas.dart';
 import 'package:guaurdados_oficial/theme/tipografia.dart';
+import 'package:guaurdados_oficial/widgets/aviso.dart';
+import 'package:guaurdados_oficial/widgets/campo.dart';
+import 'package:guaurdados_oficial/widgets/iconos.dart';
 import 'package:guaurdados_oficial/widgets/logo.dart';
 import 'iniciar_sesion.dart';
 import 'homepage.dart';
@@ -23,27 +26,23 @@ class _RegistroUsuarioState extends State<RegistroUsuario> {
   final _confirmacion = TextEditingController();
   bool _aceptaTerminos = false;
   bool _isLoading = false;
+  final _errorCorreo = ValueNotifier<String?>(null);
+  final _errorPassword = ValueNotifier<String?>(null);
 
   @override
   void dispose() {
     for (final controller in [_nombre, _correo, _password, _confirmacion]) {
       controller.dispose();
     }
+    _errorCorreo.dispose();
+    _errorPassword.dispose();
     super.dispose();
   }
 
   Future<void> _registrar() async {
+    _errorCorreo.value = null;
+    _errorPassword.value = null;
     if (_isLoading || !_formKey.currentState!.validate()) return;
-    if (!_aceptaTerminos) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Debes aceptar los términos y la política de privacidad.',
-          ),
-        ),
-      );
-      return;
-    }
     FocusScope.of(context).unfocus();
     final nombre = _nombre.text.trim();
     setState(() => _isLoading = true);
@@ -68,39 +67,30 @@ class _RegistroUsuarioState extends State<RegistroUsuario> {
         }
       } catch (_) {}
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(mensaje)));
+      avisar(context, mensaje, tipo: TipoAviso.exito);
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (_) => const Homepage()),
         (_) => false,
       );
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
-      final mensaje = switch (e.code) {
-        'email-already-in-use' =>
-          'Este correo ya tiene una cuenta. Inicia sesión.',
-        'invalid-email' => 'Ingresa un correo electrónico válido.',
-        'weak-password' =>
-          'La contraseña no cumple los requisitos de seguridad.',
-        'network-request-failed' =>
-          'Revisa tu conexión e inténtalo nuevamente.',
-        'too-many-requests' => 'Demasiados intentos. Espera un momento.',
-        'operation-not-allowed' => 'El registro por correo no está habilitado.',
-        _ => 'No se pudo crear la cuenta. Inténtalo nuevamente.',
-      };
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(mensaje)));
+      switch (e.code) {
+        case 'email-already-in-use':
+          _errorCorreo.value = 'Este correo ya tiene una cuenta. Toca «Inicia sesión», más abajo.';
+        case 'invalid-email':
+          _errorCorreo.value = 'Revisa el correo: debe verse como nombre@correo.cl';
+        case 'weak-password':
+          _errorPassword.value = 'Elige una contraseña más difícil de adivinar (mezcla letras y números).';
+        case 'network-request-failed':
+          avisar(context, 'No hay conexión a internet. Revísala e inténtalo de nuevo.', tipo: TipoAviso.error, icono: Iconos.wifiOff);
+        case 'too-many-requests':
+          avisar(context, 'Se crearon muchas cuentas seguidas desde esta red. Espera unos minutos o usa tus datos móviles.', tipo: TipoAviso.error, icono: Iconos.clock);
+        default:
+          avisar(context, 'No se pudo crear la cuenta. Inténtalo de nuevo.', tipo: TipoAviso.error);
+      }
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'No se pudo completar el registro. Revisa tu conexión.',
-          ),
-        ),
-      );
+      avisar(context, 'No se pudo completar el registro. Revisa tu conexión.', tipo: TipoAviso.error, icono: Iconos.wifiOff);
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -140,25 +130,32 @@ class _RegistroUsuarioState extends State<RegistroUsuario> {
                       : null,
                 ),
                 const SizedBox(height: 16),
-                _buildTextField(
-                  "Correo electrónico",
-                  false,
-                  _correo,
-                  (value) =>
-                      RegExp(
-                        r'^[^\s@]+@[^\s@]+\.[^\s@]+$',
-                      ).hasMatch(value?.trim() ?? '')
-                      ? null
-                      : 'Ingresa un correo válido.',
+                ValueListenableBuilder<String?>(
+                  valueListenable: _errorCorreo,
+                  builder: (context, error, _) => _buildTextField(
+                    "Correo electrónico",
+                    false,
+                    _correo,
+                    (value) => correoValido.hasMatch(value?.trim() ?? '')
+                        ? null
+                        : 'Revisa el correo: debe verse como nombre@correo.cl',
+                    errorForzado: error,
+                    alCambiar: () => _errorCorreo.value = null,
+                  ),
                 ),
                 const SizedBox(height: 16),
-                _buildTextField(
-                  "Contraseña",
-                  true,
-                  _password,
-                  (value) => (value?.length ?? 0) < 6
-                      ? 'Usa al menos 6 caracteres.'
-                      : null,
+                ValueListenableBuilder<String?>(
+                  valueListenable: _errorPassword,
+                  builder: (context, error, _) => _buildTextField(
+                    "Contraseña (mínimo 6 caracteres)",
+                    true,
+                    _password,
+                    (value) => (value?.length ?? 0) < 6
+                        ? 'Usa al menos 6 caracteres.'
+                        : null,
+                    errorForzado: error,
+                    alCambiar: () => _errorPassword.value = null,
+                  ),
                 ),
                 const SizedBox(height: 16),
                 _buildTextField(
@@ -173,15 +170,24 @@ class _RegistroUsuarioState extends State<RegistroUsuario> {
                 const SizedBox(height: 24),
 
                 // Términos y condiciones
+                FormField<bool>(
+                  initialValue: _aceptaTerminos,
+                  validator: (valor) => valor == true ? null : 'Para crear tu cuenta, acepta los términos y la política de privacidad.',
+                  builder: (campo) => Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                 Row(
                   children: [
                     Checkbox(
-                      value: _aceptaTerminos,
+                      value: campo.value ?? false,
+                      isError: campo.hasError,
                       onChanged: _isLoading
                           ? null
-                          : (value) => setState(
-                              () => _aceptaTerminos = value ?? false,
-                            ),
+                          : (value) {
+                              _aceptaTerminos = value ?? false;
+                              campo.didChange(_aceptaTerminos);
+                              if (campo.hasError) campo.validate();
+                            },
                       activeColor: c.acento,
                     ),
                     Expanded(
@@ -212,6 +218,21 @@ class _RegistroUsuarioState extends State<RegistroUsuario> {
                       ),
                     ),
                   ],
+                ),
+                      AnimatedSize(
+                        duration: const Duration(milliseconds: 220),
+                        child: campo.hasError
+                            ? Padding(
+                                padding: const EdgeInsets.fromLTRB(12, 2, 12, 0),
+                                child: Text(
+                                  campo.errorText!,
+                                  style: TextStyle(color: c.emergenciaTexto, fontSize: 12.5, fontWeight: FontWeight.w600, height: 1.3),
+                                ),
+                              )
+                            : const SizedBox(width: double.infinity),
+                      ),
+                    ],
+                  ),
                 ),
 
                 const SizedBox(height: 32),
@@ -291,12 +312,15 @@ class _RegistroUsuarioState extends State<RegistroUsuario> {
     String hint,
     bool isObscure,
     TextEditingController controller,
-    String? Function(String?) validator,
-  ) {
-    final c = context.colores;
+    String? Function(String?) validator, {
+    String? errorForzado,
+    VoidCallback? alCambiar,
+  }) {
     return TextFormField(
       controller: controller,
       validator: validator,
+      forceErrorText: errorForzado,
+      onChanged: alCambiar == null ? null : (_) => alCambiar(),
       enabled: !_isLoading,
       autocorrect: !isObscure,
       enableSuggestions: !isObscure,
@@ -310,22 +334,7 @@ class _RegistroUsuarioState extends State<RegistroUsuario> {
           ? (_) => _registrar()
           : null,
       obscureText: isObscure,
-      decoration: InputDecoration(
-        hintText: hint,
-        hintStyle: TextStyle(color: c.textoTenue),
-        filled: true,
-        fillColor: c.superficie,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 20,
-          vertical: 18,
-        ),
-        border: const BordeSquircle(),
-        enabledBorder: const BordeSquircle(),
-        focusedBorder: BordeSquircle(borderSide: BorderSide(color: c.acento, width: 1.5)),
-        errorBorder: BordeSquircle(borderSide: BorderSide(color: c.emergencia)),
-        focusedErrorBorder: BordeSquircle(borderSide: BorderSide(color: c.emergencia, width: 1.5)),
-        errorStyle: TextStyle(color: c.emergencia),
-      ),
+      decoration: decoracionCampo(context, pista: hint),
     );
   }
 }
