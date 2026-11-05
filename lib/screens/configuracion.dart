@@ -8,7 +8,10 @@ import 'package:guaurdados_oficial/services/notificaciones_service.dart';
 import 'package:guaurdados_oficial/theme/preferencias.dart';
 import 'package:guaurdados_oficial/theme/tipografia.dart';
 import 'package:guaurdados_oficial/widgets/aparicion.dart';
+import 'package:guaurdados_oficial/widgets/apoyo_guau.dart';
 import 'package:guaurdados_oficial/widgets/avatar_usuario.dart';
+import 'package:guaurdados_oficial/widgets/aviso.dart';
+import 'package:guaurdados_oficial/widgets/campo.dart';
 import 'package:guaurdados_oficial/widgets/selector_avatar.dart';
 
 import 'iniciar_sesion.dart';
@@ -24,6 +27,15 @@ class Configuracion extends StatefulWidget {
 
 class _ConfiguracionState extends State<Configuracion> {
   User? get _usuario => FirebaseAuth.instance.currentUser;
+  late final _preferencias = NotificacionesService.observarPreferencias();
+
+  Future<void> _cambiarNotificacion(String clave, bool activa) async {
+    try {
+      await NotificacionesService.cambiarPreferencia(clave, activa);
+    } catch (_) {
+      _avisar('No se pudo guardar el cambio. Revisa tu conexión.');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -76,20 +88,31 @@ class _ConfiguracionState extends State<Configuracion> {
           ]),
 
           const _TituloSeccion('Notificaciones'),
-          const _Grupo(children: [
-            _Fila(
-              icono: Iconos.siren,
-              titulo: 'Alertas de emergencia',
-              subtitulo: 'Aviso inmediato cuando alguien reporta una emergencia.',
-              final_: _Proximamente(),
-            ),
-            _Fila(
-              icono: Iconos.pawPrint,
-              titulo: 'Perros que sigues',
-              subtitulo: 'Alimentación, estado médico y novedades del foro.',
-              final_: _Proximamente(),
-            ),
-          ]),
+          StreamBuilder<Map<String, bool>>(
+            stream: _preferencias,
+            builder: (context, snapshot) {
+              final preferencias = snapshot.data ?? const {};
+              Widget interruptor(String clave) => Switch(
+                    value: preferencias[clave] ?? true,
+                    activeTrackColor: c.acento,
+                    onChanged: snapshot.hasData ? (activa) => _cambiarNotificacion(clave, activa) : null,
+                  );
+              return _Grupo(children: [
+                _Fila(
+                  icono: Iconos.siren,
+                  titulo: 'Emergencias',
+                  subtitulo: 'Cuando alguien reporta una emergencia de un perrito que sigues o de uno sin identificar, y cuando se resuelve.',
+                  final_: interruptor('emergencias'),
+                ),
+                _Fila(
+                  icono: Iconos.pawPrint,
+                  titulo: 'Cuidado de tus perritos',
+                  subtitulo: 'Cuando un perrito que sigues lleva más de un día sin comer o sin agua.',
+                  final_: interruptor('seguidos'),
+                ),
+              ]);
+            },
+          ),
 
           const _TituloSeccion('Cuenta'),
           _Grupo(children: [
@@ -126,6 +149,24 @@ class _ConfiguracionState extends State<Configuracion> {
               subtitulo: 'Borra tu cuenta de GUAUrdados de forma permanente.',
               color: c.emergencia,
               alTocar: _eliminarCuenta,
+            ),
+          ]),
+
+          const _TituloSeccion('Apoya a GUAU'),
+          _Grupo(children: [
+            _Fila(
+              icono: Iconos.handHeart,
+              titulo: 'Dona a GUAU',
+              subtitulo: 'Ayuda con comida, vacunas y remedios para los perritos.',
+              final_: Icono(Iconos.chevronRight, size: 20, color: c.textoTenue),
+              alTocar: () => mostrarDonaciones(context),
+            ),
+            _Fila(
+              icono: Iconos.heart,
+              titulo: 'Adopta un perrito',
+              subtitulo: 'GUAU coordina las adopciones. Escríbeles y te orientan.',
+              final_: Icono(Iconos.chevronRight, size: 20, color: c.textoTenue),
+              alTocar: () => mostrarAdopcion(context),
             ),
           ]),
 
@@ -166,9 +207,11 @@ class _ConfiguracionState extends State<Configuracion> {
       if (usuarioActualizado != null) {
         await PerfilesUsuarioRepository().sincronizar(usuarioActualizado);
       }
-      if (mounted) setState(() {});
+      if (!mounted) return;
+      setState(() {});
+      avisar(context, 'Listo, ahora te verán como ${nuevo.trim()} en los foros.', tipo: TipoAviso.exito);
     } catch (_) {
-      _avisar('No se pudo guardar el nombre.');
+      _avisar('No se pudo guardar el nombre. Revisa tu conexión.');
     }
   }
 
@@ -221,7 +264,7 @@ class _ConfiguracionState extends State<Configuracion> {
   }
 
   void _avisar(String texto) {
-    if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(texto)));
+    if (mounted) avisar(context, texto, tipo: TipoAviso.error);
   }
 }
 
@@ -238,6 +281,7 @@ class _DialogoEditarNombreState extends State<_DialogoEditarNombre> {
   late final TextEditingController _control = TextEditingController(
     text: widget.nombreInicial,
   );
+  final _formulario = GlobalKey<FormState>();
 
   @override
   void dispose() {
@@ -245,19 +289,28 @@ class _DialogoEditarNombreState extends State<_DialogoEditarNombre> {
     super.dispose();
   }
 
+  void _guardar() {
+    if (_formulario.currentState!.validate()) Navigator.of(context).pop(_control.text);
+  }
+
   @override
   Widget build(BuildContext context) => AlertDialog(
     title: const Text('Tu nombre'),
-    content: TextField(
-      controller: _control,
-      autofocus: true,
-      textCapitalization: TextCapitalization.words,
-      decoration: const InputDecoration(hintText: 'Cómo te verán en los foros'),
-      onSubmitted: (texto) => Navigator.of(context).pop(texto),
+    content: Form(
+      key: _formulario,
+      child: TextFormField(
+        controller: _control,
+        autofocus: true,
+        maxLength: 100,
+        textCapitalization: TextCapitalization.words,
+        validator: (valor) => (valor ?? '').trim().isEmpty ? 'Escribe cómo quieres que te vean en los foros.' : null,
+        decoration: decoracionCampo(context, pista: 'Cómo te verán en los foros', radio: 16, borde: true),
+        onFieldSubmitted: (_) => _guardar(),
+      ),
     ),
     actions: [
       TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancelar')),
-      TextButton(onPressed: () => Navigator.of(context).pop(_control.text), child: const Text('Guardar')),
+      TextButton(onPressed: _guardar, child: const Text('Guardar')),
     ],
   );
 }
