@@ -33,12 +33,26 @@ class AppColors {
   static const grisTexto = Color(0xff554e4b);
   static const rojoTexto = Color(0xff8f001b);
 
-  static const oscuroFondo = Color(0xff000000);
-  static const oscuroSuperficie = Color(0xff151515);
-  static const oscuroTexto = Color(0xfff5f5f5);
-  static const oscuroTextoSecundario = Color(0xffa0a0a0);
+  static const lavanda = Color(0xff8e63d2);
+  static const lavandaSuave = Color(0xffe6daf3);
+  static const lavandaTexto = Color(0xff5b3a8c);
+  static const oscuroLavandaTexto = Color(0xffc9aef2);
 
-  static const oscuroContenedor = Color(0xff242424);
-  static const oscuroBorde = Color(0xff2e2e2e);
-  static const oscuroTextoTenue = Color(0xff7a7a7a);
+  static const bronceMedalla = Color(0xffc98a52);
+  static const plataMedalla = Color(0xffb9bfca);
+  static const oroMedalla = Color(0xffeab84a);
+  static const bronceResplandor = Color(0xffb8642c);
+  static const plataResplandor = Color(0xff7d8799);
+  static const oroResplandor = Color(0xffd9900f);
+
+  static const oscuroFondo = Color(0xff000000);
+  static const oscuroSuperficie = Color(0xff19130f);
+  static const oscuroTexto = Color(0xfff7efea);
+  static const oscuroTextoSecundario = Color(0xffb9aca4);
+
+  static const oscuroContenedor = Color(0xff2a201a);
+  static const oscuroBorde = Color(0xff3a2c23);
+  static const oscuroTextoTenue = Color(0xff948579);
+  static const oscuroNavegacion = Color(0xff241a14);
+  static const oscuroTonal = Color(0xff3d2b20);
 }

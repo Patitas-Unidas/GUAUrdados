@@ -3,6 +3,26 @@ import 'package:flutter/painting.dart' show Alignment;
 
 bool tieneDato(String valor) => valor.trim().isNotEmpty && valor != 'Sin información';
 
+String textoCorrido(String texto) => texto
+    .split(RegExp(r'\n\s*\n'))
+    .map((parrafo) => parrafo
+        .split('\n')
+        .map((linea) => linea.replaceAll(RegExp(r'\s+'), ' ').trim())
+        .where((linea) => linea.isNotEmpty)
+        .fold('', (unido, linea) {
+          if (unido.isEmpty) return linea;
+          final cierra = RegExp(r'[.!?…:;,]$').hasMatch(unido);
+          final empiezaFrase = RegExp(r'^[A-ZÁÉÍÓÚÑ¿¡]').hasMatch(linea);
+          return '$unido${!cierra && empiezaFrase ? '.' : ''} $linea';
+        }))
+    .where((parrafo) => parrafo.isNotEmpty)
+    .map((parrafo) {
+      final corte = parrafo.lastIndexOf(' ');
+      final ultima = parrafo.substring(corte + 1);
+      return corte > 0 && ultima.length < 12 ? '${parrafo.substring(0, corte)}\u00A0$ultima' : parrafo;
+    })
+    .join('\n\n');
+
 /// Representa un documento de la colección `perros` en Cloud Firestore.
 class Perro {
   const Perro({
@@ -15,6 +35,7 @@ class Perro {
     this.esterilizado, this.ultimaComidaEn, this.ultimaAguaEn, this.ultimaVacunaEn,
     this.ultimaDesparasitacionEn, this.condiciones = const [],
     this.restricciones = const [], this.fotoCentroX, this.fotoCentroY,
+    this.adoptado = false, this.adoptadoEn,
   });
   final String id, nombre, estado, raza, edad, peso, ultimaComida, tamano;
   final String vacunacion, descripcion, caracter, imagenAsset, fotoUrl;
@@ -30,6 +51,9 @@ class Perro {
   final List<String> restricciones;
 
   final double? fotoCentroX, fotoCentroY;
+
+  final bool adoptado;
+  final DateTime? adoptadoEn;
 
   Alignment get encuadre => fotoCentroX == null || fotoCentroY == null
       ? const Alignment(0, -.2)
@@ -124,7 +148,7 @@ class Perro {
       ultimaComida: text(['ultimaComida', 'ultima_comida']),
       tamano: text(['tamano']),
       vacunacion: text(['vacunacion']),
-      descripcion: text(['descripcion'], ''),
+      descripcion: textoCorrido(text(['descripcion'], '')),
       caracter: text(['caracter']),
       imagenAsset: url.isEmpty ? imagen : '',
       fotoUrl: url,
@@ -140,6 +164,8 @@ class Perro {
       restricciones: lista(['restricciones', 'restriccionesAlimentarias', 'restricciones_alimentarias', 'alergias']),
       fotoCentroX: centro(0),
       fotoCentroY: centro(1),
+      adoptado: siNo(['adoptado', 'adoptada']) ?? false,
+      adoptadoEn: fechaOpcional(['adoptadoEn', 'adoptado_en']),
     );
   }
 }

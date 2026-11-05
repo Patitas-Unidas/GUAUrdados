@@ -1,6 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:guaurdados_oficial/widgets/aviso.dart';
+import 'package:guaurdados_oficial/widgets/campo.dart';
 import 'package:guaurdados_oficial/widgets/iconos.dart';
 import 'package:guaurdados_oficial/models/perro.dart';
 import 'package:guaurdados_oficial/services/cuidados.dart';
@@ -52,6 +54,7 @@ class _RegistrarAlimentacionState extends State<RegistrarAlimentacion> {
   _Unidad _unidadComida = _Unidad.punados;
   final _cantidades = {for (final u in _Unidad.values) u: u.inicial};
   final _otro = TextEditingController();
+  final _formularioOtro = GlobalKey<FormState>();
   bool _guardando = false;
   bool _escribiendo = false;
   final _campoCantidad = TextEditingController();
@@ -102,14 +105,11 @@ class _RegistrarAlimentacionState extends State<RegistrarAlimentacion> {
     if (_guardando) return;
     final usuario = FirebaseAuth.instance.currentUser;
     if (usuario == null) {
-      _avisar('Inicia sesión para guardar el registro.');
+      avisar(context, 'Inicia sesión para guardar el registro.', tipo: TipoAviso.error);
       return;
     }
+    if (_tipo.tipo == null && !_formularioOtro.currentState!.validate()) return;
     final tipoComida = _tipo.tipo == null ? _otro.text.trim() : _tipo.nombre.toLowerCase();
-    if (tipoComida.isEmpty) {
-      _avisar('Escribe qué alimento recibió.');
-      return;
-    }
 
     final cantidadNumero = _cantidades[_unidad]!;
     final unidad = _unidad == _Unidad.punados && cantidadNumero == 1 ? 'puñado' : _unidad.texto;
@@ -126,20 +126,22 @@ class _RegistrarAlimentacionState extends State<RegistrarAlimentacion> {
       if (!mounted) return;
       final messenger = ScaffoldMessenger.of(context);
       Navigator.of(context).pop();
-      messenger.showSnackBar(const SnackBar(content: Text('Alimentación guardada y agregada al foro.')));
+      messenger.avisar(
+        _tipo.tipo == TipoAlimento.agua
+            ? 'Agua registrada para ${widget.perro.nombre}: $cantidad. Ya está en su foro.'
+            : 'Comida registrada para ${widget.perro.nombre}: $cantidad de $tipoComida. Ya está en su foro.',
+        color: _tipo.color,
+        icono: _tipo.tipo == TipoAlimento.agua ? Iconos.droplet : Iconos.utensils,
+      );
     } catch (error) {
       if (!mounted) return;
       final mensaje = error is FirebaseException && error.code == 'permission-denied'
           ? 'Tu cuenta no tiene permiso para registrar alimentación.'
-          : 'No se pudo guardar la alimentación. Inténtalo de nuevo.';
-      _avisar(mensaje);
+          : 'No se pudo guardar la alimentación. Revisa tu conexión e inténtalo de nuevo.';
+      avisar(context, mensaje, tipo: TipoAviso.error);
     } finally {
       if (mounted) setState(() => _guardando = false);
     }
-  }
-
-  void _avisar(String texto) {
-    if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(texto)));
   }
 
   @override
@@ -166,7 +168,11 @@ class _RegistrarAlimentacionState extends State<RegistrarAlimentacion> {
             const SizedBox(width: 12),
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('Registrar alimentación', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w800).display),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text('Registrar alimentación', maxLines: 1, style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w800).display),
+                ),
                 Text('${widget.perro.nombre} · ${fechaLarga(DateTime.now())}', style: TextStyle(fontSize: 13, color: c.textoSecundario)),
               ]),
             ),
@@ -202,19 +208,22 @@ class _RegistrarAlimentacionState extends State<RegistrarAlimentacion> {
             curve: Curves.easeOutCubic,
             child: _tipo.tipo != null
                 ? const SizedBox(width: double.infinity)
-                : Container(
-                    margin: const EdgeInsets.only(top: 10),
-                    decoration: Formas.fondo(c.superficie, 16),
-                    child: TextField(
-                      controller: _otro,
-                      enabled: !_guardando,
-                      maxLength: 60,
-                      textCapitalization: TextCapitalization.sentences,
-                      decoration: InputDecoration(
-                        hintText: '¿Qué le diste? (ej.: arroz con pollo)',
-                        hintStyle: TextStyle(color: c.textoTenue),
-                        border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                : Padding(
+                    padding: const EdgeInsets.only(top: 10),
+                    child: Form(
+                      key: _formularioOtro,
+                      child: TextFormField(
+                        controller: _otro,
+                        enabled: !_guardando,
+                        maxLength: 60,
+                        textCapitalization: TextCapitalization.sentences,
+                        validator: (valor) => (valor ?? '').trim().isEmpty ? 'Escribe qué alimento recibió, por ejemplo «arroz con pollo».' : null,
+                        decoration: decoracionCampo(
+                          context,
+                          pista: '¿Qué le diste? (ej.: arroz con pollo)',
+                          radio: 16,
+                          relleno: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        ),
                       ),
                     ),
                   ),
@@ -287,7 +296,7 @@ class _RegistrarAlimentacionState extends State<RegistrarAlimentacion> {
               racion == null
                   ? 'Registra su peso para ver la ración recomendada'
                   : '${_tipo.enMl ? 'Agua diaria recomendada' : 'Ración diaria recomendada'} para su peso: '
-                      '${racion.$1} – ${racion.$2} ${_tipo.enMl ? 'ml' : 'g'}',
+                      '${racion.$1}\u00A0–\u00A0${racion.$2}\u00A0${_tipo.enMl ? 'ml' : 'g'}',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 12, color: c.textoTenue),
             ),

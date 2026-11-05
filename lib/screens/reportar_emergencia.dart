@@ -9,6 +9,7 @@ import '../services/perros_repository.dart';
 import '../theme/colores_app.dart';
 import '../theme/formas.dart';
 import '../theme/tipografia.dart';
+import '../widgets/aviso.dart';
 import '../widgets/esqueleto.dart';
 import '../widgets/foto_perro.dart';
 import '../widgets/hoja.dart';
@@ -66,8 +67,15 @@ class _ReportarEmergenciaState extends State<ReportarEmergencia> {
     super.dispose();
   }
 
-  void _snack(String texto) =>
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(texto)));
+  void _snack(String texto) => avisar(context, texto, tipo: TipoAviso.error);
+
+  String? get _falta {
+    final sinPerro = !_fijo && _seleccionados.isEmpty && !_desconocido;
+    if (sinPerro && _tipo == null) return 'Elige quién necesita ayuda y qué ocurre para emitir la alerta.';
+    if (sinPerro) return 'Elige quién necesita ayuda. Si no lo conoces, toca «No lo conozco».';
+    if (_tipo == null) return 'Elige qué ocurre para emitir la alerta.';
+    return null;
+  }
 
   Future<void> _enviar() async {
     final usuario = FirebaseAuth.instance.currentUser;
@@ -86,13 +94,14 @@ class _ReportarEmergenciaState extends State<ReportarEmergencia> {
           .timeout(const Duration(seconds: 15));
       if (!mounted) return;
       final messenger = ScaffoldMessenger.of(context);
+      final color = context.colores.emergencia;
       Navigator.pop(context);
-      messenger.showSnackBar(const SnackBar(content: Text('Alerta emitida. Se está avisando a la comunidad.')));
+      messenger.avisar('Alerta emitida. Quedó fijada en el foro y se está avisando a la comunidad.', color: color, icono: Iconos.siren);
     } on TimeoutException {
       if (!mounted) return;
       final messenger = ScaffoldMessenger.of(context);
       Navigator.pop(context);
-      messenger.showSnackBar(const SnackBar(content: Text('Hay poca señal. La alerta se enviará apenas vuelva la conexión.')));
+      messenger.avisar('Hay poca señal. La alerta se enviará apenas vuelva la conexión.', icono: Iconos.wifiOff);
     } catch (_) {
       if (!mounted) return;
       setState(() => _enviando = false);
@@ -186,6 +195,19 @@ class _ReportarEmergenciaState extends State<ReportarEmergencia> {
                 ),
               ),
             ),
+            AnimatedSize(
+              duration: const Duration(milliseconds: 220),
+              child: _falta == null || _enviando
+                  ? const SizedBox(width: double.infinity)
+                  : Padding(
+                      padding: const EdgeInsets.only(top: 10),
+                      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Icono(Iconos.info, size: 16, color: c.textoSecundario),
+                        const SizedBox(width: 6),
+                        Expanded(child: Text(_falta!, style: TextStyle(fontSize: 12.5, color: c.textoSecundario, height: 1.3))),
+                      ]),
+                    ),
+            ),
             Center(
               child: TextButton(
                 onPressed: _enviando ? null : () => Navigator.pop(context),
@@ -247,7 +269,7 @@ class _ReportarEmergenciaState extends State<ReportarEmergencia> {
                   const Padding(padding: EdgeInsets.only(right: 20), child: BloqueEsqueleto(ancho: 54, alto: 54, circular: true)),
               ]);
             }
-            final perros = snapshot.data!;
+            final perros = snapshot.data!.where((p) => !p.adoptado).toList();
             return ListView(
               scrollDirection: Axis.horizontal,
               children: [

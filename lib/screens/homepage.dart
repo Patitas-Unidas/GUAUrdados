@@ -13,6 +13,8 @@ import 'package:guaurdados_oficial/screens/reportar_emergencia.dart';
 import 'package:guaurdados_oficial/services/novedades_descartadas.dart';
 import 'package:guaurdados_oficial/services/alimentaciones.dart';
 import 'package:guaurdados_oficial/services/emergencias.dart';
+import 'package:guaurdados_oficial/services/mis_publicaciones.dart';
+import 'package:guaurdados_oficial/models/publicacion_foro.dart';
 import 'package:guaurdados_oficial/services/cuidados.dart';
 import 'package:guaurdados_oficial/widgets/estado_perro.dart';
 import 'package:guaurdados_oficial/services/perros_repository.dart';
@@ -29,6 +31,7 @@ import 'package:guaurdados_oficial/widgets/presionable.dart';
 import 'package:guaurdados_oficial/widgets/tarjeta_emergencia.dart';
 import 'foro.dart';
 import 'package:guaurdados_oficial/screens/perfilusuario.dart';
+import 'package:guaurdados_oficial/services/rutas.dart';
 
 class Homepage extends StatefulWidget {
   const Homepage({super.key, PerrosRepository? perrosRepository})
@@ -53,6 +56,7 @@ class _HomepageState extends State<Homepage> {
     super.initState();
     Alimentaciones.escuchar();
     Emergencias.escuchar();
+    MisPublicaciones.escuchar();
     _vigilados.addListener(_refrescar);
     _descartadas.cargar().then((_) {
       if (mounted) setState(() {});
@@ -248,16 +252,34 @@ class ListaTodosLosPerros extends StatelessWidget {
   final List<Perro> listaPerros;
 
   @override
-  Widget build(BuildContext context) => ListView.separated(
-        padding: const EdgeInsets.fromLTRB(18, 8, 18, 20),
-        itemCount: listaPerros.length,
+  Widget build(BuildContext context) {
+    final c = context.colores;
+    final perros = [...listaPerros.where((p) => !p.adoptado), ...listaPerros.where((p) => p.adoptado)];
+    return ListView.separated(
+        padding: const EdgeInsets.fromLTRB(18, 8, 18, 56),
+        itemCount: perros.length + 1,
         separatorBuilder: (_, _) => const SizedBox(height: 10),
         physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
-        itemBuilder: (context, index) => Aparicion(
-          indice: index,
-          child: Presionable(escala: .97, child: _TarjetaPerro(perro: listaPerros[index])),
-        ),
+        itemBuilder: (context, index) => index == perros.length
+            ? Padding(
+                padding: const EdgeInsets.fromLTRB(6, 6, 6, 0),
+                child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Icono(Iconos.info, size: 16, color: c.textoTenue),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '¿Falta algún perrito? Solo los administradores de GUAU pueden agregar perritos nuevos. Si ves uno que no está, avísales por el foro.',
+                      style: TextStyle(fontSize: 12.5, height: 1.35, color: c.textoTenue),
+                    ),
+                  ),
+                ]),
+              )
+            : Aparicion(
+                indice: index,
+                child: Presionable(escala: .97, child: _TarjetaPerro(perro: perros[index])),
+              ),
       );
+  }
 }
 
 class _TarjetaPerro extends StatefulWidget {
@@ -355,16 +377,27 @@ class _TarjetaPerroState extends State<_TarjetaPerro> {
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
                 const SizedBox(height: 3),
-                Row(children: [
-                  Icono(Iconos.clock, size: 13, color: c.textoTenue),
-                  const SizedBox(width: 3),
-                  Expanded(
-                    child: Text(_fechaRelativa(perro.actualizadoEn),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(fontSize: 12, color: c.textoSecundario)),
-                  ),
-                ]),
+                Builder(builder: (context) {
+                  final aviso = perro.adoptado ? null : Cuidados(perro, alimentaciones: Alimentaciones.de(perro.id)).principal;
+                  final color = aviso == null ? c.textoSecundario : c.tono(aviso.gravedad).$2;
+                  final icono = perro.adoptado
+                      ? Iconos.heart
+                      : aviso == null
+                          ? Iconos.clock
+                          : aviso.gravedad == Gravedad.urgente
+                              ? Iconos.triangleAlert
+                              : Iconos.circleAlert;
+                  return Row(children: [
+                    Icono(icono, size: 13, color: aviso == null ? c.textoTenue : color),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(perro.adoptado ? 'Ya tiene un hogar' : aviso?.texto ?? _fechaRelativa(perro.actualizadoEn),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontSize: 12, color: color, fontWeight: aviso == null ? null : FontWeight.w600)),
+                    ),
+                  ]);
+                }),
               ],
             ),
           ),
@@ -510,7 +543,7 @@ class BotonForo extends StatelessWidget {
               minimumSize: const Size(0, 34),
               tapTargetSize: MaterialTapTargetSize.padded,
             ),
-            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const Foro())),
+            onPressed: () => abrir(context, Foro.ruta()),
             icon: const Icono(Iconos.messageCircle, size: 16),
             label: const Text('Foros', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
           ),
@@ -804,7 +837,10 @@ class _HojaNovedadesState extends State<_HojaNovedades> with SingleTickerProvide
       onDismissed: (_) => _descartar(n),
       background: fondo(Alignment.centerLeft),
       secondaryBackground: fondo(Alignment.centerRight),
-      child: Container(
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: n.publicacion == null ? null : () => abrirComentarios(context, n.publicacion!),
+        child: Container(
         padding: const EdgeInsets.all(12),
         decoration: Formas.fondo(c.superficie, 16),
         child: Row(children: [
@@ -822,7 +858,9 @@ class _HojaNovedadesState extends State<_HojaNovedades> with SingleTickerProvide
               Text(n.detalle, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12, color: c.textoSecundario)),
             ]),
           ),
+          if (n.publicacion != null) Icono(Iconos.chevronRight, size: 18, color: c.textoTenue),
         ]),
+      ),
       ),
     );
 
@@ -845,7 +883,7 @@ class _HojaNovedadesState extends State<_HojaNovedades> with SingleTickerProvide
 
 const _antiguedadMaxima = Duration(days: 7);
 
-final _vigilados = Listenable.merge([Emergencias.recientes, Alimentaciones.recientes]);
+final _vigilados = Listenable.merge([Emergencias.recientes, Alimentaciones.recientes, MisPublicaciones.recientes]);
 
 List<_Novedad> _armarNovedades(ColoresApp c, List<Map<String, dynamic>>? foro, List<Perro>? seguidos, NovedadesDescartadas descartadas, String? uid) {
   final ahora = DateTime.now();
@@ -876,7 +914,7 @@ List<_Novedad> _armarNovedades(ColoresApp c, List<Map<String, dynamic>>? foro, L
 
   for (final p in seguidos ?? const <Perro>[]) {
     final cuidados = Cuidados(p, alimentaciones: Alimentaciones.de(p.id), ahora: ahora);
-    void alerta(String tipo, DateTime ultima, Duration limiteAlerta, IconData icono, String titulo) {
+    void alerta(String tipo, DateTime ultima, Duration limiteAlerta, IconData icono, String titulo, bool urgente) {
       final clave = '${tipo}_${p.id}';
       final version = ultima.millisecondsSinceEpoch;
       if (descartadas.estaDescartada(clave, version)) return;
@@ -885,7 +923,7 @@ List<_Novedad> _armarNovedades(ColoresApp c, List<Map<String, dynamic>>? foro, L
         version: version,
         fecha: ultima.add(limiteAlerta),
         icono: icono,
-        color: c.advertenciaTexto,
+        color: urgente ? c.emergenciaTexto : c.advertenciaTexto,
         titulo: titulo,
         detalle: 'Último registro el ${fechaLarga(ultima)} a las ${hora(ultima)}',
       ));
@@ -893,11 +931,11 @@ List<_Novedad> _armarNovedades(ColoresApp c, List<Map<String, dynamic>>? foro, L
 
     if (cuidados.sinComerHaceMucho) {
       alerta('sin_comer', cuidados.ultimaComidaEn!, ReglasCuidado.ventana, Iconos.utensils,
-          '${p.nombre} no ha comido en ${duracion(cuidados.desdeUltimaComida!)}');
+          '${p.nombre} no ha comido en ${duracion(cuidados.desdeUltimaComida!)}', cuidados.sinComerUrgente);
     }
     if (cuidados.sinAguaHaceMucho) {
       alerta('sin_agua', cuidados.ultimaAguaEn!, ReglasCuidado.sinAgua, Iconos.droplet,
-          '${p.nombre} no ha tomado agua en ${duracion(cuidados.desdeUltimaAgua!)}');
+          '${p.nombre} no ha tomado agua en ${duracion(cuidados.desdeUltimaAgua!)}', cuidados.sinAguaUrgente);
     }
   }
 
@@ -928,6 +966,24 @@ List<_Novedad> _armarNovedades(ColoresApp c, List<Map<String, dynamic>>? foro, L
       detalle: comentario.isEmpty || tipo == 'alimentacion' ? cuando : '"$comentario" · $cuando',
     ));
   }
+  for (final p in MisPublicaciones.recientes.value) {
+    final fecha = p.ultimoComentarioEn;
+    if (fecha == null || fecha.isBefore(limite) || p.ultimoComentarioPor == uid || p.numComentarios == 0) continue;
+    final clave = 'comentario_${p.id}';
+    final version = fecha.millisecondsSinceEpoch;
+    if (descartadas.estaDescartada(clave, version)) continue;
+    final texto = p.descripcion.trim();
+    novedades.add(_Novedad(
+      clave: clave,
+      version: version,
+      fecha: fecha,
+      icono: Iconos.messageCircle,
+      color: AppColors.azulAgua,
+      titulo: '${p.ultimoComentarioDe ?? 'Alguien'} comentó tu publicación',
+      detalle: [if (texto.isNotEmpty) '"$texto"', _fechaRelativa(Timestamp.fromDate(fecha))].join(' · '),
+      publicacion: p,
+    ));
+  }
   novedades.sort((a, b) {
     if (a.fijada != b.fijada) return a.fijada ? -1 : 1;
     return (b.fecha?.millisecondsSinceEpoch ?? b.version).compareTo(a.fecha?.millisecondsSinceEpoch ?? a.version);
@@ -936,7 +992,7 @@ List<_Novedad> _armarNovedades(ColoresApp c, List<Map<String, dynamic>>? foro, L
 }
 
 class _Novedad {
-  const _Novedad({required this.clave, required this.version, this.fecha, this.fijada = false, required this.icono, required this.color, required this.titulo, required this.detalle});
+  const _Novedad({required this.clave, required this.version, this.fecha, this.fijada = false, required this.icono, required this.color, required this.titulo, required this.detalle, this.publicacion});
   final String clave;
   final int version;
   final DateTime? fecha;
@@ -945,4 +1001,5 @@ class _Novedad {
   final Color color;
   final String titulo;
   final String detalle;
+  final PublicacionForo? publicacion;
 }

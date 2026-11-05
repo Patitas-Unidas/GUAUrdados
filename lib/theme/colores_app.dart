@@ -35,6 +35,8 @@ class ColoresApp extends ThemeExtension<ColoresApp> {
     required this.advertenciaTexto,
     required this.neutroTexto,
     required this.emergenciaTexto,
+    required this.adoptadoSuave,
+    required this.adoptadoTexto,
   });
 
   final Color fondo;
@@ -67,6 +69,8 @@ class ColoresApp extends ThemeExtension<ColoresApp> {
   final Color advertenciaTexto;
   final Color neutroTexto;
   final Color emergenciaTexto;
+  final Color adoptadoSuave;
+  final Color adoptadoTexto;
 
   static const claro = ColoresApp(
     fondo: AppColors.crema,
@@ -99,6 +103,8 @@ class ColoresApp extends ThemeExtension<ColoresApp> {
     advertenciaTexto: AppColors.naranjaTexto,
     neutroTexto: AppColors.grisTexto,
     emergenciaTexto: AppColors.rojoTexto,
+    adoptadoSuave: AppColors.lavandaSuave,
+    adoptadoTexto: AppColors.lavandaTexto,
   );
 
   static const oscuro = ColoresApp(
@@ -108,7 +114,7 @@ class ColoresApp extends ThemeExtension<ColoresApp> {
     superficieSuave: AppColors.oscuroSuperficie,
     contenedor: AppColors.oscuroContenedor,
     fondoAvatar: AppColors.oscuroContenedor,
-    navegacion: AppColors.oscuroSuperficie,
+    navegacion: AppColors.oscuroNavegacion,
     texto: AppColors.oscuroTexto,
     textoSecundario: AppColors.oscuroTextoSecundario,
     textoTenue: AppColors.oscuroTextoTenue,
@@ -116,7 +122,7 @@ class ColoresApp extends ThemeExtension<ColoresApp> {
     acento: AppColors.rojoMarca,
     sobreAcento: AppColors.blanco,
     secundario: AppColors.cafe,
-    tonal: AppColors.oscuroContenedor,
+    tonal: AppColors.oscuroTonal,
     sobreTonal: AppColors.tierra,
     emergencia: AppColors.rojoUrgencia,
     emergenciaSuave: Color(0x33ff0037),
@@ -132,6 +138,8 @@ class ColoresApp extends ThemeExtension<ColoresApp> {
     advertenciaTexto: AppColors.naranja,
     neutroTexto: AppColors.oscuroTextoSecundario,
     emergenciaTexto: AppColors.rojoUrgencia,
+    adoptadoSuave: Color(0x338e63d2),
+    adoptadoTexto: AppColors.oscuroLavandaTexto,
   );
 
   @override
@@ -172,6 +180,8 @@ class ColoresApp extends ThemeExtension<ColoresApp> {
       advertenciaTexto: m(advertenciaTexto, other.advertenciaTexto),
       neutroTexto: m(neutroTexto, other.neutroTexto),
       emergenciaTexto: m(emergenciaTexto, other.emergenciaTexto),
+      adoptadoSuave: m(adoptadoSuave, other.adoptadoSuave),
+      adoptadoTexto: m(adoptadoTexto, other.adoptadoTexto),
     );
   }
 }

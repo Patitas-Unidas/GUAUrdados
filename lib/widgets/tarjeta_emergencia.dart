@@ -14,7 +14,9 @@ import 'package:guaurdados_oficial/theme/tipografia.dart';
 import 'package:guaurdados_oficial/widgets/foto_perro.dart';
 import 'package:guaurdados_oficial/widgets/hoja.dart';
 import 'package:guaurdados_oficial/widgets/iconos.dart';
+import 'package:guaurdados_oficial/widgets/aviso.dart';
 import 'package:guaurdados_oficial/widgets/presionable.dart';
+import 'package:guaurdados_oficial/services/rutas.dart';
 
 const tiposEmergencia = <String, IconData>{
   'Problema de salud': Iconos.heartPulse,
@@ -267,7 +269,7 @@ class _ChipPerro extends StatelessWidget {
         shape: forma,
         child: InkWell(
           customBorder: forma,
-          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => Foro(idPerro: id, nombrePerro: nombre))),
+          onTap: () => abrir(context, Foro.ruta(idPerro: id, nombrePerro: nombre)),
           child: contenido,
         ),
       ),
@@ -305,6 +307,7 @@ class _HojaCerrarState extends State<_HojaCerrar> {
 
   Future<void> _cerrar() async {
     final messenger = ScaffoldMessenger.of(context);
+    final color = context.colores.colorEmergencia(_estado!);
     setState(() => _enviando = true);
     try {
       await EmergenciasRepository()
@@ -313,15 +316,15 @@ class _HojaCerrarState extends State<_HojaCerrar> {
       if (!mounted) return;
       HapticFeedback.mediumImpact();
       Navigator.pop(context);
-      messenger.showSnackBar(const SnackBar(content: Text('Emergencia cerrada. La comunidad verá cómo terminó.')));
+      messenger.avisar('Emergencia cerrada. La comunidad verá cómo terminó.', color: color, icono: iconoCierre(_estado!));
     } on TimeoutException {
       if (!mounted) return;
       Navigator.pop(context);
-      messenger.showSnackBar(const SnackBar(content: Text('Hay poca señal. El cierre se enviará apenas vuelva la conexión.')));
+      messenger.avisar('Hay poca señal. El cierre se enviará apenas vuelva la conexión.', icono: Iconos.wifiOff);
     } catch (_) {
       if (!mounted) return;
       setState(() => _enviando = false);
-      messenger.showSnackBar(const SnackBar(content: Text('No se pudo cerrar la emergencia. Inténtalo de nuevo.')));
+      avisar(context, 'No se pudo cerrar la emergencia. Inténtalo de nuevo.', tipo: TipoAviso.error);
     }
   }
 
