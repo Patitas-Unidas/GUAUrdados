@@ -7,6 +7,7 @@ const { getMessaging } = require("firebase-admin/messaging");
 initializeApp();
 
 const REGION = "southamerica-west1";
+const REGION_PROGRAMADAS = "southamerica-east1";
 const HORAS_SIN_COMER = 24;
 const HORAS_SIN_AGUA = 24;
 const HORAS_URGENTE = 48;
@@ -110,7 +111,7 @@ exports.notificarCierreEmergencia = onDocumentUpdated({ document: "emergencias/{
   await enviar(tokens, { title: titulo, body }, data);
 });
 
-exports.alertarSinComerNiAgua = onSchedule({ schedule: "every 60 minutes", region: REGION, timeZone: "America/Santiago" }, async () => {
+exports.alertarSinComerNiAgua = onSchedule({ schedule: "every 60 minutes", region: REGION_PROGRAMADAS, timeZone: "America/Santiago" }, async () => {
   const db = getFirestore();
   const ahora = Date.now();
   const perros = await db.collection("perros").get();
