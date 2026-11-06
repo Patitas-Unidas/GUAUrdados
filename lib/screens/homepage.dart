@@ -881,7 +881,7 @@ class _HojaNovedadesState extends State<_HojaNovedades> with SingleTickerProvide
   }
 }
 
-const _antiguedadMaxima = Duration(days: 7);
+const _antiguedadMaxima = novedadesRecientes;
 
 final _vigilados = Listenable.merge([Emergencias.recientes, Alimentaciones.recientes, MisPublicaciones.recientes]);
 
