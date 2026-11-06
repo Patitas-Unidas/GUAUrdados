@@ -178,7 +178,7 @@ service cloud.firestore {
         function esPerritoNuevo() {
           let datos = request.resource.data;
           return datos.keys().hasAll(['idUsuario', 'nombreUsuario', 'tipoPublicacion', 'descripcion', 'creadoEn'])
-            && datos.keys().hasOnly(['idUsuario', 'nombreUsuario', 'tipoPublicacion', 'descripcion', 'creadoEn', 'fotoUsuario', 'ubicacion', 'fotoUrl'])
+            && datos.keys().hasOnly(['idUsuario', 'nombreUsuario', 'tipoPublicacion', 'descripcion', 'creadoEn', 'fotoUsuario', 'ubicacion'])
             && datos.idUsuario == request.auth.uid
             && datos.nombreUsuario is string
             && datos.nombreUsuario.size() > 0
@@ -189,8 +189,7 @@ service cloud.firestore {
             && datos.descripcion.size() <= 1000
             && datos.creadoEn == request.time
             && (!('fotoUsuario' in datos) || datos.fotoUsuario is string)
-            && (!('ubicacion' in datos) || (datos.ubicacion is string && datos.ubicacion.size() <= 200))
-            && (!('fotoUrl' in datos) || (datos.fotoUrl is string && datos.fotoUrl.matches('https://firebasestorage[.]googleapis[.]com/.*')));
+            && (!('ubicacion' in datos) || (datos.ubicacion is string && datos.ubicacion.size() <= 200));
         }
 
         allow read: if request.auth != null;

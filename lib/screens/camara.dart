@@ -312,7 +312,7 @@ class _DisplayPictureScreenState extends State<DisplayPictureScreen> {
       return;
     }
     final publicado = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(builder: (_) => NuevaPublicacion(perritoNuevo: true, fotoInicial: widget.imagePath)),
+      MaterialPageRoute(builder: (_) => const NuevaPublicacion(perritoNuevo: true)),
     );
     if (publicado != true || !mounted) return;
     final messenger = ScaffoldMessenger.of(context);

@@ -1,9 +1,7 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:guaurdados_oficial/widgets/presionable.dart';
 import 'package:guaurdados_oficial/widgets/esqueleto.dart';
 import 'package:guaurdados_oficial/theme/formas.dart';
@@ -17,11 +15,10 @@ import 'package:guaurdados_oficial/widgets/foto_perro.dart';
 import 'package:guaurdados_oficial/widgets/iconos.dart';
 
 class NuevaPublicacion extends StatefulWidget {
-  const NuevaPublicacion({super.key, this.idPerro, this.perritoNuevo = false, this.fotoInicial});
+  const NuevaPublicacion({super.key, this.idPerro, this.perritoNuevo = false});
 
   final String? idPerro;
   final bool perritoNuevo;
-  final String? fotoInicial;
 
   @override
   State<NuevaPublicacion> createState() => _NuevaPublicacionState();
@@ -34,7 +31,6 @@ class _NuevaPublicacionState extends State<NuevaPublicacion> {
   final _foroRepository = ForoRepository();
   String? _perroSeleccionado;
   bool _publicando = false;
-  late String? _foto = widget.fotoInicial;
 
   @override
   void dispose() {
@@ -43,40 +39,19 @@ class _NuevaPublicacionState extends State<NuevaPublicacion> {
     super.dispose();
   }
 
-  Future<void> _elegirFoto(ImageSource origen) async {
-    try {
-      final imagen = await ImagePicker().pickImage(source: origen, maxWidth: 1600, imageQuality: 82);
-      if (imagen != null && mounted) setState(() => _foto = imagen.path);
-    } catch (_) {
-      _avisar(origen == ImageSource.camera
-          ? 'No se pudo abrir la cámara. Revisa que la app tenga permiso.'
-          : 'No se pudo abrir la galería. Revisa que la app tenga permiso.');
-    }
-  }
-
   Future<void> _avisarPerritoNuevo() async {
     final usuario = FirebaseAuth.instance.currentUser;
     if (!_formulario.currentState!.validate()) return;
     if (usuario == null) return _avisar('Inicia sesión para publicar.');
     FocusScope.of(context).unfocus();
     setState(() => _publicando = true);
-    final foto = _foto;
     try {
       await _foroRepository
-          .avisarPerritoNuevo(
-            usuario: usuario,
-            descripcion: _descripcion.text,
-            ubicacion: _ubicacion.text,
-            foto: foto == null ? null : File(foto),
-          )
-          .timeout(Duration(seconds: foto == null ? 15 : 60));
+          .avisarPerritoNuevo(usuario: usuario, descripcion: _descripcion.text, ubicacion: _ubicacion.text)
+          .timeout(const Duration(seconds: 15));
       if (mounted) Navigator.of(context).pop(true);
     } on TimeoutException {
-      if (foto == null) {
-        if (mounted) Navigator.of(context).pop(true);
-      } else {
-        _avisar('La foto está tardando mucho en subir. Revisa tu conexión o publica el aviso sin foto.');
-      }
+      if (mounted) Navigator.of(context).pop(true);
     } catch (_) {
       _avisar('No se pudo publicar el aviso. Revisa tu conexión e inténtalo de nuevo.');
     } finally {
@@ -201,13 +176,6 @@ class _NuevaPublicacionState extends State<NuevaPublicacion> {
                           borde: true,
                         ),
                       ),
-                      const SizedBox(height: 6),
-                      _FotoAviso(
-                        ruta: _foto,
-                        deshabilitada: _publicando,
-                        alElegir: _elegirFoto,
-                        alQuitar: () => setState(() => _foto = null),
-                      ),
                     ],
                   ],
                 ),
@@ -241,79 +209,6 @@ class _NuevaPublicacionState extends State<NuevaPublicacion> {
         ),
       ),
     );
-  }
-}
-
-class _FotoAviso extends StatelessWidget {
-  const _FotoAviso({required this.ruta, required this.deshabilitada, required this.alElegir, required this.alQuitar});
-  final String? ruta;
-  final bool deshabilitada;
-  final ValueChanged<ImageSource> alElegir;
-  final VoidCallback alQuitar;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.colores;
-    final botones = Row(children: [
-      Expanded(
-        child: OutlinedButton.icon(
-          onPressed: deshabilitada ? null : () => alElegir(ImageSource.gallery),
-          style: OutlinedButton.styleFrom(foregroundColor: c.texto, side: BorderSide(color: c.divisor), minimumSize: const Size(0, 48), shape: Formas.squircle(14)),
-          icon: Icono(Iconos.imagePlus, size: 18, color: c.texto),
-          label: Text(ruta == null ? 'Galería' : 'Cambiar'),
-        ),
-      ),
-      const SizedBox(width: 8),
-      Expanded(
-        child: OutlinedButton.icon(
-          onPressed: deshabilitada ? null : () => alElegir(ImageSource.camera),
-          style: OutlinedButton.styleFrom(foregroundColor: c.texto, side: BorderSide(color: c.divisor), minimumSize: const Size(0, 48), shape: Formas.squircle(14)),
-          icon: Icono(Iconos.camera, size: 18, color: c.texto),
-          label: const Text('Tomar foto'),
-        ),
-      ),
-    ]);
-    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      Text('Foto (opcional)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: c.textoSecundario)),
-      const SizedBox(height: 4),
-      Text(
-        'Ayuda a que GUAU lo reconozca. Si no quieres adjuntar una, puedes quitarla.',
-        style: TextStyle(fontSize: 12.5, height: 1.35, color: c.textoTenue),
-      ),
-      const SizedBox(height: 10),
-      AnimatedSize(
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.easeOutCubic,
-        child: ruta == null
-            ? const SizedBox(width: double.infinity)
-            : Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: ClipRSuperellipse(
-                  borderRadius: BorderRadius.circular(18),
-                  child: AspectRatio(
-                    aspectRatio: 4 / 3,
-                    child: Stack(fit: StackFit.expand, children: [
-                      Image.file(File(ruta!), fit: BoxFit.cover),
-                      Positioned(
-                        top: 8,
-                        right: 8,
-                        child: Material(
-                          color: Colors.black.withValues(alpha: .55),
-                          shape: const CircleBorder(),
-                          child: IconButton(
-                            tooltip: 'Quitar foto',
-                            onPressed: deshabilitada ? null : alQuitar,
-                            icon: const Icono(Iconos.x, size: 20, color: Colors.white),
-                          ),
-                        ),
-                      ),
-                    ]),
-                  ),
-                ),
-              ),
-      ),
-      botones,
-    ]);
   }
 }
 

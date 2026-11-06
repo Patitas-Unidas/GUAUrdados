@@ -1,8 +1,5 @@
-import 'dart:io';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 
 import '../models/comentario.dart';
 import '../models/publicacion_foro.dart';
@@ -217,7 +214,7 @@ class ForoRepository {
     await lote.commit();
   }
 
-  Future<void> avisarPerritoNuevo({required User usuario, required String descripcion, String ubicacion = '', File? foto}) async {
+  Future<void> avisarPerritoNuevo({required User usuario, required String descripcion, String ubicacion = ''}) async {
     final datos = <String, dynamic>{
       'idUsuario': usuario.uid,
       'nombreUsuario': _nombreUsuario(usuario),
@@ -228,11 +225,6 @@ class ForoRepository {
     final fotoUsuario = usuario.photoURL?.trim();
     if (fotoUsuario != null && fotoUsuario.isNotEmpty) datos['fotoUsuario'] = fotoUsuario;
     if (ubicacion.trim().isNotEmpty) datos['ubicacion'] = ubicacion.trim();
-    if (foto != null) {
-      final archivo = FirebaseStorage.instance.ref('avisos/${usuario.uid}/${DateTime.now().millisecondsSinceEpoch}.jpg');
-      await archivo.putFile(foto, SettableMetadata(contentType: 'image/jpeg'));
-      datos['fotoUrl'] = await archivo.getDownloadURL();
-    }
     await _firestore.collection('foro').doc('sin_registrar').collection('publicaciones').add(datos);
   }
 
@@ -284,11 +276,8 @@ class ForoRepository {
     return lote.commit();
   }
 
-  Future<void> eliminarPublicacion(PublicacionForo publicacion) async {
-    await _firestore.doc(publicacion.ruta).delete();
-    final foto = publicacion.fotoUrl ?? '';
-    if (foto.isNotEmpty) await FirebaseStorage.instance.refFromURL(foto).delete().catchError((_) {});
-  }
+  Future<void> eliminarPublicacion(PublicacionForo publicacion) =>
+      _firestore.doc(publicacion.ruta).delete();
 
   Future<DocumentReference<Map<String, dynamic>>> _obtenerOCrearForo(String idPerro) async {
     final foros = _firestore.collection('foro');

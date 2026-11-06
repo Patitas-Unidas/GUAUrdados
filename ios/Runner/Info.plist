@@ -64,8 +64,8 @@
 		<string>UIInterfaceOrientationPortrait</string>
 	</array>
 	<key>NSCameraUsageDescription</key>
-	<string>GUAUrdados usa la cámara para identificar a los perritos de la sede y para tomar la foto de un aviso de perrito nuevo.</string>
+	<string>GUAUrdados usa la cámara para identificar a los perritos de la sede.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>GUAUrdados abre tus fotos solo si eliges una para un aviso de perrito nuevo.</string>
+	<string>GUAUrdados abre tus fotos solo si eliges una para identificar a un perrito.</string>
 </dict>
 </plist>
