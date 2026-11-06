@@ -45,6 +45,7 @@ class ForoRepository {
   }
 
   Stream<Map<String, List<Alimentacion>>> observarAlimentacionesRecientes() => _publicaciones
+      .where('tipoPublicacion', isEqualTo: 'alimentacion')
       .where('creadoEn', isGreaterThanOrEqualTo: Timestamp.fromDate(DateTime.now().subtract(ReglasCuidado.historial)))
       .orderBy('creadoEn', descending: true)
       .limit(300)

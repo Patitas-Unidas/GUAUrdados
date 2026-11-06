@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/perro.dart';
 
+const novedadesRecientes = Duration(days: 7);
+
 class PerrosRepository {
   PerrosRepository({FirebaseFirestore? firestore}) : _firestore = firestore ?? FirebaseFirestore.instance;
   final FirebaseFirestore _firestore;
@@ -49,6 +51,7 @@ class PerrosRepository {
       return _firestore
           .collectionGroup('publicaciones')
           .where('idPerro', whereIn: idsPerrosSeguidos)
+          .where('creadoEn', isGreaterThanOrEqualTo: Timestamp.fromDate(DateTime.now().subtract(novedadesRecientes)))
           .snapshots()
           .map((snapshot) {
             final novedades = snapshot.docs.map((doc) {
