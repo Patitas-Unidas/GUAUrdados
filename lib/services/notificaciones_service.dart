@@ -44,9 +44,11 @@ class NotificacionesService {
       'notificaciones': {clave: activa},
     }, SetOptions(merge: true));
     if (clave != 'emergencias') return;
-    activa
-        ? await FirebaseMessaging.instance.subscribeToTopic('emergencias')
-        : await FirebaseMessaging.instance.unsubscribeFromTopic('emergencias');
+    try {
+      activa
+          ? await FirebaseMessaging.instance.subscribeToTopic('emergencias')
+          : await FirebaseMessaging.instance.unsubscribeFromTopic('emergencias');
+    } on FirebaseException catch (_) {}
   }
 
   /// Llamar justo antes de cerrar sesión, para no seguir recibiendo
