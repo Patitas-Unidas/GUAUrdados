@@ -32,8 +32,8 @@ conservan como historial.
 Si la cámara no reconoce a un perrito, cualquier usuario puede avisar a GUAU
 desde ahí. El aviso se guarda en `foro/sin_registrar/publicaciones` con
 `tipoPublicacion: "perrito_nuevo"`, sin `idPerro` ni `nombrePerro` (no está asociado a ningún perrito),
-una descripción y, opcionalmente, `ubicacion` y `fotoUrl` (la foto se sube a
-Storage en `avisos/{uid}/`). Aparece en el foro general.
+una descripción y, opcionalmente, `ubicacion`. No se adjuntan fotos. Aparece en
+el foro general.
 
 Cuando GUAU revisa el aviso, un administrador lo cierra agregando estos campos
 a la publicación (no se borra, así la comunidad ve cómo terminó):

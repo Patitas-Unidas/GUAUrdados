@@ -2,7 +2,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:guaurdados_oficial/widgets/presionable.dart';
 import 'package:guaurdados_oficial/widgets/esqueleto.dart';
-import 'package:guaurdados_oficial/widgets/imagen_remota.dart';
 import 'package:guaurdados_oficial/widgets/aparicion.dart';
 import 'package:guaurdados_oficial/theme/formas.dart';
 import 'package:guaurdados_oficial/models/emergencia.dart';
@@ -377,21 +376,6 @@ class _TarjetaPublicacion extends StatelessWidget {
             ),
             const SizedBox(height: 11),
             Text(publicacion.descripcion, style: const TextStyle(fontSize: 15, height: 1.4)),
-            if ((publicacion.fotoUrl ?? '').isNotEmpty) ...[
-              const SizedBox(height: 10),
-              ClipRSuperellipse(
-                borderRadius: BorderRadius.circular(14),
-                child: AspectRatio(
-                  aspectRatio: 4 / 3,
-                  child: ImagenRemota(
-                    url: publicacion.fotoUrl!,
-                    fit: BoxFit.cover,
-                    cargando: const BloqueEsqueleto(radio: 14),
-                    error: Center(child: Icono(Iconos.imageOff, size: 32, color: c.textoTenue)),
-                  ),
-                ),
-              ),
-            ],
             if ((publicacion.ubicacion ?? '').isNotEmpty) ...[
               const SizedBox(height: 8),
               Row(children: [

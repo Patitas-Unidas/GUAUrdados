@@ -34,7 +34,6 @@ class PublicacionForo {
     this.cantidadComida,
     this.procedimiento,
     this.ubicacion,
-    this.fotoUrl,
     this.resultadoAviso,
     this.idPerroAviso,
     this.notaGuau,
@@ -59,7 +58,6 @@ class PublicacionForo {
   final String? cantidadComida;
   final String? procedimiento;
   final String? ubicacion;
-  final String? fotoUrl;
   final ResultadoAviso? resultadoAviso;
   final String? idPerroAviso;
   final String? notaGuau;
@@ -114,7 +112,6 @@ class PublicacionForo {
       cantidadComida: data['cantidadComida'] as String?,
       procedimiento: data['procedimiento'] as String?,
       ubicacion: data['ubicacion'] as String?,
-      fotoUrl: data['fotoUrl'] as String?,
       resultadoAviso: switch (data['resultadoAviso']) {
         'registrado' => ResultadoAviso.registrado,
         'ya_registrado' => ResultadoAviso.yaRegistrado,
