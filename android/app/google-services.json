@@ -1,6 +1,7 @@
 {
   "project_info": {
     "project_number": "997761473283",
+    "firebase_url": "https://guaurdados-default-rtdb.firebaseio.com",
     "project_id": "guaurdados",
     "storage_bucket": "guaurdados.firebasestorage.app"
   },
@@ -29,6 +30,49 @@
             {
               "client_id": "997761473283-9d2mc7bsob8g3jj2ipa62h8cuoub6ncd.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "997761473283-8ep1li67m6meiukrf19hlj51dai3v1bh.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.patitasunidas.guaurdados"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:997761473283:android:94ce9fe8064b6a377a6736",
+        "android_client_info": {
+          "package_name": "com.patitasunidas.guaurdados"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "997761473283-9d2mc7bsob8g3jj2ipa62h8cuoub6ncd.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAVBpXqonXhoOWYMhb2JP3UQpbfZrWpZC4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "997761473283-9d2mc7bsob8g3jj2ipa62h8cuoub6ncd.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "997761473283-8ep1li67m6meiukrf19hlj51dai3v1bh.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.patitasunidas.guaurdados"
+              }
             }
           ]
         }
