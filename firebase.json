@@ -16,7 +16,7 @@
       "android": {
         "default": {
           "projectId": "guaurdados",
-          "appId": "1:997761473283:android:7ce59f625715726c7a6736",
+          "appId": "1:997761473283:android:94ce9fe8064b6a377a6736",
           "fileOutput": "android/app/google-services.json"
         }
       },
@@ -24,7 +24,7 @@
         "lib/firebase_options.dart": {
           "projectId": "guaurdados",
           "configurations": {
-            "android": "1:997761473283:android:7ce59f625715726c7a6736",
+            "android": "1:997761473283:android:94ce9fe8064b6a377a6736",
             "ios": "1:997761473283:ios:305c0ca727e89cde7a6736"
           }
         }

@@ -1,4 +1,4 @@
-package com.example.guaurdados_oficial;
+package com.patitasunidas.guaurdados;
 
 import io.flutter.embedding.android.FlutterActivity;
 
