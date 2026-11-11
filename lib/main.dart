@@ -38,6 +38,7 @@ class _MyAppState extends State<MyApp> {
   late final _estado = FirebaseFirestore.instance
       .doc('configuracion/servicio')
       .snapshots(includeMetadataChanges: true);
+  bool _confirmada = false;
 
   @override
   Widget build(BuildContext context) {
@@ -45,31 +46,21 @@ class _MyAppState extends State<MyApp> {
       stream: _estado,
       builder: (context, snapshot) {
         final documento = snapshot.data;
-        final habilitada = !snapshot.hasError &&
-            documento != null &&
-            !documento.metadata.isFromCache &&
-            !documento.metadata.hasPendingWrites &&
-            documento.data()?['habilitada'] == true;
-        if (habilitada) return const _AppActiva();
+        final valor = snapshot.hasError ? null : documento?.data()?['habilitada'];
+        final delServidor = documento != null && !documento.metadata.isFromCache && !documento.metadata.hasPendingWrites;
+        if (valor == false) _confirmada = false;
+        if (valor == true && delServidor) _confirmada = true;
+        if (_confirmada) return const _AppActiva();
 
-        final mantenimiento = documento?.data()?['habilitada'] == false;
-        return MaterialApp(
-          debugShowCheckedModeBanner: false,
-          theme: AppTheme.claro,
-          darkTheme: AppTheme.oscuro,
-          themeMode: Preferencias.tema.value,
-          home: mantenimiento ? const Mantenimiento() : const Scaffold(
-            body: SafeArea(
-              child: Center(
-                child: Padding(
-                  padding: EdgeInsets.all(24),
-                  child: Text(
-                    'Verificando la disponibilidad de GUAUrdados. Comprueba tu conexión a internet.',
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ),
-            ),
+        return ListenableBuilder(
+          listenable: Preferencias.tema,
+          builder: (context, _) => MaterialApp(
+            debugShowCheckedModeBanner: false,
+            title: 'GUAUrdados',
+            theme: AppTheme.claro,
+            darkTheme: AppTheme.oscuro,
+            themeMode: Preferencias.tema.value,
+            home: valor == false ? const Mantenimiento() : const VerificandoServicio(),
           ),
         );
       },
