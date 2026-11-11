@@ -1,15 +1,25 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    function servicioHabilitado() {
+      return get(/databases/$(database)/documents/configuracion/servicio)
+        .data.habilitada == true;
+    }
+
+    match /configuracion/servicio {
+      allow get: if true;
+    }
+
     // Permite las consultas collectionGroup('publicaciones') de los foros.
     match /{path=**}/publicaciones/{publicacionId} {
-      allow read: if request.auth != null;
+      allow read: if servicioHabilitado() && request.auth != null;
     }
 
     match /perros/{perroId} {
-      allow read: if request.auth != null;
-      allow create, delete: if request.auth != null && request.auth.token.admin == true;
-      allow update: if request.auth != null && (
+      allow read: if servicioHabilitado() && request.auth != null;
+      allow create, delete: if servicioHabilitado() && request.auth != null && request.auth.token.admin == true;
+      allow update: if servicioHabilitado() && request.auth != null && (
         request.auth.token.admin == true ||
         (
           request.resource.data.diff(resource.data).affectedKeys()
@@ -42,8 +52,8 @@ service cloud.firestore {
     // Perfil público mínimo para mostrar nombre y foto de los seguidores.
     // Los tokens FCM se mantienen aislados en la colección privada `usuarios`.
     match /perfiles_publicos/{uid} {
-      allow read: if request.auth != null;
-      allow create, update: if request.auth != null
+      allow read: if servicioHabilitado() && request.auth != null;
+      allow create, update: if servicioHabilitado() && request.auth != null
         && request.auth.uid == uid
         && request.resource.data.keys().hasOnly(['nombre', 'usuario', 'fotoUrl', 'actualizadoEn'])
         && request.resource.data.nombre is string
@@ -54,7 +64,7 @@ service cloud.firestore {
         && request.resource.data.fotoUrl is string
         && request.resource.data.fotoUrl.size() <= 2048
         && request.resource.data.actualizadoEn == request.time;
-      allow delete: if request.auth != null && request.auth.uid == uid;
+      allow delete: if servicioHabilitado() && request.auth != null && request.auth.uid == uid;
     }
 
     match /emergencias/{emergenciaId} {
@@ -89,11 +99,11 @@ service cloud.firestore {
           && datos.estado == 'en_curso';
       }
 
-      allow read: if request.auth != null;
-      allow create: if request.auth != null
+      allow read: if servicioHabilitado() && request.auth != null;
+      allow create: if servicioHabilitado() && request.auth != null
         && datosComunes()
         && (formatoAnterior() || variosPerros());
-      allow update: if request.auth != null
+      allow update: if servicioHabilitado() && request.auth != null
         && (resource.data.creadoPor == request.auth.uid || request.auth.token.admin == true)
         && resource.data.get('estado', 'en_curso') == 'en_curso'
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['estado', 'nota', 'cerradaEn'])
@@ -104,23 +114,23 @@ service cloud.firestore {
     }
 
     match /usuarios/{uid} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
+      allow read, write: if servicioHabilitado() && request.auth != null && request.auth.uid == uid;
     }
 
     match /foro/{foroId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null
+      allow read: if servicioHabilitado() && request.auth != null;
+      allow create: if servicioHabilitado() && request.auth != null
         && request.resource.data.keys().hasOnly(['idperro'])
         && request.resource.data.idperro is string
         && request.resource.data.idperro.size() > 0
         && foroId == request.resource.data.idperro
         && exists(/databases/$(database)/documents/perros/$(request.resource.data.idperro));
-      allow update: if request.auth != null
+      allow update: if servicioHabilitado() && request.auth != null
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['idperro'])
         && request.resource.data.idperro == resource.data.idperro
         && resource.data.idperro is string
         && exists(/databases/$(database)/documents/perros/$(resource.data.idperro));
-      allow delete: if request.auth != null && request.auth.token.admin == true;
+      allow delete: if servicioHabilitado() && request.auth != null && request.auth.token.admin == true;
 
       match /publicaciones/{publicacionId} {
         function esPublicacionValida() {
@@ -192,8 +202,8 @@ service cloud.firestore {
             && (!('ubicacion' in datos) || (datos.ubicacion is string && datos.ubicacion.size() <= 200));
         }
 
-        allow read: if request.auth != null;
-        allow create: if request.auth != null
+        allow read: if servicioHabilitado() && request.auth != null;
+        allow create: if servicioHabilitado() && request.auth != null
           && (
             (foroId == 'sin_registrar' && esPerritoNuevo())
             || (exists(/databases/$(database)/documents/foro/$(foroId))
@@ -243,10 +253,10 @@ service cloud.firestore {
             && request.resource.data.numComentarios >= 0;
         }
 
-        allow update: if request.auth != null
+        allow update: if servicioHabilitado() && request.auth != null
           && (esReaccionPropia() || sumaComentario() || restaComentario());
 
-        allow update: if request.auth != null
+        allow update: if servicioHabilitado() && request.auth != null
           && request.auth.token.admin == true
           && foroId == 'sin_registrar'
           && resource.data.tipoPublicacion == 'perrito_nuevo'
@@ -255,12 +265,12 @@ service cloud.firestore {
           && (!('idPerroAviso' in request.resource.data) || exists(/databases/$(database)/documents/perros/$(request.resource.data.idPerroAviso)))
           && (!('notaGuau' in request.resource.data) || (request.resource.data.notaGuau is string && request.resource.data.notaGuau.size() <= 500))
           && (!('revisadoPor' in request.resource.data) || request.resource.data.revisadoPor == request.auth.uid);
-        allow delete: if request.auth != null
+        allow delete: if servicioHabilitado() && request.auth != null
           && (request.auth.token.admin == true || resource.data.idUsuario == request.auth.uid);
 
         match /comentarios/{comentarioId} {
-          allow read: if request.auth != null;
-          allow create: if request.auth != null
+          allow read: if servicioHabilitado() && request.auth != null;
+          allow create: if servicioHabilitado() && request.auth != null
             && get(/databases/$(database)/documents/foro/$(foroId)/publicaciones/$(publicacionId)).data.tipoPublicacion in ['normal', 'perrito_nuevo']
             && request.resource.data.keys().hasAll(['idUsuario', 'nombreUsuario', 'texto', 'creadoEn'])
             && request.resource.data.keys().hasOnly(['idUsuario', 'nombreUsuario', 'fotoUsuario', 'texto', 'creadoEn'])
@@ -274,7 +284,7 @@ service cloud.firestore {
             && request.resource.data.creadoEn == request.time
             && (!('fotoUsuario' in request.resource.data) || request.resource.data.fotoUsuario is string);
           allow update: if false;
-          allow delete: if request.auth != null
+          allow delete: if servicioHabilitado() && request.auth != null
             && (request.auth.token.admin == true || resource.data.idUsuario == request.auth.uid);
         }
       }

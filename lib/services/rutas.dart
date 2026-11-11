@@ -6,6 +6,8 @@ class RegistroRutas extends NavigatorObserver {
   static final instancia = RegistroRutas._();
   final _abiertas = <Route<dynamic>>[];
 
+  void limpiar() => _abiertas.clear();
+
   bool estaAbierta(String nombre) => _abiertas.any((ruta) => ruta.settings.name == nombre);
 
   @override
