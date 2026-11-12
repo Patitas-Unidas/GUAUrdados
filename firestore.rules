@@ -111,6 +111,47 @@ service cloud.firestore {
         && request.resource.data.cerradaEn == request.time
         && request.resource.data.get('nota', '') is string
         && request.resource.data.get('nota', '').size() <= 200;
+      allow update: if servicioHabilitado() && request.auth != null
+        && resource.data.creadoPor == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['nombreUsuario'])
+        && request.resource.data.nombreUsuario == 'Usuario eliminado';
+    }
+
+    match /reportes/{reporteId} {
+      function reporteValido() {
+        let datos = request.resource.data;
+        let contenido = get(path('/databases/' + database + '/documents/' + datos.ruta));
+        return datos.keys().hasAll(['tipo', 'ruta', 'idAutor', 'nombreAutor', 'texto', 'motivo', 'idReportante', 'nombreReportante', 'estado', 'creadoEn'])
+          && datos.keys().hasOnly(['tipo', 'ruta', 'rutaPublicacion', 'idAutor', 'nombreAutor', 'fotoAutor', 'texto', 'motivo', 'detalle', 'idReportante', 'nombreReportante', 'estado', 'creadoEn'])
+          && datos.tipo in ['publicacion', 'comentario']
+          && datos.ruta is string
+          && datos.ruta.size() <= 400
+          && datos.ruta.matches('foro/[^/]+/publicaciones/[^/]+(/comentarios/[^/]+)?')
+          && (datos.tipo == 'comentario') == datos.ruta.matches('.*/comentarios/[^/]+')
+          && reporteId == request.auth.uid + '__' + datos.ruta.replace('/', '_')
+          && datos.idReportante == request.auth.uid
+          && datos.idAutor != request.auth.uid
+          && contenido.data.idUsuario == datos.idAutor
+          && datos.nombreAutor is string && datos.nombreAutor.size() <= 100
+          && datos.nombreReportante is string && datos.nombreReportante.size() <= 100
+          && datos.texto is string && datos.texto.size() <= 2000
+          && datos.motivo in ['ofensivo', 'acoso', 'spam', 'falso', 'datos_personales', 'maltrato', 'otro']
+          && (!('detalle' in datos) || (datos.detalle is string && datos.detalle.size() <= 300))
+          && (!('fotoAutor' in datos) || datos.fotoAutor is string)
+          && (!('rutaPublicacion' in datos) || (datos.rutaPublicacion is string && datos.ruta.matches(datos.rutaPublicacion + '/comentarios/[^/]+')))
+          && datos.estado == 'pendiente'
+          && datos.creadoEn == request.time;
+      }
+
+      allow create: if servicioHabilitado() && request.auth != null && reporteValido();
+      allow read, delete: if servicioHabilitado() && request.auth != null
+        && (request.auth.token.admin == true || resource.data.idReportante == request.auth.uid);
+      allow update: if servicioHabilitado() && request.auth != null
+        && request.auth.token.admin == true
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['estado', 'resueltoEn', 'resueltoPor'])
+        && request.resource.data.estado in ['eliminado', 'descartado']
+        && request.resource.data.resueltoEn == request.time
+        && request.resource.data.resueltoPor == request.auth.uid;
     }
 
     match /usuarios/{uid} {
@@ -248,13 +289,26 @@ service cloud.firestore {
         }
 
         function restaComentario() {
-          return cambia().hasOnly(['numComentarios'])
+          let ultimo = resource.data.get('ultimoComentario', null);
+          return (cambia().hasOnly(['numComentarios'])
+              || (cambia().hasOnly(['numComentarios', 'ultimoComentario'])
+                && !('ultimoComentario' in request.resource.data)
+                && ultimo is map
+                && ultimo.get('idUsuario', '') == request.auth.uid))
             && request.resource.data.numComentarios == resource.data.get('numComentarios', 0) - 1
             && request.resource.data.numComentarios >= 0;
         }
 
+        function anonimizaPropia() {
+          return resource.data.idUsuario == request.auth.uid
+            && resource.data.tipoPublicacion in ['alimentacion', 'estado_medico']
+            && cambia().hasOnly(['nombreUsuario', 'fotoUsuario'])
+            && request.resource.data.nombreUsuario == 'Usuario eliminado'
+            && !('fotoUsuario' in request.resource.data);
+        }
+
         allow update: if servicioHabilitado() && request.auth != null
-          && (esReaccionPropia() || sumaComentario() || restaComentario());
+          && (esReaccionPropia() || sumaComentario() || restaComentario() || anonimizaPropia());
 
         allow update: if servicioHabilitado() && request.auth != null
           && request.auth.token.admin == true

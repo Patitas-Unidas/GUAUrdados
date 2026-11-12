@@ -5,6 +5,7 @@ const _duotono = 'PhosphorDuotone';
 
 class Iconos {
   static const aLargeSmall = IconData(0xe587, fontFamily: _lucide);
+  static const ban = IconData(0xe051, fontFamily: _lucide);
   static const banknote = IconData(0xe052, fontFamily: _lucide);
   static const bell = IconData(0xe059, fontFamily: _lucide);
   static const calendar = IconData(0xe063, fontFamily: _lucide);
@@ -21,7 +22,10 @@ class Iconos {
   static const clock = IconData(0xe087, fontFamily: _lucide);
   static const droplet = IconData(0xe0b4, fontFamily: _lucide);
   static const ellipsis = IconData(0xe0b6, fontFamily: _lucide);
+  static const eye = IconData(0xe0ba, fontFamily: _lucide);
+  static const eyeOff = IconData(0xe0bb, fontFamily: _lucide);
   static const fileText = IconData(0xe0cc, fontFamily: _lucide);
+  static const flag = IconData(0xe0d1, fontFamily: _lucide);
   static const flame = IconData(0xe0d2, fontFamily: _lucide);
   static const handHeart = IconData(0xe5b9, fontFamily: _lucide);
   static const heartPulse = IconData(0xe36e, fontFamily: _lucide);
@@ -50,6 +54,7 @@ class Iconos {
   static const searchX = IconData(0xe4ad, fontFamily: _lucide);
   static const send = IconData(0xe152, fontFamily: _lucide);
   static const settings = IconData(0xe154, fontFamily: _lucide);
+  static const shieldAlert = IconData(0xe1fe, fontFamily: _lucide);
   static const shieldCheck = IconData(0xe1ff, fontFamily: _lucide);
   static const siren = IconData(0xe2ef, fontFamily: _lucide);
   static const smile = IconData(0xe164, fontFamily: _lucide);
@@ -61,6 +66,7 @@ class Iconos {
   static const triangleAlert = IconData(0xe193, fontFamily: _lucide);
   static const user = IconData(0xe19f, fontFamily: _lucide);
   static const users = IconData(0xe1a4, fontFamily: _lucide);
+  static const userX = IconData(0xe1a3, fontFamily: _lucide);
   static const utensils = IconData(0xe2f6, fontFamily: _lucide);
   static const weight = IconData(0xe530, fontFamily: _lucide);
   static const wifiOff = IconData(0xe1af, fontFamily: _lucide);

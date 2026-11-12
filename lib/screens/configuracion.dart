@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:guaurdados_oficial/widgets/iconos.dart';
 import 'package:guaurdados_oficial/theme/colores_app.dart';
 import 'package:guaurdados_oficial/theme/formas.dart';
+import 'package:guaurdados_oficial/services/moderacion.dart';
 import 'package:guaurdados_oficial/services/notificaciones_service.dart';
+import 'package:guaurdados_oficial/services/permisos_usuario.dart';
 import 'package:guaurdados_oficial/theme/preferencias.dart';
 import 'package:guaurdados_oficial/theme/tipografia.dart';
 import 'package:guaurdados_oficial/widgets/aparicion.dart';
@@ -12,9 +14,12 @@ import 'package:guaurdados_oficial/widgets/apoyo_guau.dart';
 import 'package:guaurdados_oficial/widgets/avatar_usuario.dart';
 import 'package:guaurdados_oficial/widgets/aviso.dart';
 import 'package:guaurdados_oficial/widgets/campo.dart';
+import 'package:guaurdados_oficial/widgets/hoja_eliminar_cuenta.dart';
+import 'package:guaurdados_oficial/widgets/moderacion.dart';
 import 'package:guaurdados_oficial/widgets/selector_avatar.dart';
 
 import 'iniciar_sesion.dart';
+import 'reportes.dart';
 
 const _version = '1.0.0';
 
@@ -28,6 +33,17 @@ class Configuracion extends StatefulWidget {
 class _ConfiguracionState extends State<Configuracion> {
   User? get _usuario => FirebaseAuth.instance.currentUser;
   late final _preferencias = NotificacionesService.observarPreferencias();
+  late final _esAdmin = PermisosUsuario.esAdmin();
+  Stream<List<ReportesDeContenido>>? _pendientes;
+
+  @override
+  void initState() {
+    super.initState();
+    Moderacion.escuchar();
+    _esAdmin.then((admin) {
+      if (admin && mounted) setState(() => _pendientes = Moderacion.observarPendientes());
+    });
+  }
 
   Future<void> _cambiarNotificacion(String clave, bool activa) async {
     try {
@@ -137,6 +153,20 @@ class _ConfiguracionState extends State<Configuracion> {
               titulo: 'Correo',
               subtitulo: _usuario?.email ?? '—',
             ),
+            ValueListenableBuilder<Map<String, UsuarioBloqueado>>(
+              valueListenable: Moderacion.bloqueados,
+              builder: (context, bloqueados, _) => _Fila(
+                icono: Iconos.ban,
+                titulo: 'Usuarios bloqueados',
+                subtitulo: switch (bloqueados.length) {
+                  0 => 'No has bloqueado a nadie',
+                  1 => '1 persona',
+                  final n => '$n personas',
+                },
+                final_: Icono(Iconos.chevronRight, size: 20, color: c.textoTenue),
+                alTocar: () => mostrarBloqueados(context),
+              ),
+            ),
             _Fila(
               icono: Iconos.logOut,
               titulo: 'Cerrar sesión',
@@ -146,11 +176,39 @@ class _ConfiguracionState extends State<Configuracion> {
             _Fila(
               icono: Iconos.trash2,
               titulo: 'Eliminar cuenta',
-              subtitulo: 'Borra tu cuenta de GUAUrdados de forma permanente.',
+              subtitulo: 'Borra tu cuenta y tus publicaciones de forma permanente.',
               color: c.emergencia,
               alTocar: _eliminarCuenta,
             ),
           ]),
+
+          if (_pendientes != null) ...[
+            const _TituloSeccion('Moderación'),
+            _Grupo(children: [
+              StreamBuilder<List<ReportesDeContenido>>(
+                stream: _pendientes,
+                builder: (context, snapshot) {
+                  final total = snapshot.data?.length ?? 0;
+                  return _Fila(
+                    icono: Iconos.shieldAlert,
+                    titulo: 'Reportes',
+                    subtitulo: total == 0 ? 'Sin reportes pendientes' : 'Publicaciones y comentarios reportados por la comunidad',
+                    final_: Row(mainAxisSize: MainAxisSize.min, children: [
+                      if (total > 0)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: Formas.fondo(c.emergencia, 10),
+                          child: Text('$total', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: c.sobreAcento)),
+                        ),
+                      const SizedBox(width: 6),
+                      Icono(Iconos.chevronRight, size: 20, color: c.textoTenue),
+                    ]),
+                    alTocar: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const Reportes())),
+                  );
+                },
+              ),
+            ]),
+          ],
 
           const _TituloSeccion('Apoya a GUAU'),
           _Grupo(children: [
@@ -232,35 +290,13 @@ class _ConfiguracionState extends State<Configuracion> {
   }
 
   Future<void> _eliminarCuenta() async {
-    final c = context.colores;
-    final confirmado = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('¿Eliminar tu cuenta?'),
-        content: const Text('Se borrará tu cuenta de forma permanente. Esta acción no se puede deshacer.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: c.emergencia),
-            child: const Text('Eliminar'),
-          ),
-        ],
-      ),
+    if (!await mostrarEliminarCuenta(context) || !mounted) return;
+    final mensajero = ScaffoldMessenger.of(context);
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const IniciarSesion()),
+      (route) => false,
     );
-    if (confirmado != true) return;
-    try {
-      await _usuario?.delete();
-      if (!mounted) return;
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const IniciarSesion()),
-        (route) => false,
-      );
-    } on FirebaseAuthException catch (e) {
-      _avisar(e.code == 'requires-recent-login'
-          ? 'Por seguridad, cierra sesión y vuelve a entrar antes de eliminar tu cuenta.'
-          : 'No se pudo eliminar la cuenta.');
-    }
+    mensajero.avisar('Tu cuenta se eliminó. Gracias por cuidar a los perritos.', tipo: TipoAviso.exito);
   }
 
   void _avisar(String texto) {
