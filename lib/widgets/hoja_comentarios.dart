@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:guaurdados_oficial/models/comentario.dart';
+import 'package:guaurdados_oficial/services/moderacion.dart';
 import 'package:guaurdados_oficial/theme/colores_app.dart';
 import 'package:guaurdados_oficial/theme/formas.dart';
 import 'package:guaurdados_oficial/theme/tipografia.dart';
@@ -14,11 +15,13 @@ import 'package:guaurdados_oficial/widgets/campo.dart';
 import 'package:guaurdados_oficial/widgets/esqueleto.dart';
 import 'package:guaurdados_oficial/widgets/hoja.dart';
 import 'package:guaurdados_oficial/widgets/iconos.dart';
+import 'package:guaurdados_oficial/widgets/moderacion.dart';
 import 'package:guaurdados_oficial/widgets/presionable.dart';
 import 'package:guaurdados_oficial/widgets/tarjeta_emergencia.dart';
 
 Future<void> mostrarComentarios(
   BuildContext context, {
+  required String rutaPublicacion,
   required String idAutor,
   required String nombreAutor,
   required String textoPublicacion,
@@ -29,6 +32,7 @@ Future<void> mostrarComentarios(
 }) => mostrarHoja<void>(
   context,
   builder: (_) => _HojaComentarios(
+    rutaPublicacion: rutaPublicacion,
     idAutor: idAutor,
     nombreAutor: nombreAutor,
     textoPublicacion: textoPublicacion,
@@ -41,6 +45,7 @@ Future<void> mostrarComentarios(
 
 class _HojaComentarios extends StatefulWidget {
   const _HojaComentarios({
+    required this.rutaPublicacion,
     required this.idAutor,
     required this.nombreAutor,
     required this.textoPublicacion,
@@ -50,6 +55,7 @@ class _HojaComentarios extends StatefulWidget {
     required this.esAdmin,
   });
 
+  final String rutaPublicacion;
   final String idAutor;
   final String nombreAutor;
   final String textoPublicacion;
@@ -125,9 +131,10 @@ class _HojaComentariosState extends State<_HojaComentarios> {
             child: Container(width: 36, height: 4, margin: const EdgeInsets.only(top: 10, bottom: 14), decoration: Formas.fondo(c.divisor, 2)),
           ),
           Expanded(
-            child: Builder(
-              builder: (context) {
-                final lista = _lista ?? const <Comentario>[];
+            child: ValueListenableBuilder<Map<String, UsuarioBloqueado>>(
+              valueListenable: Moderacion.bloqueados,
+              builder: (context, bloqueados, _) {
+                final lista = (_lista ?? const <Comentario>[]).where((co) => !bloqueados.containsKey(co.idUsuario)).toList();
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -211,10 +218,24 @@ class _HojaComentariosState extends State<_HojaComentarios> {
                               itemBuilder: (context, i) => Aparicion(
                                 indice: i.clamp(0, 8),
                                 child: _FilaComentario(
+                                  key: ValueKey(lista[i].id),
                                   comentario: lista[i],
                                   esAutor: lista[i].idUsuario == widget.idAutor,
-                                  puedeEliminar: widget.esAdmin || lista[i].idUsuario == uid,
-                                  eliminar: () => widget.eliminar(lista[i]),
+                                  opciones: () => mostrarOpcionesContenido(
+                                    context,
+                                    propio: lista[i].idUsuario == uid,
+                                    puedeEliminar: widget.esAdmin || lista[i].idUsuario == uid,
+                                    eliminar: () => widget.eliminar(lista[i]),
+                                    contenido: ContenidoReportable(
+                                      tipo: TipoContenido.comentario,
+                                      ruta: '${widget.rutaPublicacion}/comentarios/${lista[i].id}',
+                                      rutaPublicacion: widget.rutaPublicacion,
+                                      idAutor: lista[i].idUsuario,
+                                      nombreAutor: lista[i].nombreUsuario,
+                                      fotoAutor: lista[i].fotoUsuario,
+                                      texto: lista[i].texto,
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),
@@ -285,12 +306,11 @@ class _HojaComentariosState extends State<_HojaComentarios> {
 }
 
 class _FilaComentario extends StatelessWidget {
-  const _FilaComentario({required this.comentario, required this.esAutor, required this.puedeEliminar, required this.eliminar});
+  const _FilaComentario({super.key, required this.comentario, required this.esAutor, required this.opciones});
 
   final Comentario comentario;
   final bool esAutor;
-  final bool puedeEliminar;
-  final VoidCallback eliminar;
+  final VoidCallback opciones;
 
   @override
   Widget build(BuildContext context) {
@@ -336,17 +356,15 @@ class _FilaComentario extends StatelessWidget {
               ],
             ),
           ),
-          if (puedeEliminar)
-            SizedBox.square(
-              dimension: 36,
-              child: IconButton(
-                padding: EdgeInsets.zero,
-                onPressed: eliminar,
-                icon: Icono(Iconos.ellipsis, size: 18, color: c.textoTenue),
-              ),
-            )
-          else
-            const SizedBox(width: 8),
+          SizedBox.square(
+            dimension: 40,
+            child: IconButton(
+              padding: EdgeInsets.zero,
+              tooltip: 'Opciones',
+              onPressed: opciones,
+              icon: Icono(Iconos.ellipsis, size: 18, color: c.textoTenue),
+            ),
+          ),
         ],
       ),
     );

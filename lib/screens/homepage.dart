@@ -14,6 +14,7 @@ import 'package:guaurdados_oficial/services/novedades_descartadas.dart';
 import 'package:guaurdados_oficial/services/alimentaciones.dart';
 import 'package:guaurdados_oficial/services/emergencias.dart';
 import 'package:guaurdados_oficial/services/mis_publicaciones.dart';
+import 'package:guaurdados_oficial/services/moderacion.dart';
 import 'package:guaurdados_oficial/models/publicacion_foro.dart';
 import 'package:guaurdados_oficial/services/cuidados.dart';
 import 'package:guaurdados_oficial/widgets/estado_perro.dart';
@@ -57,6 +58,7 @@ class _HomepageState extends State<Homepage> {
     Alimentaciones.escuchar();
     Emergencias.escuchar();
     MisPublicaciones.escuchar();
+    Moderacion.escuchar();
     _vigilados.addListener(_refrescar);
     _descartadas.cargar().then((_) {
       if (mounted) setState(() {});
@@ -883,7 +885,7 @@ class _HojaNovedadesState extends State<_HojaNovedades> with SingleTickerProvide
 
 const _antiguedadMaxima = novedadesRecientes;
 
-final _vigilados = Listenable.merge([Emergencias.recientes, Alimentaciones.recientes, MisPublicaciones.recientes]);
+final _vigilados = Listenable.merge([Emergencias.recientes, Alimentaciones.recientes, MisPublicaciones.recientes, Moderacion.bloqueados]);
 
 List<_Novedad> _armarNovedades(ColoresApp c, List<Map<String, dynamic>>? foro, List<Perro>? seguidos, NovedadesDescartadas descartadas, String? uid) {
   final ahora = DateTime.now();
@@ -941,13 +943,14 @@ List<_Novedad> _armarNovedades(ColoresApp c, List<Map<String, dynamic>>? foro, L
 
   for (final f in foro ?? <Map<String, dynamic>>[]) {
     if (uid != null && f['idUsuario'] == uid) continue;
+    final tipo = f['tipoPublicacion'];
+    if (tipo != 'alimentacion' && tipo != 'estado_medico' && Moderacion.estaBloqueado(f['idUsuario'] as String?)) continue;
     final crudo = f['fecha'];
     final fecha = crudo is Timestamp ? crudo.toDate() : null;
     if (fecha != null && fecha.isBefore(limite)) continue;
     final clave = 'foro_${f['id']}';
     final version = fecha?.millisecondsSinceEpoch ?? 0;
     if (descartadas.estaDescartada(clave, version)) continue;
-    final tipo = f['tipoPublicacion'];
     final usuario = f['nombreUsuario'] ?? 'Alguien';
     final perro = f['nombrePerro'];
     final comentario = '${f['comentario'] ?? ''}'.trim();
@@ -969,6 +972,7 @@ List<_Novedad> _armarNovedades(ColoresApp c, List<Map<String, dynamic>>? foro, L
   for (final p in MisPublicaciones.recientes.value) {
     final fecha = p.ultimoComentarioEn;
     if (fecha == null || fecha.isBefore(limite) || p.ultimoComentarioPor == uid || p.numComentarios == 0) continue;
+    if (Moderacion.estaBloqueado(p.ultimoComentarioPor)) continue;
     final clave = 'comentario_${p.id}';
     final version = fecha.millisecondsSinceEpoch;
     if (descartadas.estaDescartada(clave, version)) continue;

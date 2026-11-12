@@ -10,6 +10,7 @@ import 'package:guaurdados_oficial/models/publicacion_foro.dart';
 import 'package:guaurdados_oficial/services/cuidados.dart';
 import 'package:guaurdados_oficial/services/emergencias.dart';
 import 'package:guaurdados_oficial/services/foro_repository.dart';
+import 'package:guaurdados_oficial/services/moderacion.dart';
 import 'package:guaurdados_oficial/services/perfiles_usuario_repository.dart';
 import 'package:guaurdados_oficial/services/perros_repository.dart';
 import 'package:guaurdados_oficial/theme/colores_app.dart';
@@ -20,6 +21,7 @@ import 'package:guaurdados_oficial/widgets/aviso.dart';
 import 'package:guaurdados_oficial/widgets/estado_perro.dart';
 import 'package:guaurdados_oficial/widgets/hoja.dart';
 import 'package:guaurdados_oficial/widgets/hoja_comentarios.dart';
+import 'package:guaurdados_oficial/widgets/moderacion.dart';
 import 'package:guaurdados_oficial/widgets/reacciones.dart';
 import 'package:guaurdados_oficial/services/permisos_usuario.dart';
 import 'package:guaurdados_oficial/widgets/foto_perro.dart';
@@ -56,6 +58,7 @@ class _ForoState extends State<Foro> {
   void initState() {
     super.initState();
     Emergencias.escuchar();
+    Moderacion.escuchar();
   }
 
   Future<void> _nuevaPublicacion() async {
@@ -115,9 +118,15 @@ class _ForoState extends State<Foro> {
                         else
                           StreamBuilder<List<PublicacionForo>>(
                             stream: publicaciones,
-                            builder: (context, snapshot) => Text(
-                              '${snapshot.data?.length ?? 0} ${snapshot.data?.length == 1 ? 'actualización' : 'actualizaciones'}',
-                              style: TextStyle(color: c.textoTenue, fontSize: 12),
+                            builder: (context, snapshot) => ValueListenableBuilder<Map<String, UsuarioBloqueado>>(
+                              valueListenable: Moderacion.bloqueados,
+                              builder: (context, _, _) {
+                                final total = visiblesEnForo(snapshot.data ?? const []).length;
+                                return Text(
+                                  '$total ${total == 1 ? 'actualización' : 'actualizaciones'}',
+                                  style: TextStyle(color: c.textoTenue, fontSize: 12),
+                                );
+                              },
                             ),
                           ),
                       ],
@@ -173,7 +182,9 @@ class _ForoState extends State<Foro> {
             Expanded(
               child: StreamBuilder<List<PublicacionForo>>(
                 stream: publicaciones,
-                builder: (context, snapshot) {
+                builder: (context, snapshot) => ValueListenableBuilder<Map<String, UsuarioBloqueado>>(
+                valueListenable: Moderacion.bloqueados,
+                builder: (context, _, _) {
                   if (snapshot.hasError) {
                     final error = snapshot.error?.toString().toLowerCase() ?? '';
                     final indiceEnConstruccion = error.contains('failed-precondition') &&
@@ -198,7 +209,7 @@ class _ForoState extends State<Foro> {
                     );
                   }
 
-                  final items = snapshot.data!;
+                  final items = visiblesEnForo(snapshot.data!);
                   if (items.isEmpty) {
                     return Column(children: [
                       _EmergenciasForo(idPerro: idPerro, padding: const EdgeInsets.fromLTRB(12, 4, 12, 0)),
@@ -221,10 +232,15 @@ class _ForoState extends State<Foro> {
                         ? _EmergenciasForo(idPerro: idPerro)
                         : Aparicion(
                             indice: index - 1,
-                            child: _TarjetaPublicacion(publicacion: items[index - 1], mostrarPerro: idPerro == null),
+                            child: _TarjetaPublicacion(
+                              key: ValueKey(items[index - 1].ruta),
+                              publicacion: items[index - 1],
+                              mostrarPerro: idPerro == null,
+                            ),
                           ),
                   );
                 },
+                ),
               ),
             ),
           ],
@@ -306,8 +322,11 @@ class _ChipSeguidor extends StatelessWidget {
   }
 }
 
+List<PublicacionForo> visiblesEnForo(List<PublicacionForo> publicaciones) =>
+    publicaciones.where((p) => !(p.admiteReacciones && Moderacion.estaBloqueado(p.idUsuario))).toList();
+
 class _TarjetaPublicacion extends StatelessWidget {
-  const _TarjetaPublicacion({required this.publicacion, required this.mostrarPerro});
+  const _TarjetaPublicacion({super.key, required this.publicacion, required this.mostrarPerro});
 
   final PublicacionForo publicacion;
   final bool mostrarPerro;
@@ -519,6 +538,7 @@ Future<void> abrirComentarios(BuildContext context, PublicacionForo publicacion)
   final repositorio = ForoRepository();
   await mostrarComentarios(
     context,
+    rutaPublicacion: publicacion.ruta,
     idAutor: publicacion.idUsuario,
     nombreAutor: publicacion.nombreUsuario,
     textoPublicacion: publicacion.descripcion,
@@ -611,31 +631,7 @@ class _OpcionesPublicacion extends StatelessWidget {
 
   final PublicacionForo publicacion;
 
-  Future<void> _abrir(BuildContext context) async {
-    final eliminar = await mostrarHoja<bool>(
-      context,
-      builder: (context) {
-        final c = context.colores;
-        return Container(
-          decoration: ShapeDecoration(color: c.fondo, shape: Formas.squircleArriba(28)),
-          padding: EdgeInsets.fromLTRB(16, 10, 16, 14 + MediaQuery.paddingOf(context).bottom),
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Container(width: 36, height: 4, margin: const EdgeInsets.only(bottom: 14), decoration: Formas.fondo(c.divisor, 2)),
-            Material(
-              color: c.superficie,
-              shape: Formas.squircle(18),
-              clipBehavior: Clip.antiAlias,
-              child: ListTile(
-                leading: Icono(Iconos.trash2, color: c.emergenciaTexto),
-                title: Text('Eliminar publicación', style: TextStyle(color: c.emergenciaTexto, fontWeight: FontWeight.w700)),
-                onTap: () => Navigator.of(context).pop(true),
-              ),
-            ),
-          ]),
-        );
-      },
-    );
-    if (eliminar != true || !context.mounted) return;
+  Future<void> _eliminar(BuildContext context) async {
     if (!await _confirmarEliminar(context, '¿Eliminar esta publicación?', texto: 'Se borrará del foro junto con sus reacciones. Esta acción no se puede deshacer.')) return;
     try {
       await ForoRepository().eliminarPublicacion(publicacion);
@@ -645,20 +641,32 @@ class _OpcionesPublicacion extends StatelessWidget {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final c = context.colores;
+  Future<void> _abrir(BuildContext context) async {
     final propia = publicacion.idUsuario == FirebaseAuth.instance.currentUser?.uid;
-    return FutureBuilder<bool>(
-      future: propia ? Future.value(true) : PermisosUsuario.esAdmin(),
-      builder: (context, permitido) => permitido.data == true
-          ? IconButton(
-              onPressed: () => _abrir(context),
-              icon: Icono(Iconos.ellipsis, color: c.textoSecundario),
-            )
-          : const SizedBox(width: 8),
+    final esAdmin = await PermisosUsuario.esAdmin();
+    if (!context.mounted) return;
+    await mostrarOpcionesContenido(
+      context,
+      propio: propia,
+      puedeEliminar: propia || esAdmin,
+      eliminar: () => _eliminar(context),
+      contenido: ContenidoReportable(
+        tipo: TipoContenido.publicacion,
+        ruta: publicacion.ruta,
+        idAutor: publicacion.idUsuario,
+        nombreAutor: publicacion.nombreUsuario,
+        fotoAutor: publicacion.fotoUsuario,
+        texto: publicacion.descripcion,
+      ),
     );
   }
+
+  @override
+  Widget build(BuildContext context) => IconButton(
+    tooltip: 'Opciones',
+    onPressed: () => _abrir(context),
+    icon: Icono(Iconos.ellipsis, color: context.colores.textoSecundario),
+  );
 }
 
 class _ResultadoAviso extends StatelessWidget {
